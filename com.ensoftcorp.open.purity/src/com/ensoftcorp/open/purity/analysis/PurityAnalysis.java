@@ -170,8 +170,7 @@ public class PurityAnalysis {
 					Set<ImmutabilityTypes> fTypes = getTypes(f);
 					// note variable -InstanceVariableAccessed-> InstanceVariableAssignment
 					GraphElement x = instanceVariableAccessedGraph.edges(instanceVariableAssignment, NodeDirection.IN).getFirst();
-					Set<ImmutabilityTypes> xTypes = getTypes(x);
-					
+
 					// x must be mutable
 					if(removeTypes(x, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY)){
 						workItems.add(x);
@@ -333,8 +332,7 @@ public class PurityAnalysis {
 			
 		}
 		
-		// TODO: implement
-		return null;
+		return workItems;
 	}
 	
 	/**
@@ -371,7 +369,9 @@ public class PurityAnalysis {
 			HashSet<ImmutabilityTypes> qualifiers = new HashSet<ImmutabilityTypes>();
 			
 			// TODO: is the return node the right node?
-			if(ge.taggedWith(XCSG.MasterReturn)){
+			if(ge.taggedWith(XCSG.Instantiation) || ge.taggedWith(XCSG.ArrayInstantiation)){
+				qualifiers.add(ImmutabilityTypes.MUTABLE);
+			} else if(ge.taggedWith(XCSG.MasterReturn)){
 				qualifiers.add(ImmutabilityTypes.POLYREAD);
 				qualifiers.add(ImmutabilityTypes.READONLY);
 			} else if(ge.taggedWith(XCSG.Field)){
