@@ -58,16 +58,6 @@ public class PurityAnalysis {
 				return null;
 			}
 		}
-
-		public static Set<ImmutabilityTypes> getAdaptedFieldViewpoints(Set<ImmutabilityTypes> contexts, Set<ImmutabilityTypes> declarations){
-			HashSet<ImmutabilityTypes> adaptedFieldViewpoints = new HashSet<ImmutabilityTypes>();
-			for(ImmutabilityTypes context : contexts){
-				for(ImmutabilityTypes declaration : declarations){
-					adaptedFieldViewpoints.add(getAdaptedFieldViewpoint(context, declaration));
-				}
-			}
-			return adaptedFieldViewpoints;
-		}
 		
 		/**
 		 * Viewpoint adaptation is a concept from Universe Types.
@@ -93,16 +83,6 @@ public class PurityAnalysis {
 				// q and POLYREAD = q
 				return context;
 			}
-		}
-		
-		public static Set<ImmutabilityTypes> getAdaptedMethodViewpoints(Set<ImmutabilityTypes> contexts, Set<ImmutabilityTypes> declarations){
-			HashSet<ImmutabilityTypes> adaptedMethodViewpoints = new HashSet<ImmutabilityTypes>();
-			for(ImmutabilityTypes context : contexts){
-				for(ImmutabilityTypes declaration : declarations){
-					adaptedMethodViewpoints.add(getAdaptedMethodViewpoint(context, declaration));
-				}
-			}
-			return adaptedMethodViewpoints;
 		}
 		
 		/**
@@ -196,18 +176,42 @@ public class PurityAnalysis {
 					if(removeTypes(x, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY)){
 						workItems.add(x);
 					}
+					ImmutabilityTypes xType = ImmutabilityTypes.MUTABLE;
 					
-					// some types of y may need to be removed to satisfy constraints
-					Set<ImmutabilityTypes> xAdaptedFViewpointTypes = ImmutabilityTypes.getAdaptedFieldViewpoints(xTypes, fTypes);
-					Set<ImmutabilityTypes> typesToRemoveFromY = new HashSet<ImmutabilityTypes>();
-					ImmutabilityTypes lca = leastCommonAncestor(xAdaptedFViewpointTypes, yTypes);
+					// process s(y)
+					Set<ImmutabilityTypes> yTypesToRemove = new HashSet<ImmutabilityTypes>();
 					for(ImmutabilityTypes yType : yTypes){
-						if(yType.compareTo(lca) > 0){
-							typesToRemoveFromY.add(yType);
+						boolean isSatisfied = false;
+						for(ImmutabilityTypes fType : fTypes){
+							ImmutabilityTypes xAdaptedF = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, fType);
+							if(xAdaptedF.compareTo(yType) >= 0){
+								isSatisfied = true;
+							}
+						}
+						if(!isSatisfied){
+							yTypesToRemove.add(yType);
 						}
 					}
-					if(removeTypes(y, typesToRemoveFromY)){
+					if(removeTypes(y, yTypesToRemove)){
 						workItems.add(y);
+					}
+					
+					// process s(f)
+					Set<ImmutabilityTypes> fTypesToRemove = new HashSet<ImmutabilityTypes>();
+					for(ImmutabilityTypes fType : fTypes){
+						boolean isSatisfied = false;
+						for(ImmutabilityTypes yType : yTypes){
+							ImmutabilityTypes xAdaptedF = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, fType);
+							if(xAdaptedF.compareTo(yType) >= 0){
+								isSatisfied = true;
+							}
+						}
+						if(!isSatisfied){
+							fTypesToRemove.add(fType);
+						}
+					}
+					if(removeTypes(f, fTypesToRemove)){
+						workItems.add(f);
 					}
 				} else {
 					// Type Rule 2 - TASSIGN
@@ -226,6 +230,80 @@ public class PurityAnalysis {
 					}
 					if(removeTypes(y, typesToRemoveFromY)){
 						workItems.add(y);
+					}
+				}
+			} else {
+				if(from.taggedWith(XCSG.InstanceVariable)){
+					// Type Rule 4 - TREAD
+					// let, x = y.f;
+					GraphElement f = from;
+					Set<ImmutabilityTypes> fTypes = getTypes(f);
+					// note InstanceVariable (field) -DataFlow-> InstanceVariableValue
+					GraphElement instanceVariableValue = to;
+					GraphElement cfBlock = Common.toQ(instanceVariableValue).parent().eval().nodes().getFirst();
+					GraphElement x = Common.toQ(cfBlock).children().nodesTaggedWithAny(XCSG.Assignment).eval().nodes().getFirst();
+					Set<ImmutabilityTypes> xTypes = getTypes(x);
+					GraphElement y = instanceVariableAccessedGraph.edges(f, NodeDirection.IN).getFirst();
+					Set<ImmutabilityTypes> yTypes = getTypes(y);
+					
+					// process s(x)
+					Set<ImmutabilityTypes> xTypesToRemove = new HashSet<ImmutabilityTypes>();
+					for(ImmutabilityTypes xType : xTypes){
+						boolean isSatisfied = false;
+						for(ImmutabilityTypes yType : yTypes){
+							for(ImmutabilityTypes fType : fTypes){
+								ImmutabilityTypes yAdaptedF = ImmutabilityTypes.getAdaptedFieldViewpoint(yType, fType);
+								if(xType.compareTo(yAdaptedF) >= 0){
+									isSatisfied = true;
+								}
+							}
+						}
+						if(!isSatisfied){
+							xTypesToRemove.add(xType);
+						}
+					}
+					if(removeTypes(x, xTypesToRemove)){
+						workItems.add(x);
+					}
+					
+					// process s(y)
+					Set<ImmutabilityTypes> yTypesToRemove = new HashSet<ImmutabilityTypes>();
+					for(ImmutabilityTypes yType : yTypes){
+						boolean isSatisfied = false;
+						for(ImmutabilityTypes xType : xTypes){
+							for(ImmutabilityTypes fType : fTypes){
+								ImmutabilityTypes yAdaptedF = ImmutabilityTypes.getAdaptedFieldViewpoint(yType, fType);
+								if(xType.compareTo(yAdaptedF) >= 0){
+									isSatisfied = true;
+								}
+							}
+						}
+						if(!isSatisfied){
+							yTypesToRemove.add(yType);
+						}
+					}
+					if(removeTypes(y, yTypesToRemove)){
+						workItems.add(y);
+					}
+					
+					// process s(f)
+					Set<ImmutabilityTypes> fTypesToRemove = new HashSet<ImmutabilityTypes>();
+					for(ImmutabilityTypes fType : fTypes){
+						boolean isSatisfied = false;
+						for(ImmutabilityTypes xType : xTypes){
+							for(ImmutabilityTypes yType : yTypes){
+								ImmutabilityTypes yAdaptedF = ImmutabilityTypes.getAdaptedFieldViewpoint(yType, fType);
+								if(xType.compareTo(yAdaptedF) >= 0){
+									isSatisfied = true;
+								}
+							}
+						}
+						if(!isSatisfied){
+							fTypesToRemove.add(fType);
+						}
+					}
+					if(removeTypes(f, fTypesToRemove)){
+						workItems.add(f);
 					}
 				}
 			}
@@ -268,9 +346,21 @@ public class PurityAnalysis {
 			return (Set<ImmutabilityTypes>) ge.getAttr(IMMUTABILITY_TYPES);
 		} else {
 			HashSet<ImmutabilityTypes> qualifiers = new HashSet<ImmutabilityTypes>();
-			qualifiers.add(ImmutabilityTypes.MUTABLE);
-			qualifiers.add(ImmutabilityTypes.POLYREAD);
-			qualifiers.add(ImmutabilityTypes.READONLY);
+			
+			// TODO: is the return node the right node?
+			if(ge.taggedWith(XCSG.MasterReturn)){
+				qualifiers.add(ImmutabilityTypes.POLYREAD);
+				qualifiers.add(ImmutabilityTypes.READONLY);
+			} else if(ge.taggedWith(XCSG.Field)){
+				qualifiers.add(ImmutabilityTypes.POLYREAD);
+				qualifiers.add(ImmutabilityTypes.READONLY);
+			} else {
+				// all other cases are initialized to the maximal type set
+				qualifiers.add(ImmutabilityTypes.POLYREAD);
+				qualifiers.add(ImmutabilityTypes.READONLY);
+				qualifiers.add(ImmutabilityTypes.MUTABLE);
+			}
+
 			ge.putAttr(IMMUTABILITY_TYPES, qualifiers);
 			return qualifiers;
 		}
