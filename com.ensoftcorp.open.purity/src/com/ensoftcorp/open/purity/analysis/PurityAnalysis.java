@@ -118,6 +118,7 @@ public class PurityAnalysis {
 	
 	private static Set<GraphElement> applyInferenceRules(GraphElement workItem){
 		Graph dfGraph = Common.universe().edgesTaggedWithAny(XCSG.DataFlow_Edge).eval();
+		Graph instanceVariableAccessedGraph = Common.universe().edgesTaggedWithAny(XCSG.InstanceVariableAccessed).eval();
 		Set<GraphElement> workItems = new HashSet<GraphElement>();
 		
 		GraphElement from = workItem;
@@ -128,30 +129,58 @@ public class PurityAnalysis {
 			GraphElement to = edge.getNode(EdgeDirection.TO);
 			
 			if(to.taggedWith(XCSG.Assignment)){
-				// Type Rule 1 - TNEW
 				if(from.taggedWith(XCSG.Instantiation) || from.taggedWith(XCSG.ArrayInstantiation)){
+					// Type Rule 1 - TNEW
 					// return type of a constructor is mutable
 					// x = new C(); // no effect on qualifier to x
+				}
+				
+				if(to.taggedWith(XCSG.InstanceVariableAssignment)){
+					// Type Rule 3 - TWRITE
+					// let, x.f = y
+					// note InstanceVariableAssignment -DataFlow-> InstanceVariable (field)
+					GraphElement y = from;
+					Set<ImmutabilityTypes> yTypes = getTypes(y);
+					GraphElement instanceVariableAssignment = to;
+					GraphElement f = dfGraph.edges(instanceVariableAssignment, NodeDirection.OUT).getFirst();
+					Set<ImmutabilityTypes> fTypes = getTypes(f);
+					// note variable -InstanceVariableAccessed-> InstanceVariableAssignment
+					GraphElement x = instanceVariableAccessedGraph.edges(instanceVariableAssignment, NodeDirection.IN).getFirst();
+					Set<ImmutabilityTypes> xTypes = getTypes(x);
+					
+					// x must be mutable
+					if(removeTypes(x, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY)){
+						workItems.add(x);
+					}
+					
+					// TODO: consider view adaptations
+					Set<ImmutabilityTypes> typesToRemoveFromY = new HashSet<ImmutabilityTypes>();
+					ImmutabilityTypes lca = leastCommonAncestor(xTypes, yTypes);
+					for(ImmutabilityTypes yType : yTypes){
+						if(yType.compareTo(lca) > 0){
+							typesToRemoveFromY.add(yType);
+						}
+					}
+					if(removeTypes(y, typesToRemoveFromY)){
+						workItems.add(y);
+					}
 				} else {
-					if(to.taggedWith(XCSG.Field)){
-						// Type Rule 3 - TWRITE
-						
-					} else {
-						// Type Rule 2 - TASSIGN
-						// let, x = y;
-						Set<ImmutabilityTypes> xTypes = getTypes(to);
-						Set<ImmutabilityTypes> yTypes = getTypes(from);
-						// note that it is only possible to remove types from y
-						Set<ImmutabilityTypes> typesToRemoveFromY = new HashSet<ImmutabilityTypes>();
-						ImmutabilityTypes lca = leastCommonAncestor(xTypes, yTypes);
-						for(ImmutabilityTypes yType : yTypes){
-							if(yType.compareTo(lca) > 0){
-								typesToRemoveFromY.add(yType);
-							}
+					// Type Rule 2 - TASSIGN
+					// let, x = y;
+					GraphElement x = to;
+					GraphElement y = from;
+					Set<ImmutabilityTypes> xTypes = getTypes(x);
+					Set<ImmutabilityTypes> yTypes = getTypes(y);
+					// note that it is only possible to remove types from y
+					Set<ImmutabilityTypes> typesToRemoveFromY = new HashSet<ImmutabilityTypes>();
+					ImmutabilityTypes lca = leastCommonAncestor(xTypes, yTypes);
+					for(ImmutabilityTypes yType : yTypes){
+						if(yType.compareTo(lca) > 0){
+							typesToRemoveFromY.add(yType);
 						}
-						if(removeTypes(from, typesToRemoveFromY)){
-							workItems.add(from);
-						}
+					}
+					if(removeTypes(y, typesToRemoveFromY)){
+						workItems.add(y);
 					}
 				}
 			}
