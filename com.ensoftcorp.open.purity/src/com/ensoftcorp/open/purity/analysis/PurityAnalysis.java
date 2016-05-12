@@ -220,15 +220,38 @@ public class PurityAnalysis {
 					GraphElement y = from;
 					Set<ImmutabilityTypes> xTypes = getTypes(x);
 					Set<ImmutabilityTypes> yTypes = getTypes(y);
-					// note that it is only possible to remove types from y
-					Set<ImmutabilityTypes> typesToRemoveFromY = new HashSet<ImmutabilityTypes>();
-					ImmutabilityTypes lca = leastCommonAncestor(xTypes, yTypes);
-					for(ImmutabilityTypes yType : yTypes){
-						if(yType.compareTo(lca) > 0){
-							typesToRemoveFromY.add(yType);
+					
+					// process s(x)
+					Set<ImmutabilityTypes> xTypesToRemove = new HashSet<ImmutabilityTypes>();
+					for(ImmutabilityTypes xType : xTypes){
+						boolean isSatisfied = false;
+						for(ImmutabilityTypes yType : yTypes){
+							if(xType.compareTo(yType) >= 0){
+								isSatisfied = true;
+							}
+						}
+						if(!isSatisfied){
+							xTypesToRemove.add(xType);
 						}
 					}
-					if(removeTypes(y, typesToRemoveFromY)){
+					if(removeTypes(x, xTypesToRemove)){
+						workItems.add(x);
+					}
+					
+					// process s(y)
+					Set<ImmutabilityTypes> yTypesToRemove = new HashSet<ImmutabilityTypes>();
+					for(ImmutabilityTypes yType : yTypes){
+						boolean isSatisfied = false;
+						for(ImmutabilityTypes xType : xTypes){
+							if(xType.compareTo(yType) >= 0){
+								isSatisfied = true;
+							}
+						}
+						if(!isSatisfied){
+							yTypesToRemove.add(yType);
+						}
+					}
+					if(removeTypes(y, yTypesToRemove)){
 						workItems.add(y);
 					}
 				}
