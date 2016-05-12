@@ -1,6 +1,8 @@
 package com.ensoftcorp.open.purity.analysis;
 
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -23,7 +25,7 @@ import com.ensoftcorp.atlas.core.xcsg.XCSG;
  */
 public class PurityAnalysis {
 
-	private static final String IMMUTABILITY_QUALIFIER = "IMMUTABILITY_QUALIFIER";
+	private static final String IMMUTABILITY_TYPES = "IMMUTABILITY_QUALIFIER";
 	
 	/**
 	 * Encodes the immutability qualifications as types 
@@ -116,7 +118,7 @@ public class PurityAnalysis {
 	
 	private static Set<GraphElement> applyInferenceRules(GraphElement workItem){
 		Graph dfGraph = Common.universe().edgesTaggedWithAny(XCSG.DataFlow_Edge).eval();
-		Set<GraphElement> result = new HashSet<GraphElement>();
+		Set<GraphElement> workItems = new HashSet<GraphElement>();
 		
 		GraphElement from = workItem;
 		AtlasSet<GraphElement> outEdges = dfGraph.edges(from, NodeDirection.OUT);
@@ -128,22 +130,27 @@ public class PurityAnalysis {
 			if(to.taggedWith(XCSG.Assignment)){
 				// Type Rule 1 - TNEW
 				if(from.taggedWith(XCSG.Instantiation) || from.taggedWith(XCSG.ArrayInstantiation)){
-					setTypeQualifier(to, ImmutabilityTypes.MUTABLE);
-					result.add(to);
+					// return type of a constructor is mutable
+					// x = new C(); // no effect on qualifier to x
 				} else {
 					if(to.taggedWith(XCSG.Field)){
 						// Type Rule 3 - TWRITE
 						
 					} else {
 						// Type Rule 2 - TASSIGN
-						ImmutabilityTypes fromType = getTypeQualifier(from);
-						ImmutabilityTypes toType = getTypeQualifier(to);
-						// of the from type is more generic than the to type
-						// then Type Rule 2 is violated, so the to type must be
-						// made at least as generic as the from type
-						if(fromType.compareTo(toType) > 0){
-							setTypeQualifier(to, fromType);
-							result.add(to);
+						// let, x = y;
+						Set<ImmutabilityTypes> xTypes = getTypes(to);
+						Set<ImmutabilityTypes> yTypes = getTypes(from);
+						// note that it is only possible to remove types from y
+						Set<ImmutabilityTypes> typesToRemoveFromY = new HashSet<ImmutabilityTypes>();
+						ImmutabilityTypes lca = leastCommonAncestor(xTypes, yTypes);
+						for(ImmutabilityTypes yType : yTypes){
+							if(yType.compareTo(lca) > 0){
+								typesToRemoveFromY.add(yType);
+							}
+						}
+						if(removeTypes(from, typesToRemoveFromY)){
+							workItems.add(from);
 						}
 					}
 				}
@@ -161,21 +168,48 @@ public class PurityAnalysis {
 	 * @param qualifier
 	 * @return Returns true if the type qualifier changed
 	 */
-	private static boolean setTypeQualifier(GraphElement ge, ImmutabilityTypes qualifier){
-		if(getTypeQualifier(ge) == qualifier){
-			return false;
+	private static boolean removeTypes(GraphElement ge, Set<ImmutabilityTypes> typesToRemove){
+		Set<ImmutabilityTypes> typeSet = getTypes(ge);
+		return typeSet.removeAll(typesToRemove);
+	}
+	
+	/**
+	 * Sets the type qualifier for a graph element
+	 * @param ge
+	 * @param qualifier
+	 * @return Returns true if the type qualifier changed
+	 */
+	private static boolean removeTypes(GraphElement ge, ImmutabilityTypes... types){
+		Set<ImmutabilityTypes> typeSet = getTypes(ge);
+		HashSet<ImmutabilityTypes> typesToRemove = new HashSet<ImmutabilityTypes>();
+		for(ImmutabilityTypes type : types){
+			typesToRemove.add(type);
+		}
+		return typeSet.removeAll(typesToRemove);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static Set<ImmutabilityTypes> getTypes(GraphElement ge){
+		if(ge.hasAttr(IMMUTABILITY_TYPES)){
+			return (Set<ImmutabilityTypes>) ge.getAttr(IMMUTABILITY_TYPES);
 		} else {
-			ge.putAttr(IMMUTABILITY_QUALIFIER, qualifier);
-			return true;
+			HashSet<ImmutabilityTypes> qualifiers = new HashSet<ImmutabilityTypes>();
+			qualifiers.add(ImmutabilityTypes.MUTABLE);
+			qualifiers.add(ImmutabilityTypes.POLYREAD);
+			qualifiers.add(ImmutabilityTypes.READONLY);
+			ge.putAttr(IMMUTABILITY_TYPES, qualifiers);
+			return qualifiers;
 		}
 	}
 	
-	public static ImmutabilityTypes getTypeQualifier(GraphElement ge){
-		if(ge.hasAttr(IMMUTABILITY_QUALIFIER)){
-			return ImmutabilityTypes.getImmutabilityType(ge.getAttr(IMMUTABILITY_QUALIFIER).toString());
-		} else {
-			return null;
-		}
+	public static ImmutabilityTypes leastCommonAncestor(Set<ImmutabilityTypes> a, Set<ImmutabilityTypes> b){
+		HashSet<ImmutabilityTypes> commonTypes = new HashSet<ImmutabilityTypes>();
+		commonTypes.addAll(a);
+		commonTypes.retainAll(b);
+		LinkedList<ImmutabilityTypes> orderedTypes = new LinkedList<ImmutabilityTypes>();
+		orderedTypes.addAll(commonTypes);
+		Collections.sort(orderedTypes);
+		return orderedTypes.getLast();
 	}
 	
 	/**
