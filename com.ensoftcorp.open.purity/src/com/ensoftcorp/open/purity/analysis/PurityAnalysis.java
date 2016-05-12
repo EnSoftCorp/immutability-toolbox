@@ -59,31 +59,75 @@ public class PurityAnalysis {
 			}
 		}
 
+		public static Set<ImmutabilityTypes> getAdaptedFieldViewpoints(Set<ImmutabilityTypes> contexts, Set<ImmutabilityTypes> declarations){
+			HashSet<ImmutabilityTypes> adaptedFieldViewpoints = new HashSet<ImmutabilityTypes>();
+			for(ImmutabilityTypes context : contexts){
+				for(ImmutabilityTypes declaration : declarations){
+					adaptedFieldViewpoints.add(getAdaptedFieldViewpoint(context, declaration));
+				}
+			}
+			return adaptedFieldViewpoints;
+		}
+		
 		/**
-		 * Viewpoint adaptation is a concept from Universe Types. Local variables,
-		 * callsite receivers, field accesses can be "adapted" to a point of
-		 * view of the variable at the left-hand-side.
+		 * Viewpoint adaptation is a concept from Universe Types.
 		 * 
-		 * Specifically, 
-		 * lhs=? and rhs=mutable => mutable
-		 * lhs=? and rhs=readonly => readonly
-		 * lhs=q and rhs=polyread => q
+		 * Specifically for fields, 
+		 * context=? and declaration=readonly => readonly
+		 * context=q and declaration=mutable => q
+		 * context=q and declaration=polyread => q
 		 * 
-		 * @param lhs
-		 * @param rhs
+		 * @param context
+		 * @param declared
 		 * @return
 		 */
-		public static ImmutabilityTypes adaptViewpoint(ImmutabilityTypes lhs, ImmutabilityTypes rhs){
-			if(rhs == ImmutabilityTypes.MUTABLE){
-				// ? and MUTABLE = MUTABLE
-				return ImmutabilityTypes.MUTABLE;
-			} else if(rhs == ImmutabilityTypes.READONLY){
+		public static ImmutabilityTypes getAdaptedFieldViewpoint(ImmutabilityTypes context, ImmutabilityTypes declaration){
+			if(declaration == ImmutabilityTypes.READONLY){
 				// ? and READONLY = READONLY
 				return ImmutabilityTypes.READONLY;
+			} else if(declaration == ImmutabilityTypes.MUTABLE){
+				// q and MUTABLE = q
+				return context;
 			} else {
-				// rhs must be ImmutabilityTypes.POLYREAD
+				// declared must be ImmutabilityTypes.POLYREAD
 				// q and POLYREAD = q
-				return lhs;
+				return context;
+			}
+		}
+		
+		public static Set<ImmutabilityTypes> getAdaptedMethodViewpoints(Set<ImmutabilityTypes> contexts, Set<ImmutabilityTypes> declarations){
+			HashSet<ImmutabilityTypes> adaptedMethodViewpoints = new HashSet<ImmutabilityTypes>();
+			for(ImmutabilityTypes context : contexts){
+				for(ImmutabilityTypes declaration : declarations){
+					adaptedMethodViewpoints.add(getAdaptedMethodViewpoint(context, declaration));
+				}
+			}
+			return adaptedMethodViewpoints;
+		}
+		
+		/**
+		 * Viewpoint adaptation is a concept from Universe Types.
+		 * 
+		 * Specifically, 
+		 * context=? and declaration=readonly => readonly
+		 * context=? and declaration=mutable => mutable
+		 * context=q and declaration=polyread => q
+		 * 
+		 * @param context
+		 * @param declared
+		 * @return
+		 */
+		public static ImmutabilityTypes getAdaptedMethodViewpoint(ImmutabilityTypes context, ImmutabilityTypes declaration){
+			if(declaration == ImmutabilityTypes.READONLY){
+				// ? and READONLY = READONLY
+				return ImmutabilityTypes.READONLY;
+			} else if(declaration == ImmutabilityTypes.MUTABLE){
+				// ? and MUTABLE = MUTABLE
+				return ImmutabilityTypes.MUTABLE;
+			} else {
+				// declared must be ImmutabilityTypes.POLYREAD
+				// q and POLYREAD = q
+				return context;
 			}
 		}
 	}
@@ -153,9 +197,10 @@ public class PurityAnalysis {
 						workItems.add(x);
 					}
 					
-					// TODO: consider view adaptations
+					// some types of y may need to be removed to satisfy constraints
+					Set<ImmutabilityTypes> xAdaptedFViewpointTypes = ImmutabilityTypes.getAdaptedFieldViewpoints(xTypes, fTypes);
 					Set<ImmutabilityTypes> typesToRemoveFromY = new HashSet<ImmutabilityTypes>();
-					ImmutabilityTypes lca = leastCommonAncestor(xTypes, yTypes);
+					ImmutabilityTypes lca = leastCommonAncestor(xAdaptedFViewpointTypes, yTypes);
 					for(ImmutabilityTypes yType : yTypes){
 						if(yType.compareTo(lca) > 0){
 							typesToRemoveFromY.add(yType);
