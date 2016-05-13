@@ -18,8 +18,8 @@ import com.ensoftcorp.atlas.core.xcsg.XCSG;
 /**
  * Implements an Atlas native implementation of the context-sensitive method 
  * purity and side-effect analysis proposed in:
- * 1) ReIm & ReImInfer: Checking and Inference of Reference Immutability, OOPSLA 2012 
- * 2) Method Purity and ReImInfer: Method Purity Inference for Java, FSE 2012
+ * Reference 1: ReIm & ReImInfer: Checking and Inference of Reference Immutability, OOPSLA 2012 
+ * Reference 2: Method Purity and ReImInfer: Method Purity Inference for Java, FSE 2012
  * 
  * @author Ben Holland
  */
@@ -34,6 +34,9 @@ public class PurityAnalysis {
 	 */
 	public static enum ImmutabilityTypes {
 		// note that MUTABLE <: POLYREAD <: READONLY
+		// <: denotes a subtype relationship
+		// MUTABLE is a subtype of POLYREAD and POLYREAD is a subtype of READONLY
+		// MUTABLE is the most specific type and READONLY is the most generic type
 		MUTABLE("MUTABLE"), POLYREAD("POLYREAD"), READONLY("READONLY");
 		
 		private String name;
@@ -134,6 +137,12 @@ public class PurityAnalysis {
 			worklist.add(parameter);
 		}
 		
+		// add all assignments to worklist
+		Q assignments = Common.universe().nodesTaggedWithAny(XCSG.Assignment);
+		for(GraphElement assignment : assignments.eval().nodes()){
+			worklist.add(assignment);
+		}
+		
 		while(!worklist.isEmpty()){
 			GraphElement workItem = worklist.pollFirst();
 			worklist.addAll(applyInferenceRules(workItem));
@@ -145,193 +154,243 @@ public class PurityAnalysis {
 		Graph instanceVariableAccessedGraph = Common.universe().edgesTaggedWithAny(XCSG.InstanceVariableAccessed).eval();
 		Set<GraphElement> workItems = new HashSet<GraphElement>();
 		
+		// consider outgoing data flow edges
+		// outgoing edges represent a write relationship in an assignment
 		GraphElement from = workItem;
 		AtlasSet<GraphElement> outEdges = dfGraph.edges(from, NodeDirection.OUT);
-
-		// for each assignment 
 		for(GraphElement edge : outEdges){
 			GraphElement to = edge.getNode(EdgeDirection.TO);
-			
 			if(to.taggedWith(XCSG.Assignment)){
-				if(from.taggedWith(XCSG.Instantiation) || from.taggedWith(XCSG.ArrayInstantiation)){
-					// Type Rule 1 - TNEW
-					// return type of a constructor is mutable
-					// x = new C(); // no effect on qualifier to x
-				}
-				
 				if(to.taggedWith(XCSG.InstanceVariableAssignment)){
 					// Type Rule 3 - TWRITE
 					// let, x.f = y
 					// note InstanceVariableAssignment -DataFlow-> InstanceVariable (field)
 					GraphElement y = from;
-					Set<ImmutabilityTypes> yTypes = getTypes(y);
 					GraphElement instanceVariableAssignment = to;
 					GraphElement f = dfGraph.edges(instanceVariableAssignment, NodeDirection.OUT).getFirst();
-					Set<ImmutabilityTypes> fTypes = getTypes(f);
 					// note variable -InstanceVariableAccessed-> InstanceVariableAssignment
 					GraphElement x = instanceVariableAccessedGraph.edges(instanceVariableAssignment, NodeDirection.IN).getFirst();
-
-					// x must be mutable
-					if(removeTypes(x, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY)){
-						workItems.add(x);
-					}
-					ImmutabilityTypes xType = ImmutabilityTypes.MUTABLE;
-					
-					// process s(y)
-					Set<ImmutabilityTypes> yTypesToRemove = new HashSet<ImmutabilityTypes>();
-					for(ImmutabilityTypes yType : yTypes){
-						boolean isSatisfied = false;
-						for(ImmutabilityTypes fType : fTypes){
-							ImmutabilityTypes xAdaptedF = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, fType);
-							if(xAdaptedF.compareTo(yType) >= 0){
-								isSatisfied = true;
-							}
-						}
-						if(!isSatisfied){
-							yTypesToRemove.add(yType);
-						}
-					}
-					if(removeTypes(y, yTypesToRemove)){
-						workItems.add(y);
-					}
-					
-					// process s(f)
-					Set<ImmutabilityTypes> fTypesToRemove = new HashSet<ImmutabilityTypes>();
-					for(ImmutabilityTypes fType : fTypes){
-						boolean isSatisfied = false;
-						for(ImmutabilityTypes yType : yTypes){
-							ImmutabilityTypes xAdaptedF = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, fType);
-							if(xAdaptedF.compareTo(yType) >= 0){
-								isSatisfied = true;
-							}
-						}
-						if(!isSatisfied){
-							fTypesToRemove.add(fType);
-						}
-					}
-					if(removeTypes(f, fTypesToRemove)){
-						workItems.add(f);
-					}
+					workItems.addAll(handleFieldWrite(x, f, y));
 				} else {
 					// Type Rule 2 - TASSIGN
-					// let, x = y;
+					// let, x = y
 					GraphElement x = to;
 					GraphElement y = from;
-					Set<ImmutabilityTypes> xTypes = getTypes(x);
-					Set<ImmutabilityTypes> yTypes = getTypes(y);
-					
-					// process s(x)
-					Set<ImmutabilityTypes> xTypesToRemove = new HashSet<ImmutabilityTypes>();
-					for(ImmutabilityTypes xType : xTypes){
-						boolean isSatisfied = false;
-						for(ImmutabilityTypes yType : yTypes){
-							if(xType.compareTo(yType) >= 0){
-								isSatisfied = true;
-							}
-						}
-						if(!isSatisfied){
-							xTypesToRemove.add(xType);
-						}
-					}
-					if(removeTypes(x, xTypesToRemove)){
-						workItems.add(x);
-					}
-					
-					// process s(y)
-					Set<ImmutabilityTypes> yTypesToRemove = new HashSet<ImmutabilityTypes>();
-					for(ImmutabilityTypes yType : yTypes){
-						boolean isSatisfied = false;
-						for(ImmutabilityTypes xType : xTypes){
-							if(xType.compareTo(yType) >= 0){
-								isSatisfied = true;
-							}
-						}
-						if(!isSatisfied){
-							yTypesToRemove.add(yType);
-						}
-					}
-					if(removeTypes(y, yTypesToRemove)){
-						workItems.add(y);
-					}
+					workItems.addAll(handleAssignment(x, y));
 				}
-			} else {
+			}
+		}
+		
+		// consider incoming data flow edges
+		// incoming edges represent a read relationship in an assignment
+		GraphElement to = workItem;
+		AtlasSet<GraphElement> inEdges = dfGraph.edges(to, NodeDirection.IN);
+		for(GraphElement edge : inEdges){
+			from = edge.getNode(EdgeDirection.FROM);
+			if(to.taggedWith(XCSG.Assignment)){
 				if(from.taggedWith(XCSG.InstanceVariable)){
 					// Type Rule 4 - TREAD
-					// let, x = y.f;
+					// let, x = y.f
 					GraphElement f = from;
-					Set<ImmutabilityTypes> fTypes = getTypes(f);
 					// note InstanceVariable (field) -DataFlow-> InstanceVariableValue
 					GraphElement instanceVariableValue = to;
 					GraphElement cfBlock = Common.toQ(instanceVariableValue).parent().eval().nodes().getFirst();
 					GraphElement x = Common.toQ(cfBlock).children().nodesTaggedWithAny(XCSG.Assignment).eval().nodes().getFirst();
-					Set<ImmutabilityTypes> xTypes = getTypes(x);
 					GraphElement y = instanceVariableAccessedGraph.edges(f, NodeDirection.IN).getFirst();
-					Set<ImmutabilityTypes> yTypes = getTypes(y);
-					
-					// process s(x)
-					Set<ImmutabilityTypes> xTypesToRemove = new HashSet<ImmutabilityTypes>();
-					for(ImmutabilityTypes xType : xTypes){
-						boolean isSatisfied = false;
-						for(ImmutabilityTypes yType : yTypes){
-							for(ImmutabilityTypes fType : fTypes){
-								ImmutabilityTypes yAdaptedF = ImmutabilityTypes.getAdaptedFieldViewpoint(yType, fType);
-								if(xType.compareTo(yAdaptedF) >= 0){
-									isSatisfied = true;
-								}
-							}
-						}
-						if(!isSatisfied){
-							xTypesToRemove.add(xType);
-						}
-					}
-					if(removeTypes(x, xTypesToRemove)){
-						workItems.add(x);
-					}
-					
-					// process s(y)
-					Set<ImmutabilityTypes> yTypesToRemove = new HashSet<ImmutabilityTypes>();
-					for(ImmutabilityTypes yType : yTypes){
-						boolean isSatisfied = false;
-						for(ImmutabilityTypes xType : xTypes){
-							for(ImmutabilityTypes fType : fTypes){
-								ImmutabilityTypes yAdaptedF = ImmutabilityTypes.getAdaptedFieldViewpoint(yType, fType);
-								if(xType.compareTo(yAdaptedF) >= 0){
-									isSatisfied = true;
-								}
-							}
-						}
-						if(!isSatisfied){
-							yTypesToRemove.add(yType);
-						}
-					}
-					if(removeTypes(y, yTypesToRemove)){
-						workItems.add(y);
-					}
-					
-					// process s(f)
-					Set<ImmutabilityTypes> fTypesToRemove = new HashSet<ImmutabilityTypes>();
-					for(ImmutabilityTypes fType : fTypes){
-						boolean isSatisfied = false;
-						for(ImmutabilityTypes xType : xTypes){
-							for(ImmutabilityTypes yType : yTypes){
-								ImmutabilityTypes yAdaptedF = ImmutabilityTypes.getAdaptedFieldViewpoint(yType, fType);
-								if(xType.compareTo(yAdaptedF) >= 0){
-									isSatisfied = true;
-								}
-							}
-						}
-						if(!isSatisfied){
-							fTypesToRemove.add(fType);
-						}
-					}
-					if(removeTypes(f, fTypesToRemove)){
-						workItems.add(f);
+					workItems.addAll(handleFieldRead(x, y, f));
+				} else {
+					// Type Rule 2 - TASSIGN
+					// let, x = y
+					GraphElement x = to;
+					GraphElement y = from;
+					workItems.addAll(handleAssignment(x, y));
+				}	
+			}
+		}
+		
+		return workItems;
+	}
+
+	/**
+	 * Solves and satisfies constraints for Type Rule 2 - TASSIGN
+	 * Let, x = y
+	 * 
+	 * @param x The reference being written to
+	 * @param y The reference be read from
+	 * @return
+	 */
+	private static Set<GraphElement> handleAssignment(GraphElement x, GraphElement y) {
+		Set<GraphElement> workItems = new HashSet<GraphElement>();
+		Set<ImmutabilityTypes> xTypes = getTypes(x);
+		Set<ImmutabilityTypes> yTypes = getTypes(y);
+		
+		// process s(x)
+		Set<ImmutabilityTypes> xTypesToRemove = new HashSet<ImmutabilityTypes>();
+		for(ImmutabilityTypes xType : xTypes){
+			boolean isSatisfied = false;
+			for(ImmutabilityTypes yType : yTypes){
+				if(xType.compareTo(yType) >= 0){
+					isSatisfied = true;
+				}
+			}
+			if(!isSatisfied){
+				xTypesToRemove.add(xType);
+			}
+		}
+		if(removeTypes(x, xTypesToRemove)){
+			workItems.add(x);
+		}
+		
+		// process s(y)
+		Set<ImmutabilityTypes> yTypesToRemove = new HashSet<ImmutabilityTypes>();
+		for(ImmutabilityTypes yType : yTypes){
+			boolean isSatisfied = false;
+			for(ImmutabilityTypes xType : xTypes){
+				if(xType.compareTo(yType) >= 0){
+					isSatisfied = true;
+				}
+			}
+			if(!isSatisfied){
+				yTypesToRemove.add(yType);
+			}
+		}
+		if(removeTypes(y, yTypesToRemove)){
+			workItems.add(y);
+		}
+		return workItems;
+	}
+	
+	/**
+	 * Solves and satisfies constraints for Type Rule 3 - TWRITE
+	 * Let, x.f = y
+	 * 
+	 * @param x The receiver object
+	 * @param f The field of the receiver object being written to
+	 * @param y The reference being read from
+	 * @return Returns a set of GraphElements whose set of ImmutabilityTypes have changed
+	 */
+	private static Set<GraphElement> handleFieldWrite(GraphElement x, GraphElement f, GraphElement y) {
+		Set<GraphElement> workItems = new HashSet<GraphElement>();
+		Set<ImmutabilityTypes> yTypes = getTypes(y);
+		Set<ImmutabilityTypes> fTypes = getTypes(f);
+		// x must be mutable
+		if(removeTypes(x, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY)){
+			workItems.add(x);
+		}
+		ImmutabilityTypes xType = ImmutabilityTypes.MUTABLE;
+		
+		// process s(y)
+		Set<ImmutabilityTypes> yTypesToRemove = new HashSet<ImmutabilityTypes>();
+		for(ImmutabilityTypes yType : yTypes){
+			boolean isSatisfied = false;
+			for(ImmutabilityTypes fType : fTypes){
+				ImmutabilityTypes xAdaptedF = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, fType);
+				if(xAdaptedF.compareTo(yType) >= 0){
+					isSatisfied = true;
+				}
+			}
+			if(!isSatisfied){
+				yTypesToRemove.add(yType);
+			}
+		}
+		if(removeTypes(y, yTypesToRemove)){
+			workItems.add(y);
+		}
+		
+		// process s(f)
+		Set<ImmutabilityTypes> fTypesToRemove = new HashSet<ImmutabilityTypes>();
+		for(ImmutabilityTypes fType : fTypes){
+			boolean isSatisfied = false;
+			for(ImmutabilityTypes yType : yTypes){
+				ImmutabilityTypes xAdaptedF = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, fType);
+				if(xAdaptedF.compareTo(yType) >= 0){
+					isSatisfied = true;
+				}
+			}
+			if(!isSatisfied){
+				fTypesToRemove.add(fType);
+			}
+		}
+		if(removeTypes(f, fTypesToRemove)){
+			workItems.add(f);
+		}
+		return workItems;
+	}
+	
+	/**
+	 * Solves and satisfies constraints for Type Rule 4 - TREAD
+	 * Let, x = y.f
+	 * 
+	 * @param x The reference being written to
+	 * @param y The receiver object
+	 * @param f The field of the receiver object being read from
+	 * @return Returns a set of GraphElements whose set of ImmutabilityTypes have changed
+	 */
+	private static Set<GraphElement> handleFieldRead(GraphElement x, GraphElement y, GraphElement f) {
+		Set<GraphElement> workItems = new HashSet<GraphElement>();
+		Set<ImmutabilityTypes> fTypes = getTypes(f);
+		Set<ImmutabilityTypes> xTypes = getTypes(x);
+		Set<ImmutabilityTypes> yTypes = getTypes(y);
+		
+		// process s(x)
+		Set<ImmutabilityTypes> xTypesToRemove = new HashSet<ImmutabilityTypes>();
+		for(ImmutabilityTypes xType : xTypes){
+			boolean isSatisfied = false;
+			for(ImmutabilityTypes yType : yTypes){
+				for(ImmutabilityTypes fType : fTypes){
+					ImmutabilityTypes yAdaptedF = ImmutabilityTypes.getAdaptedFieldViewpoint(yType, fType);
+					if(xType.compareTo(yAdaptedF) >= 0){
+						isSatisfied = true;
 					}
 				}
 			}
-			
+			if(!isSatisfied){
+				xTypesToRemove.add(xType);
+			}
+		}
+		if(removeTypes(x, xTypesToRemove)){
+			workItems.add(x);
 		}
 		
+		// process s(y)
+		Set<ImmutabilityTypes> yTypesToRemove = new HashSet<ImmutabilityTypes>();
+		for(ImmutabilityTypes yType : yTypes){
+			boolean isSatisfied = false;
+			for(ImmutabilityTypes xType : xTypes){
+				for(ImmutabilityTypes fType : fTypes){
+					ImmutabilityTypes yAdaptedF = ImmutabilityTypes.getAdaptedFieldViewpoint(yType, fType);
+					if(xType.compareTo(yAdaptedF) >= 0){
+						isSatisfied = true;
+					}
+				}
+			}
+			if(!isSatisfied){
+				yTypesToRemove.add(yType);
+			}
+		}
+		if(removeTypes(y, yTypesToRemove)){
+			workItems.add(y);
+		}
+		
+		// process s(f)
+		Set<ImmutabilityTypes> fTypesToRemove = new HashSet<ImmutabilityTypes>();
+		for(ImmutabilityTypes fType : fTypes){
+			boolean isSatisfied = false;
+			for(ImmutabilityTypes xType : xTypes){
+				for(ImmutabilityTypes yType : yTypes){
+					ImmutabilityTypes yAdaptedF = ImmutabilityTypes.getAdaptedFieldViewpoint(yType, fType);
+					if(xType.compareTo(yAdaptedF) >= 0){
+						isSatisfied = true;
+					}
+				}
+			}
+			if(!isSatisfied){
+				fTypesToRemove.add(fType);
+			}
+		}
+		if(removeTypes(f, fTypesToRemove)){
+			workItems.add(f);
+		}
 		return workItems;
 	}
 	
@@ -368,17 +427,25 @@ public class PurityAnalysis {
 		} else {
 			HashSet<ImmutabilityTypes> qualifiers = new HashSet<ImmutabilityTypes>();
 			
-			// TODO: is the return node the right node?
 			if(ge.taggedWith(XCSG.Instantiation) || ge.taggedWith(XCSG.ArrayInstantiation)){
+				// Type Rule 1 - TNEW
+				// return type of a constructor is only mutable
+				// x = new C(); // no effect on qualifier to x
 				qualifiers.add(ImmutabilityTypes.MUTABLE);
 			} else if(ge.taggedWith(XCSG.MasterReturn)){
+				// Section 2.4 of Reference 1
+				// "Method returns are initialized S(ret) = {readonly, polyread} for each method m"
 				qualifiers.add(ImmutabilityTypes.POLYREAD);
 				qualifiers.add(ImmutabilityTypes.READONLY);
 			} else if(ge.taggedWith(XCSG.Field)){
+				// Section 2.4 of Reference 1
+				// "Fields are initialized to S(f) = {readonly, polyread}"
 				qualifiers.add(ImmutabilityTypes.POLYREAD);
 				qualifiers.add(ImmutabilityTypes.READONLY);
 			} else {
-				// all other cases are initialized to the maximal type set
+				// Section 2.4 of Reference 1
+				// "All other references are initialized to the maximal
+				// set of qualifiers, i.e. S(x) = {readonly, polyread, mutable}"
 				qualifiers.add(ImmutabilityTypes.POLYREAD);
 				qualifiers.add(ImmutabilityTypes.READONLY);
 				qualifiers.add(ImmutabilityTypes.MUTABLE);
@@ -389,6 +456,12 @@ public class PurityAnalysis {
 		}
 	}
 	
+	/**
+	 * Returns the least common ancestor for two sets of ImmutabilityTypes
+	 * @param a
+	 * @param b
+	 * @return
+	 */
 	public static ImmutabilityTypes leastCommonAncestor(Set<ImmutabilityTypes> a, Set<ImmutabilityTypes> b){
 		HashSet<ImmutabilityTypes> commonTypes = new HashSet<ImmutabilityTypes>();
 		commonTypes.addAll(a);
@@ -403,10 +476,10 @@ public class PurityAnalysis {
 	 * Returns true if the method is pure
 	 * @param method
 	 */
-	public static boolean isPure(GraphElement method){
+	public static boolean isPureMethod(GraphElement method){
 		if(!method.taggedWith(XCSG.Method)){
 			return false;
-		} else if(isPureDefault(method)){
+		} else if(isPureMethodDefault(method)){
 			return true;
 		} else {
 			boolean isPure = true;
@@ -417,7 +490,7 @@ public class PurityAnalysis {
 		}
 	}
 	
-	private static boolean isPureDefault(GraphElement method){
+	private static boolean isPureMethodDefault(GraphElement method){
 		// from : https://github.com/SoftwareEngineeringToolDemos/FSE-2012-ReImInfer/blob/master/inference-framework/checker-framework/checkers/src/checkers/inference/reim/ReimChecker.java
 //		defaultPurePatterns.add(Pattern.compile(".*\\.equals\\(java\\.lang\\.Object\\)$"));
 //        defaultPurePatterns.add(Pattern.compile(".*\\.hashCode\\(\\)$"));
