@@ -143,17 +143,25 @@ public class PurityAnalysis {
 			worklist.add(assignment);
 		}
 		
-		while(!worklist.isEmpty()){
-			GraphElement workItem = worklist.pollFirst();
-			worklist.addAll(applyInferenceRules(workItem));
+		while(true){
+			boolean fixedPoint = true;
+			// TODO: consider removing workItems that only have the mutable tag from future iterations...
+			for(GraphElement workItem : worklist){
+				if(applyInferenceRules(workItem)){
+					fixedPoint = false;
+				}
+			}
+			if(fixedPoint){
+				break;
+			}
 		}
 	}
 	
-	private static Set<GraphElement> applyInferenceRules(GraphElement workItem){
+	private static boolean applyInferenceRules(GraphElement workItem){
 		Graph localDFGraph = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow).eval();
 		Graph interproceduralDFGraph = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow).eval();
 		Graph instanceVariableAccessedGraph = Common.universe().edgesTaggedWithAny(XCSG.InstanceVariableAccessed).eval();
-		Set<GraphElement> workItems = new HashSet<GraphElement>();
+		boolean typesChanged = false;
 		
 		// consider incoming data flow edges
 		// incoming edges represent a read relationship in an assignment
@@ -181,7 +189,9 @@ public class PurityAnalysis {
 				GraphElement instanceVariableAccessedEdge = instanceVariableAccessedGraph.edges(instanceVariableAssignment, NodeDirection.IN).getFirst();
 				GraphElement x = instanceVariableAccessedEdge.getNode(EdgeDirection.FROM);
 
-				workItems.addAll(handleFieldWrite(x, f, y));
+				if(handleFieldWrite(x, f, y)){
+					typesChanged = true;
+				}
 				
 				involvesField = true;
 			}
@@ -197,7 +207,9 @@ public class PurityAnalysis {
 			if(!involvesField){
 				GraphElement x = to;
 				GraphElement y = from;
-				workItems.addAll(handleAssignment(x, y));
+				if(handleAssignment(x, y)){
+					typesChanged = true;
+				}
 			}
 		}
 		
@@ -260,7 +272,7 @@ public class PurityAnalysis {
 //			}
 //		}
 		
-		return workItems;
+		return typesChanged;
 	}
 
 	/**
@@ -271,8 +283,8 @@ public class PurityAnalysis {
 	 * @param y The reference be read from
 	 * @return
 	 */
-	private static Set<GraphElement> handleAssignment(GraphElement x, GraphElement y) {
-		Set<GraphElement> workItems = new HashSet<GraphElement>();
+	private static boolean handleAssignment(GraphElement x, GraphElement y) {
+		boolean typesChanged = false;
 		Set<ImmutabilityTypes> xTypes = getTypes(x);
 		Set<ImmutabilityTypes> yTypes = getTypes(y);
 		
@@ -290,7 +302,7 @@ public class PurityAnalysis {
 			}
 		}
 		if(removeTypes(x, xTypesToRemove)){
-			workItems.add(x);
+			typesChanged = true;
 		}
 		
 		// process s(y)
@@ -306,8 +318,10 @@ public class PurityAnalysis {
 				yTypesToRemove.add(yType);
 			}
 		}
-		removeTypes(y, yTypesToRemove);
-		return workItems;
+		if(removeTypes(y, yTypesToRemove)){
+			typesChanged = true;
+		}
+		return typesChanged;
 	}
 	
 	/**
@@ -319,12 +333,14 @@ public class PurityAnalysis {
 	 * @param y The reference being read from
 	 * @return Returns a set of GraphElements whose set of ImmutabilityTypes have changed
 	 */
-	private static Set<GraphElement> handleFieldWrite(GraphElement x, GraphElement f, GraphElement y) {
-		Set<GraphElement> workItems = new HashSet<GraphElement>();
+	private static boolean handleFieldWrite(GraphElement x, GraphElement f, GraphElement y) {
+		boolean typesChanged = false;
 		Set<ImmutabilityTypes> yTypes = getTypes(y);
 		Set<ImmutabilityTypes> fTypes = getTypes(f);
 		// x must be mutable
-		removeTypes(x, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY);
+		if(removeTypes(x, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY)){
+			typesChanged = true;
+		}
 		ImmutabilityTypes xType = ImmutabilityTypes.MUTABLE;
 		
 		// process s(y)
@@ -341,7 +357,9 @@ public class PurityAnalysis {
 				yTypesToRemove.add(yType);
 			}
 		}
-		removeTypes(y, yTypesToRemove);
+		if(removeTypes(y, yTypesToRemove)){
+			typesChanged = true;
+		}
 		
 		// process s(f)
 		Set<ImmutabilityTypes> fTypesToRemove = new HashSet<ImmutabilityTypes>();
@@ -358,9 +376,9 @@ public class PurityAnalysis {
 			}
 		}
 		if(removeTypes(f, fTypesToRemove)){
-			workItems.add(f);
+			typesChanged = true;
 		}
-		return workItems;
+		return typesChanged;
 	}
 	
 	/**
