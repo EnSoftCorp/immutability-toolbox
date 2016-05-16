@@ -11,6 +11,7 @@ import com.ensoftcorp.atlas.core.db.graph.GraphElement;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.EdgeDirection;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.NodeDirection;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
+import com.ensoftcorp.atlas.core.log.Log;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
@@ -147,7 +148,8 @@ public class PurityAnalysis {
 			boolean fixedPoint = true;
 			// TODO: consider removing workItems that only have the mutable tag from future iterations...
 			for(GraphElement workItem : worklist){
-				if(applyInferenceRules(workItem)){
+				boolean typesChanged = applyInferenceRules(workItem);
+				if(typesChanged){
 					fixedPoint = false;
 				}
 			}
@@ -179,7 +181,7 @@ public class PurityAnalysis {
 
 				// Reference (y) -LocalDataFlow-> InstanceVariableAssignment (.f)
 				GraphElement y = from;
-				GraphElement instanceVariableAssignment = to; 
+				GraphElement instanceVariableAssignment = to; // (.f)
 				
 				// InstanceVariableAssignment (.f) -InterproceduralDataFlow-> InstanceVariable (f)
 				GraphElement interproceduralEdgeToField = interproceduralDFGraph.edges(instanceVariableAssignment, NodeDirection.OUT).getFirst();
@@ -188,20 +190,44 @@ public class PurityAnalysis {
 				// Reference (x) -InstanceVariableAccessed-> InstanceVariableAssignment (.f)
 				GraphElement instanceVariableAccessedEdge = instanceVariableAccessedGraph.edges(instanceVariableAssignment, NodeDirection.IN).getFirst();
 				GraphElement x = instanceVariableAccessedEdge.getNode(EdgeDirection.FROM);
-
+//				if(x.taggedWith(XCSG.InstanceVariableValue)){
+//					interproceduralEdgeToField = interproceduralDFGraph.edges(x, NodeDirection.IN).getFirst();
+//					x = interproceduralEdgeToField.getNode(EdgeDirection.FROM);
+//				}
+				
 				if(handleFieldWrite(x, f, y)){
 					typesChanged = true;
 				}
 				
 				involvesField = true;
 			}
-//			
-//			// TREAD
-//			// x = y.f
-//			if(from.taggedWith(XCSG.InstanceVariableValue)){
-//				involvesField = true;
-//			}
 			
+			// TREAD
+			if(from.taggedWith(XCSG.InstanceVariableValue)){
+				// Type Rule 4 - TREAD
+				// let, x = y.f
+				
+				GraphElement x = to;
+				GraphElement instanceVariableValue = from; // (.f)
+				
+				// InstanceVariable (f) -InterproceduralDataFlow-> InstanceVariableValue (.f) 
+				GraphElement interproceduralEdgeFromField = interproceduralDFGraph.edges(instanceVariableValue, NodeDirection.IN).getFirst();
+				GraphElement f = interproceduralEdgeFromField.getNode(EdgeDirection.FROM);
+				
+				// Reference (y) -InstanceVariableAccessed-> InstanceVariableValue (.f)
+				GraphElement instanceVariableAccessedEdge = instanceVariableAccessedGraph.edges(instanceVariableValue, NodeDirection.IN).getFirst();
+				GraphElement y = instanceVariableAccessedEdge.getNode(EdgeDirection.FROM);
+				if(y.taggedWith(XCSG.InstanceVariableValue)){
+					interproceduralEdgeFromField = interproceduralDFGraph.edges(y, NodeDirection.IN).getFirst();
+					y = interproceduralEdgeFromField.getNode(EdgeDirection.FROM);
+				}
+				
+				if(handleFieldRead(x, y, f)){
+					typesChanged = true;
+				}
+				
+				involvesField = true;
+			}
 			
 			// TASSIGN
 			if(!involvesField){
@@ -212,65 +238,6 @@ public class PurityAnalysis {
 				}
 			}
 		}
-		
-		
-		
-		
-		
-		
-//		// consider outgoing data flow edges
-//		// outgoing edges represent a write relationship in an assignment
-//		GraphElement from = workItem;
-//		AtlasSet<GraphElement> outEdges = dfGraph.edges(from, NodeDirection.OUT);
-//		for(GraphElement edge : outEdges){
-//			GraphElement to = edge.getNode(EdgeDirection.TO);
-//			if(to.taggedWith(XCSG.Assignment)){
-//				if(to.taggedWith(XCSG.InstanceVariableAssignment)){
-//					// Type Rule 3 - TWRITE
-//					// let, x.f = y
-//					// note InstanceVariableAssignment -DataFlow-> InstanceVariable (field)
-//					GraphElement y = from;
-//					GraphElement instanceVariableAssignment = to;
-//					GraphElement f = dfGraph.edges(instanceVariableAssignment, NodeDirection.OUT).getFirst();
-//					// note variable -InstanceVariableAccessed-> InstanceVariableAssignment
-//					GraphElement x = instanceVariableAccessedGraph.edges(instanceVariableAssignment, NodeDirection.IN).getFirst();
-//					workItems.addAll(handleFieldWrite(x, f, y));
-//				} else {
-//					// Type Rule 2 - TASSIGN
-//					// let, x = y
-//					GraphElement x = to;
-//					GraphElement y = from;
-//					workItems.addAll(handleAssignment(x, y));
-//				}
-//			}
-//		}
-//		
-//		// consider incoming data flow edges
-//		// incoming edges represent a read relationship in an assignment
-//		GraphElement to = workItem;
-//		AtlasSet<GraphElement> inEdges = dfGraph.edges(to, NodeDirection.IN);
-//		for(GraphElement edge : inEdges){
-//			from = edge.getNode(EdgeDirection.FROM);
-//			if(to.taggedWith(XCSG.Assignment)){
-//				if(from.taggedWith(XCSG.InstanceVariable)){
-//					// Type Rule 4 - TREAD
-//					// let, x = y.f
-//					GraphElement f = from;
-//					// note InstanceVariable (field) -DataFlow-> InstanceVariableValue
-//					GraphElement instanceVariableValue = to;
-//					GraphElement cfBlock = Common.toQ(instanceVariableValue).parent().eval().nodes().getFirst();
-//					GraphElement x = Common.toQ(cfBlock).children().nodesTaggedWithAny(XCSG.Assignment).eval().nodes().getFirst();
-//					GraphElement y = instanceVariableAccessedGraph.edges(f, NodeDirection.IN).getFirst();
-//					workItems.addAll(handleFieldRead(x, y, f));
-//				} else {
-//					// Type Rule 2 - TASSIGN
-//					// let, x = y
-//					GraphElement x = to;
-//					GraphElement y = from;
-//					workItems.addAll(handleAssignment(x, y));
-//				}	
-//			}
-//		}
 		
 		return typesChanged;
 	}
@@ -301,9 +268,16 @@ public class PurityAnalysis {
 				xTypesToRemove.add(xType);
 			}
 		}
-		if(removeTypes(x, xTypesToRemove)){
-			typesChanged = true;
+		Set<ImmutabilityTypes> xDiff = new HashSet<ImmutabilityTypes>();
+		xDiff.addAll(xTypes);
+		xDiff.removeAll(xTypesToRemove);
+		if(xDiff.size() >= 1){
+			if(removeTypes(x, xTypesToRemove)){
+				typesChanged = true;
+				Log.info(x.getAttr(XCSG.name) + " Types Changed " + getTypes(x));
+			}
 		}
+		
 		
 		// process s(y)
 		Set<ImmutabilityTypes> yTypesToRemove = new HashSet<ImmutabilityTypes>();
@@ -318,9 +292,16 @@ public class PurityAnalysis {
 				yTypesToRemove.add(yType);
 			}
 		}
-		if(removeTypes(y, yTypesToRemove)){
-			typesChanged = true;
+		Set<ImmutabilityTypes> yDiff = new HashSet<ImmutabilityTypes>();
+		yDiff.addAll(yTypes);
+		yDiff.removeAll(yTypesToRemove);
+		if(yDiff.size() >= 1){
+			if(removeTypes(y, yTypesToRemove)){
+				typesChanged = true;
+				Log.info(y.getAttr(XCSG.name) + " Types Changed " + getTypes(y));
+			}
 		}
+		
 		return typesChanged;
 	}
 	
@@ -331,16 +312,19 @@ public class PurityAnalysis {
 	 * @param x The receiver object
 	 * @param f The field of the receiver object being written to
 	 * @param y The reference being read from
-	 * @return Returns a set of GraphElements whose set of ImmutabilityTypes have changed
+	 * @return Returns true if the graph element's ImmutabilityTypes have changed
 	 */
 	private static boolean handleFieldWrite(GraphElement x, GraphElement f, GraphElement y) {
 		boolean typesChanged = false;
 		Set<ImmutabilityTypes> yTypes = getTypes(y);
 		Set<ImmutabilityTypes> fTypes = getTypes(f);
+		
 		// x must be mutable
-		if(removeTypes(x, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY)){
+		if(setTypes(x, ImmutabilityTypes.MUTABLE)){
 			typesChanged = true;
+			Log.info(x.getAttr(XCSG.name) + " Types Changed " + getTypes(x));
 		}
+		
 		ImmutabilityTypes xType = ImmutabilityTypes.MUTABLE;
 		
 		// process s(y)
@@ -357,10 +341,16 @@ public class PurityAnalysis {
 				yTypesToRemove.add(yType);
 			}
 		}
-		if(removeTypes(y, yTypesToRemove)){
-			typesChanged = true;
+		Set<ImmutabilityTypes> yDiff = new HashSet<ImmutabilityTypes>();
+		yDiff.addAll(yTypes);
+		yDiff.removeAll(yTypesToRemove);
+		if(yDiff.size() >= 1){
+			if(removeTypes(y, yTypesToRemove)){
+				typesChanged = true;
+				Log.info(y.getAttr(XCSG.name) + " Types Changed " + getTypes(y));
+			}
 		}
-		
+
 		// process s(f)
 		Set<ImmutabilityTypes> fTypesToRemove = new HashSet<ImmutabilityTypes>();
 		for(ImmutabilityTypes fType : fTypes){
@@ -375,9 +365,17 @@ public class PurityAnalysis {
 				fTypesToRemove.add(fType);
 			}
 		}
-		if(removeTypes(f, fTypesToRemove)){
-			typesChanged = true;
+		Set<ImmutabilityTypes> fDiff = new HashSet<ImmutabilityTypes>();
+		fDiff.addAll(fTypes);
+		fDiff.removeAll(fTypesToRemove);
+		if(fDiff.size() >= 1){
+			if(removeTypes(f, fTypesToRemove)){
+				typesChanged = true;
+				Log.info(f.getAttr(XCSG.name) + " Types Changed " + getTypes(f));
+			}
 		}
+		
+		
 		return typesChanged;
 	}
 	
@@ -388,10 +386,10 @@ public class PurityAnalysis {
 	 * @param x The reference being written to
 	 * @param y The receiver object
 	 * @param f The field of the receiver object being read from
-	 * @return Returns a set of GraphElements whose set of ImmutabilityTypes have changed
+	 * @return Returns true if the graph element's ImmutabilityTypes have changed
 	 */
-	private static Set<GraphElement> handleFieldRead(GraphElement x, GraphElement y, GraphElement f) {
-		Set<GraphElement> workItems = new HashSet<GraphElement>();
+	private static boolean handleFieldRead(GraphElement x, GraphElement y, GraphElement f) {
+		boolean typesChanged = false;
 		Set<ImmutabilityTypes> fTypes = getTypes(f);
 		Set<ImmutabilityTypes> xTypes = getTypes(x);
 		Set<ImmutabilityTypes> yTypes = getTypes(y);
@@ -412,10 +410,16 @@ public class PurityAnalysis {
 				xTypesToRemove.add(xType);
 			}
 		}
-		if(removeTypes(x, xTypesToRemove)){
-			workItems.add(x);
+		Set<ImmutabilityTypes> xDiff = new HashSet<ImmutabilityTypes>();
+		xDiff.addAll(xTypes);
+		xDiff.removeAll(xTypesToRemove);
+		if(xDiff.size() >= 1){
+			if(removeTypes(x, xTypesToRemove)){
+				typesChanged = true;
+				Log.info(x.getAttr(XCSG.name) + " Types Changed " + getTypes(x));
+			}
 		}
-		
+
 		// process s(y)
 		Set<ImmutabilityTypes> yTypesToRemove = new HashSet<ImmutabilityTypes>();
 		for(ImmutabilityTypes yType : yTypes){
@@ -432,8 +436,15 @@ public class PurityAnalysis {
 				yTypesToRemove.add(yType);
 			}
 		}
-		if(removeTypes(y, yTypesToRemove)){
-			workItems.add(y);
+		
+		Set<ImmutabilityTypes> yDiff = new HashSet<ImmutabilityTypes>();
+		yDiff.addAll(yTypes);
+		yDiff.removeAll(yTypesToRemove);
+		if(yDiff.size() >= 1){
+			if(removeTypes(y, yTypesToRemove)){
+				typesChanged = true;
+				Log.info(y.getAttr(XCSG.name) + " Types Changed " + getTypes(y));
+			}
 		}
 		
 		// process s(f)
@@ -452,10 +463,18 @@ public class PurityAnalysis {
 				fTypesToRemove.add(fType);
 			}
 		}
-		if(removeTypes(f, fTypesToRemove)){
-			workItems.add(f);
+		
+		Set<ImmutabilityTypes> fDiff = new HashSet<ImmutabilityTypes>();
+		fDiff.addAll(fTypes);
+		fDiff.removeAll(fTypesToRemove);
+		if(fDiff.size() >= 1){
+			if(removeTypes(f, fTypesToRemove)){
+				typesChanged = true;
+				Log.info(f.getAttr(XCSG.name) + " Types Changed " + getTypes(f));
+			}
 		}
-		return workItems;
+		
+		return typesChanged;
 	}
 	
 	/**
@@ -476,12 +495,42 @@ public class PurityAnalysis {
 	 * @return Returns true if the type qualifier changed
 	 */
 	private static boolean removeTypes(GraphElement ge, ImmutabilityTypes... types){
-		Set<ImmutabilityTypes> typeSet = getTypes(ge);
 		HashSet<ImmutabilityTypes> typesToRemove = new HashSet<ImmutabilityTypes>();
 		for(ImmutabilityTypes type : types){
 			typesToRemove.add(type);
 		}
-		return typeSet.removeAll(typesToRemove);
+		return removeTypes(ge, typesToRemove);
+	}
+	
+	/**
+	 * Sets the type qualifier for a graph element
+	 * @param ge
+	 * @param qualifier
+	 * @return Returns true if the type qualifier changed
+	 */
+	private static boolean setTypes(GraphElement ge, Set<ImmutabilityTypes> typesToSet){
+		Set<ImmutabilityTypes> typeSet = getTypes(ge);
+		if(typeSet.containsAll(typesToSet) && typesToSet.containsAll(typeSet)){
+			return false;
+		} else {
+			typeSet.clear();
+			typeSet.addAll(typesToSet);
+			return true;
+		}
+	}
+	
+	/**
+	 * Sets the type qualifier for a graph element
+	 * @param ge
+	 * @param qualifier
+	 * @return Returns true if the type qualifier changed
+	 */
+	private static boolean setTypes(GraphElement ge, ImmutabilityTypes... types){
+		HashSet<ImmutabilityTypes> typesToSet = new HashSet<ImmutabilityTypes>();
+		for(ImmutabilityTypes type : types){
+			typesToSet.add(type);
+		}
+		return setTypes(ge, typesToSet);
 	}
 	
 	@SuppressWarnings("unchecked")
