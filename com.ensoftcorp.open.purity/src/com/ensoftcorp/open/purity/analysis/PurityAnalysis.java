@@ -21,7 +21,7 @@ import com.ensoftcorp.atlas.core.xcsg.XCSG;
  * Reference 1: ReIm & ReImInfer: Checking and Inference of Reference Immutability, OOPSLA 2012 
  * Reference 2: Method Purity and ReImInfer: Method Purity Inference for Java, FSE 2012
  * 
- * @author Ben Holland
+ * @author Ben Holland, Ganesh Santhanam
  */
 public class PurityAnalysis {
 
@@ -123,20 +123,20 @@ public class PurityAnalysis {
 	}
 	
 	private static void runAnalysis(){
-		TreeSet<GraphElement> worklist = new TreeSet<GraphElement>();
 		
-		// add all new instantiations to worklist
-		Q newRefs = Common.universe().nodesTaggedWithAny(XCSG.Instantiation, XCSG.ArrayInstantiation);
-		for(GraphElement newRef : newRefs.eval().nodes()){
-			worklist.add(newRef);
-		}
-	
-		// add all parameters to worklist
 		Q parameters = Common.universe().nodesTaggedWithAny(XCSG.Parameter);
-		for(GraphElement parameter : parameters.eval().nodes()){
-			worklist.add(parameter);
+		Q masterReturns = Common.universe().nodesTaggedWithAny(XCSG.MasterReturn);
+		Q instanceVariables = Common.universe().nodesTaggedWithAny(XCSG.InstanceVariable);
+		Q thisNodes = Common.universe().nodesTaggedWithAll(XCSG.InstanceMethod).children().nodesTaggedWithAny(XCSG.Identity);
+		
+		// create default types on each tracked item
+		// note local variables may also get tracked, but only if need be during the analysis
+		for(GraphElement trackedItem : parameters.union(masterReturns, instanceVariables, thisNodes).eval().nodes()){
+			getTypes(trackedItem);
 		}
 		
+		TreeSet<GraphElement> worklist = new TreeSet<GraphElement>();
+
 		// add all assignments to worklist
 		Q assignments = Common.universe().nodesTaggedWithAny(XCSG.Assignment);
 		for(GraphElement assignment : assignments.eval().nodes()){
@@ -150,63 +150,115 @@ public class PurityAnalysis {
 	}
 	
 	private static Set<GraphElement> applyInferenceRules(GraphElement workItem){
-		Graph dfGraph = Common.universe().edgesTaggedWithAny(XCSG.DataFlow_Edge).eval();
+		Graph localDFGraph = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow).eval();
+		Graph interproceduralDFGraph = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow).eval();
 		Graph instanceVariableAccessedGraph = Common.universe().edgesTaggedWithAny(XCSG.InstanceVariableAccessed).eval();
 		Set<GraphElement> workItems = new HashSet<GraphElement>();
-		
-		// consider outgoing data flow edges
-		// outgoing edges represent a write relationship in an assignment
-		GraphElement from = workItem;
-		AtlasSet<GraphElement> outEdges = dfGraph.edges(from, NodeDirection.OUT);
-		for(GraphElement edge : outEdges){
-			GraphElement to = edge.getNode(EdgeDirection.TO);
-			if(to.taggedWith(XCSG.Assignment)){
-				if(to.taggedWith(XCSG.InstanceVariableAssignment)){
-					// Type Rule 3 - TWRITE
-					// let, x.f = y
-					// note InstanceVariableAssignment -DataFlow-> InstanceVariable (field)
-					GraphElement y = from;
-					GraphElement instanceVariableAssignment = to;
-					GraphElement f = dfGraph.edges(instanceVariableAssignment, NodeDirection.OUT).getFirst();
-					// note variable -InstanceVariableAccessed-> InstanceVariableAssignment
-					GraphElement x = instanceVariableAccessedGraph.edges(instanceVariableAssignment, NodeDirection.IN).getFirst();
-					workItems.addAll(handleFieldWrite(x, f, y));
-				} else {
-					// Type Rule 2 - TASSIGN
-					// let, x = y
-					GraphElement x = to;
-					GraphElement y = from;
-					workItems.addAll(handleAssignment(x, y));
-				}
-			}
-		}
 		
 		// consider incoming data flow edges
 		// incoming edges represent a read relationship in an assignment
 		GraphElement to = workItem;
-		AtlasSet<GraphElement> inEdges = dfGraph.edges(to, NodeDirection.IN);
+		AtlasSet<GraphElement> inEdges = localDFGraph.edges(to, NodeDirection.IN);
 		for(GraphElement edge : inEdges){
-			from = edge.getNode(EdgeDirection.FROM);
-			if(to.taggedWith(XCSG.Assignment)){
-				if(from.taggedWith(XCSG.InstanceVariable)){
-					// Type Rule 4 - TREAD
-					// let, x = y.f
-					GraphElement f = from;
-					// note InstanceVariable (field) -DataFlow-> InstanceVariableValue
-					GraphElement instanceVariableValue = to;
-					GraphElement cfBlock = Common.toQ(instanceVariableValue).parent().eval().nodes().getFirst();
-					GraphElement x = Common.toQ(cfBlock).children().nodesTaggedWithAny(XCSG.Assignment).eval().nodes().getFirst();
-					GraphElement y = instanceVariableAccessedGraph.edges(f, NodeDirection.IN).getFirst();
-					workItems.addAll(handleFieldRead(x, y, f));
-				} else {
-					// Type Rule 2 - TASSIGN
-					// let, x = y
-					GraphElement x = to;
-					GraphElement y = from;
-					workItems.addAll(handleAssignment(x, y));
-				}	
+			GraphElement from = edge.getNode(EdgeDirection.FROM);
+
+			boolean involvesField = false;
+			
+			// TWRITE
+			if(to.taggedWith(XCSG.InstanceVariableAssignment)){
+				// Type Rule 3 - TWRITE
+				// let, x.f = y
+
+				// Reference (y) -LocalDataFlow-> InstanceVariableAssignment (.f)
+				GraphElement y = from;
+				GraphElement instanceVariableAssignment = to; 
+				
+				// InstanceVariableAssignment (.f) -InterproceduralDataFlow-> InstanceVariable (f)
+				GraphElement interproceduralEdgeToField = interproceduralDFGraph.edges(instanceVariableAssignment, NodeDirection.OUT).getFirst();
+				GraphElement f = interproceduralEdgeToField.getNode(EdgeDirection.TO);
+				
+				// Reference (x) -InstanceVariableAccessed-> InstanceVariableAssignment (.f)
+				GraphElement instanceVariableAccessedEdge = instanceVariableAccessedGraph.edges(instanceVariableAssignment, NodeDirection.IN).getFirst();
+				GraphElement x = instanceVariableAccessedEdge.getNode(EdgeDirection.FROM);
+
+				workItems.addAll(handleFieldWrite(x, f, y));
+				
+				involvesField = true;
+			}
+//			
+//			// TREAD
+//			// x = y.f
+//			if(from.taggedWith(XCSG.InstanceVariableValue)){
+//				involvesField = true;
+//			}
+			
+			
+			// TASSIGN
+			if(!involvesField){
+				GraphElement x = to;
+				GraphElement y = from;
+				workItems.addAll(handleAssignment(x, y));
 			}
 		}
+		
+		
+		
+		
+		
+		
+//		// consider outgoing data flow edges
+//		// outgoing edges represent a write relationship in an assignment
+//		GraphElement from = workItem;
+//		AtlasSet<GraphElement> outEdges = dfGraph.edges(from, NodeDirection.OUT);
+//		for(GraphElement edge : outEdges){
+//			GraphElement to = edge.getNode(EdgeDirection.TO);
+//			if(to.taggedWith(XCSG.Assignment)){
+//				if(to.taggedWith(XCSG.InstanceVariableAssignment)){
+//					// Type Rule 3 - TWRITE
+//					// let, x.f = y
+//					// note InstanceVariableAssignment -DataFlow-> InstanceVariable (field)
+//					GraphElement y = from;
+//					GraphElement instanceVariableAssignment = to;
+//					GraphElement f = dfGraph.edges(instanceVariableAssignment, NodeDirection.OUT).getFirst();
+//					// note variable -InstanceVariableAccessed-> InstanceVariableAssignment
+//					GraphElement x = instanceVariableAccessedGraph.edges(instanceVariableAssignment, NodeDirection.IN).getFirst();
+//					workItems.addAll(handleFieldWrite(x, f, y));
+//				} else {
+//					// Type Rule 2 - TASSIGN
+//					// let, x = y
+//					GraphElement x = to;
+//					GraphElement y = from;
+//					workItems.addAll(handleAssignment(x, y));
+//				}
+//			}
+//		}
+//		
+//		// consider incoming data flow edges
+//		// incoming edges represent a read relationship in an assignment
+//		GraphElement to = workItem;
+//		AtlasSet<GraphElement> inEdges = dfGraph.edges(to, NodeDirection.IN);
+//		for(GraphElement edge : inEdges){
+//			from = edge.getNode(EdgeDirection.FROM);
+//			if(to.taggedWith(XCSG.Assignment)){
+//				if(from.taggedWith(XCSG.InstanceVariable)){
+//					// Type Rule 4 - TREAD
+//					// let, x = y.f
+//					GraphElement f = from;
+//					// note InstanceVariable (field) -DataFlow-> InstanceVariableValue
+//					GraphElement instanceVariableValue = to;
+//					GraphElement cfBlock = Common.toQ(instanceVariableValue).parent().eval().nodes().getFirst();
+//					GraphElement x = Common.toQ(cfBlock).children().nodesTaggedWithAny(XCSG.Assignment).eval().nodes().getFirst();
+//					GraphElement y = instanceVariableAccessedGraph.edges(f, NodeDirection.IN).getFirst();
+//					workItems.addAll(handleFieldRead(x, y, f));
+//				} else {
+//					// Type Rule 2 - TASSIGN
+//					// let, x = y
+//					GraphElement x = to;
+//					GraphElement y = from;
+//					workItems.addAll(handleAssignment(x, y));
+//				}	
+//			}
+//		}
 		
 		return workItems;
 	}
@@ -254,9 +306,7 @@ public class PurityAnalysis {
 				yTypesToRemove.add(yType);
 			}
 		}
-		if(removeTypes(y, yTypesToRemove)){
-			workItems.add(y);
-		}
+		removeTypes(y, yTypesToRemove);
 		return workItems;
 	}
 	
@@ -274,9 +324,7 @@ public class PurityAnalysis {
 		Set<ImmutabilityTypes> yTypes = getTypes(y);
 		Set<ImmutabilityTypes> fTypes = getTypes(f);
 		// x must be mutable
-		if(removeTypes(x, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY)){
-			workItems.add(x);
-		}
+		removeTypes(x, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY);
 		ImmutabilityTypes xType = ImmutabilityTypes.MUTABLE;
 		
 		// process s(y)
@@ -293,9 +341,7 @@ public class PurityAnalysis {
 				yTypesToRemove.add(yType);
 			}
 		}
-		if(removeTypes(y, yTypesToRemove)){
-			workItems.add(y);
-		}
+		removeTypes(y, yTypesToRemove);
 		
 		// process s(f)
 		Set<ImmutabilityTypes> fTypesToRemove = new HashSet<ImmutabilityTypes>();
