@@ -169,6 +169,9 @@ public class PurityAnalysis {
 		Graph localDFGraph = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow).eval();
 		Graph interproceduralDFGraph = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow).eval();
 		Graph instanceVariableAccessedGraph = Common.universe().edgesTaggedWithAny(XCSG.InstanceVariableAccessed).eval();
+		Graph identityPassedToGraph = Common.universe().edgesTaggedWithAny(XCSG.IdentityPassedTo).eval();
+		Graph containsGraph = Common.universe().edgesTaggedWithAny(XCSG.Contains).eval();
+		
 		boolean typesChanged = false;
 		
 		// consider incoming data flow edges
@@ -237,8 +240,57 @@ public class PurityAnalysis {
 				involvesField = true;
 			}
 			
+			// TCALL
+			boolean involvesCallsite = false;
+			if(from.taggedWith(XCSG.CallSite)){
+				// Type Rule 5 - TCALL
+				// let, x = y.m(z)
+				Log.info("TCALL");
+				
+				GraphElement x = to;
+				GraphElement callsite = from;
+				
+				// IdentityPass (.this) -IdentityPassedTo-> CallSite (m)
+				GraphElement identityPassedToEdge = identityPassedToGraph.edges(callsite, NodeDirection.IN).getFirst();
+				GraphElement identityPass = identityPassedToEdge.getNode(EdgeDirection.FROM);
+				
+				// Receiver (y) -LocalDataFlow-> IdentityPass (.this)
+				GraphElement localDataFlowEdge = localDFGraph.edges(identityPass, NodeDirection.IN).getFirst();
+				GraphElement y = localDataFlowEdge.getNode(EdgeDirection.FROM);
+				
+				// ReturnValue (ret) -InterproceduralDataFlow-> CallSite (m)
+				GraphElement interproceduralDataFlowEdge = interproceduralDFGraph.edges(callsite, NodeDirection.IN).getFirst();
+				GraphElement ret = interproceduralDataFlowEdge.getNode(EdgeDirection.FROM);
+				
+				// Method (method) -Contains-> ReturnValue (ret)
+				GraphElement containsEdge = containsGraph.edges(ret, NodeDirection.IN).getFirst();
+				GraphElement method = containsEdge.getNode(EdgeDirection.FROM);
+				
+				// Method (method) -Contains-> Identity
+				GraphElement identity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
+				
+				// Method (method) -Contains-> Parameter (p1, p2, ...)
+				AtlasSet<GraphElement> parameters = Common.universe().edgesTaggedWithAny(XCSG.Contains)
+						.successors(Common.toQ(method)).nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
+				
+				// ControlFlow -Contains-> CallSite
+				// CallSite -Contains-> ParameterPassed (z1, z2, ...)
+				AtlasSet<GraphElement> parametersPassed = Common.toQ(callsite).parent().children().nodesTaggedWithAny(XCSG.ParameterPass).eval().nodes();
+				
+				// ParameterPassed (z1, z2, ...) -InterproceduralDataFlow-> Parameter (p1, p2, ...)
+				// such that z1-InterproceduralDataFlow->p1, z2-InterproceduralDataFlow->p2, ...
+				AtlasSet<GraphElement> parametersPassedEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow)
+						.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
+				
+				if(handleCall(x, y, identity, ret, parametersPassedEdges)){
+					typesChanged = true;
+				}
+				
+				involvesCallsite = true;
+			}
+			
 			// TASSIGN
-			if(!involvesField){
+			if(!involvesField && !involvesCallsite){
 				Log.info("TASSIGN");
 				GraphElement x = to;
 				GraphElement y = from;
@@ -464,6 +516,129 @@ public class PurityAnalysis {
 		return typesChanged;
 	}
 	
+	private static boolean handleCall(GraphElement x, GraphElement y, GraphElement identity, GraphElement ret, AtlasSet<GraphElement> parametersPassedEdges) {
+		boolean typesChanged = false;
+		Set<ImmutabilityTypes> xTypes = getTypes(x);
+		Set<ImmutabilityTypes> yTypes = getTypes(y);
+		Set<ImmutabilityTypes> identityTypes = getTypes(identity);
+		Set<ImmutabilityTypes> retTypes = getTypes(ret);
+		
+		/////////////////////// start qx adapt qret <: qx /////////////////////// 
+		// process s(x)
+//		Set<ImmutabilityTypes> xTypesToRemove = new HashSet<ImmutabilityTypes>();
+//		for(ImmutabilityTypes xType : xTypes){
+//			boolean isSatisfied = false;
+//			for(ImmutabilityTypes retType : retTypes){
+//				ImmutabilityTypes xAdaptedRet = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, retType);
+//				if(xType.compareTo(xAdaptedRet) >= 0){
+//					isSatisfied = true;
+//				}
+//			}
+//			if(!isSatisfied){
+//				xTypesToRemove.add(xType);
+//			}
+//		}
+//		if(removeTypes(x, xTypesToRemove)){
+//			typesChanged = true;
+//			Log.info(x.getAttr(XCSG.name) + " Types Changed " + getTypes(x));
+//		}
+//		
+//		// process s(ret)
+//		Set<ImmutabilityTypes> retTypesToRemove = new HashSet<ImmutabilityTypes>();
+//		for(ImmutabilityTypes retType : retTypes){
+//			boolean isSatisfied = false;
+//			for(ImmutabilityTypes xType : xTypes){
+//				ImmutabilityTypes xAdaptedRet = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, retType);
+//				if(xType.compareTo(xAdaptedRet) >= 0){
+//					isSatisfied = true;
+//				}
+//			}
+//			if(!isSatisfied){
+//				retTypesToRemove.add(retType);
+//			}
+//		}
+//		if(removeTypes(ret, retTypesToRemove)){
+//			typesChanged = true;
+//			Log.info(ret.getAttr(XCSG.name) + " Types Changed " + getTypes(ret));
+//		}
+//		/////////////////////// end qx adapt qret <: qx /////////////////////// 
+//		
+//		/////////////////////// start qy <: qx adapt qthis /////////////////////// 
+//		
+//		// process s(y)
+//		Set<ImmutabilityTypes> yTypesToRemove = new HashSet<ImmutabilityTypes>();
+//		for(ImmutabilityTypes yType : yTypes){
+//			boolean isSatisfied = false;
+//			for(ImmutabilityTypes xType : xTypes){
+//				for(ImmutabilityTypes identityType : identityTypes){
+//					ImmutabilityTypes xAdaptedThis = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, identityType);
+//					if(xAdaptedThis.compareTo(yType) >= 0){
+//						isSatisfied = true;
+//					}
+//				}
+//			}
+//			if(!isSatisfied){
+//				yTypesToRemove.add(yType);
+//			}
+//		}
+//		if(removeTypes(y, yTypesToRemove)){
+//			typesChanged = true;
+//			Log.info(y.getAttr(XCSG.name) + " Types Changed " + getTypes(y));
+//		}
+//		
+//		// process s(x)
+//		Set<ImmutabilityTypes> xTypesToRemove = new HashSet<ImmutabilityTypes>();
+//		for(ImmutabilityTypes xType : xTypes){
+//			boolean isSatisfied = false;
+//			for(ImmutabilityTypes yType : yTypes){
+//				for(ImmutabilityTypes identityType : identityTypes){
+//					ImmutabilityTypes xAdaptedThis = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, identityType);
+//					if(xAdaptedThis.compareTo(yType) >= 0){
+//						isSatisfied = true;
+//					}
+//				}
+//			}
+//			if(!isSatisfied){
+//				xTypesToRemove.add(xType);
+//			}
+//		}
+//		if(removeTypes(x, xTypesToRemove)){
+//			typesChanged = true;
+//			Log.info(x.getAttr(XCSG.name) + " Types Changed " + getTypes(x));
+//		}
+//		
+//		// process s(identity)
+//		Set<ImmutabilityTypes> identityTypesToRemove = new HashSet<ImmutabilityTypes>();
+//		for(ImmutabilityTypes identityType : identityTypes){
+//			boolean isSatisfied = false;
+//			for(ImmutabilityTypes xType : xTypes){
+//				for(ImmutabilityTypes yType : yTypes){
+//					ImmutabilityTypes xAdaptedThis = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, identityType);
+//					if(xAdaptedThis.compareTo(yType) >= 0){
+//						isSatisfied = true;
+//					}
+//				}
+//			}
+//			if(!isSatisfied){
+//				identityTypesToRemove.add(identityType);
+//			}
+//		}
+//		if(removeTypes(identity, identityTypesToRemove)){
+//			typesChanged = true;
+//			Log.info(identity.getAttr(XCSG.name) + " Types Changed " + getTypes(identity));
+//		}
+		
+		/////////////////////// end qy <: qx adapt qthis ///////////////////////
+		
+		/////////////////////// start qz <: qx adapt qp ///////////////////////
+				
+		// TODO: implement
+		
+		/////////////////////// end qz <: qx adapt qp ///////////////////////
+		
+		return typesChanged;
+	}
+	
 	/**
 	 * Sets the type qualifier for a graph element
 	 * @param ge
@@ -637,7 +812,7 @@ public class PurityAnalysis {
 	
 	private static boolean isPureMethodDefault(GraphElement method){
 		// from : https://github.com/SoftwareEngineeringToolDemos/FSE-2012-ReImInfer/blob/master/inference-framework/checker-framework/checkers/src/checkers/inference/reim/ReimChecker.java
-//		defaultPurePatterns.add(Pattern.compile(".*\\.equals\\(java\\.lang\\.Object\\)$"));
+//		  defaultPurePatterns.add(Pattern.compile(".*\\.equals\\(java\\.lang\\.Object\\)$"));
 //        defaultPurePatterns.add(Pattern.compile(".*\\.hashCode\\(\\)$"));
 //        defaultPurePatterns.add(Pattern.compile(".*\\.toString\\(\\)$"));
 //        defaultPurePatterns.add(Pattern.compile(".*\\.compareTo\\(.*\\)$"));
