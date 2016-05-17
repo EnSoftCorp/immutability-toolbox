@@ -145,8 +145,8 @@ public class PurityAnalysis {
 
 		// add all assignments to worklist
 		Q assignments = Common.universe().nodesTaggedWithAny(XCSG.Assignment);
-		Q initializerAssignments = Common.universe().methods("<init>").contained().nodesTaggedWithAny(XCSG.Assignment);
-		for(GraphElement assignment : assignments.difference(initializerAssignments).eval().nodes()){
+//		Q initializerAssignments = Common.universe().methods("<init>").contained().nodesTaggedWithAny(XCSG.Assignment);
+		for(GraphElement assignment : assignments.eval().nodes()){
 			worklist.add(assignment);
 		}
 		
