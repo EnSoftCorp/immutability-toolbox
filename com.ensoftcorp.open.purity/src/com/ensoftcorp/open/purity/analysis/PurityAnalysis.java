@@ -472,14 +472,8 @@ public class PurityAnalysis {
 	 */
 	private static boolean removeTypes(GraphElement ge, Set<ImmutabilityTypes> typesToRemove){
 		Set<ImmutabilityTypes> typeSet = getTypes(ge);
-		
-		Log.info("Before Remove: " + ge.getAttr(XCSG.name) + ", " + typeSet.toString());
-		
-		boolean result = typeSet.removeAll(typesToRemove);
-		
-		Log.info("After Remove: " + ge.getAttr(XCSG.name) + ", " + typeSet.toString());
-		
-		return result;
+		Log.info("Remove: " + typesToRemove.toString() + " from " + typeSet.toString() + " for " + ge.getAttr(XCSG.name));
+		return typeSet.removeAll(typesToRemove);
 	}
 	
 	/**
@@ -488,6 +482,7 @@ public class PurityAnalysis {
 	 * @param qualifier
 	 * @return Returns true if the type qualifier changed
 	 */
+	@SuppressWarnings("unused")
 	private static boolean removeTypes(GraphElement ge, ImmutabilityTypes... types){
 		HashSet<ImmutabilityTypes> typesToRemove = new HashSet<ImmutabilityTypes>();
 		for(ImmutabilityTypes type : types){
@@ -505,7 +500,7 @@ public class PurityAnalysis {
 	private static boolean setTypes(GraphElement ge, Set<ImmutabilityTypes> typesToSet){
 		Set<ImmutabilityTypes> typeSet = getTypes(ge);
 		
-		Log.info("Before Set: " + ge.getAttr(XCSG.name) + ", " + typeSet.toString());
+		Log.info("Set: " + typeSet.toString() + " to " + typesToSet.toString() + " for " + ge.getAttr(XCSG.name));
 		
 		boolean result;
 		if(typeSet.containsAll(typesToSet) && typesToSet.containsAll(typeSet)){
@@ -515,9 +510,6 @@ public class PurityAnalysis {
 			typeSet.addAll(typesToSet);
 			result = true;
 		}
-		
-		Log.info("After Set: " + ge.getAttr(XCSG.name) + ", " + typeSet.toString());
-		
 		return result;
 	}
 	
@@ -591,13 +583,18 @@ public class PurityAnalysis {
 	public static AtlasSet<GraphElement> getContainerFields(GraphElement field){
 		Q containsEdges = Common.universe().edgesTaggedWithAny(XCSG.Contains);
 		Q typeOfEdges = Common.universe().edgesTaggedWithAny(XCSG.TypeOf);
+		Q supertypeEdges = Common.universe().edgesTaggedWithAny(XCSG.Supertype);
 		
 		AtlasSet<GraphElement> fields = new AtlasHashSet<GraphElement>();
 		fields.add(field);
 		boolean foundNewFields = false;
 		do {
-			Q fieldTypes = containsEdges.predecessors(Common.toQ(fields));
-			AtlasSet<GraphElement> reachableFields = typeOfEdges.predecessors(fieldTypes).nodesTaggedWithAny(XCSG.InstanceVariable).eval().nodes();
+			Q privateFields = Common.toQ(fields).nodesTaggedWithAny(XCSG.privateVisibility);
+			Q accessibleFields = Common.toQ(fields).difference(privateFields);
+			Q accessibleFieldContainers = containsEdges.predecessors(accessibleFields);
+			Q accessibleFieldContainerSubtypes = supertypeEdges.reverse(accessibleFieldContainers);
+			Q privateFieldContainers = containsEdges.predecessors(privateFields);
+			AtlasSet<GraphElement> reachableFields = typeOfEdges.predecessors(accessibleFieldContainerSubtypes.union(privateFieldContainers)).nodesTaggedWithAny(XCSG.InstanceVariable).eval().nodes();
 			foundNewFields = fields.addAll(reachableFields);
 		} while(foundNewFields);
 		
