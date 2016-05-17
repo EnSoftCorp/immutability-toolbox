@@ -10,6 +10,7 @@ import com.ensoftcorp.atlas.core.db.graph.Graph;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.EdgeDirection;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.NodeDirection;
+import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.log.Log;
 import com.ensoftcorp.atlas.core.query.Q;
@@ -76,17 +77,21 @@ public class PurityAnalysis {
 		 * @return
 		 */
 		public static ImmutabilityTypes getAdaptedFieldViewpoint(ImmutabilityTypes context, ImmutabilityTypes declaration){
-			if(declaration == ImmutabilityTypes.READONLY){
-				// ? and READONLY = READONLY
-				return ImmutabilityTypes.READONLY;
-			} else if(declaration == ImmutabilityTypes.MUTABLE){
-				// q and MUTABLE = q
-				return context;
-			} else {
-				// declared must be ImmutabilityTypes.POLYREAD
-				// q and POLYREAD = q
-				return context;
-			}
+			// see https://github.com/SoftwareEngineeringToolDemos/FSE-2012-ReImInfer/blob/master/inference-framework/checker-framework/checkers/src/checkers/inference/reim/ReimChecker.java#L216
+//			if(declaration == ImmutabilityTypes.READONLY){
+//				// ? and READONLY = READONLY
+//				return ImmutabilityTypes.READONLY;
+//			} else if(declaration == ImmutabilityTypes.MUTABLE){
+//				// q and MUTABLE = q
+//				return context;
+//			} else {
+//				// declared must be ImmutabilityTypes.POLYREAD
+//				// q and POLYREAD = q
+//				return context;
+//			}
+			
+			// see https://github.com/proganalysis/type-inference/blob/master/inference-framework/checker-framework/checkers/src/checkers/inference2/reim/ReimChecker.java#L272
+			return getAdaptedMethodViewpoint(context, declaration);
 		}
 		
 		/**
@@ -140,7 +145,8 @@ public class PurityAnalysis {
 
 		// add all assignments to worklist
 		Q assignments = Common.universe().nodesTaggedWithAny(XCSG.Assignment);
-		for(GraphElement assignment : assignments.eval().nodes()){
+		Q initializerAssignments = Common.universe().methods("<init>").contained().nodesTaggedWithAny(XCSG.Assignment);
+		for(GraphElement assignment : assignments.difference(initializerAssignments).eval().nodes()){
 			worklist.add(assignment);
 		}
 		
@@ -178,6 +184,7 @@ public class PurityAnalysis {
 			if(to.taggedWith(XCSG.InstanceVariableAssignment)){
 				// Type Rule 3 - TWRITE
 				// let, x.f = y
+				Log.info("TWRITE");
 
 				// Reference (y) -LocalDataFlow-> InstanceVariableAssignment (.f)
 				GraphElement y = from;
@@ -190,10 +197,10 @@ public class PurityAnalysis {
 				// Reference (x) -InstanceVariableAccessed-> InstanceVariableAssignment (.f)
 				GraphElement instanceVariableAccessedEdge = instanceVariableAccessedGraph.edges(instanceVariableAssignment, NodeDirection.IN).getFirst();
 				GraphElement x = instanceVariableAccessedEdge.getNode(EdgeDirection.FROM);
-//				if(x.taggedWith(XCSG.InstanceVariableValue)){
-//					interproceduralEdgeToField = interproceduralDFGraph.edges(x, NodeDirection.IN).getFirst();
-//					x = interproceduralEdgeToField.getNode(EdgeDirection.FROM);
-//				}
+				if(x.taggedWith(XCSG.InstanceVariableValue)){
+					interproceduralEdgeToField = interproceduralDFGraph.edges(x, NodeDirection.IN).getFirst();
+					x = interproceduralEdgeToField.getNode(EdgeDirection.FROM);
+				}
 				
 				if(handleFieldWrite(x, f, y)){
 					typesChanged = true;
@@ -206,6 +213,7 @@ public class PurityAnalysis {
 			if(from.taggedWith(XCSG.InstanceVariableValue)){
 				// Type Rule 4 - TREAD
 				// let, x = y.f
+				Log.info("TREAD");
 				
 				GraphElement x = to;
 				GraphElement instanceVariableValue = from; // (.f)
@@ -231,6 +239,7 @@ public class PurityAnalysis {
 			
 			// TASSIGN
 			if(!involvesField){
+				Log.info("TASSIGN");
 				GraphElement x = to;
 				GraphElement y = from;
 				if(handleAssignment(x, y)){
@@ -268,16 +277,10 @@ public class PurityAnalysis {
 				xTypesToRemove.add(xType);
 			}
 		}
-		Set<ImmutabilityTypes> xDiff = new HashSet<ImmutabilityTypes>();
-		xDiff.addAll(xTypes);
-		xDiff.removeAll(xTypesToRemove);
-		if(xDiff.size() >= 1){
-			if(removeTypes(x, xTypesToRemove)){
-				typesChanged = true;
-				Log.info(x.getAttr(XCSG.name) + " Types Changed " + getTypes(x));
-			}
+		if(removeTypes(x, xTypesToRemove)){
+			typesChanged = true;
+			Log.info(x.getAttr(XCSG.name) + " Types Changed " + getTypes(x));
 		}
-		
 		
 		// process s(y)
 		Set<ImmutabilityTypes> yTypesToRemove = new HashSet<ImmutabilityTypes>();
@@ -292,16 +295,10 @@ public class PurityAnalysis {
 				yTypesToRemove.add(yType);
 			}
 		}
-		Set<ImmutabilityTypes> yDiff = new HashSet<ImmutabilityTypes>();
-		yDiff.addAll(yTypes);
-		yDiff.removeAll(yTypesToRemove);
-		if(yDiff.size() >= 1){
-			if(removeTypes(y, yTypesToRemove)){
-				typesChanged = true;
-				Log.info(y.getAttr(XCSG.name) + " Types Changed " + getTypes(y));
-			}
+		if(removeTypes(y, yTypesToRemove)){
+			typesChanged = true;
+			Log.info(y.getAttr(XCSG.name) + " Types Changed " + getTypes(y));
 		}
-		
 		return typesChanged;
 	}
 	
@@ -318,15 +315,24 @@ public class PurityAnalysis {
 		boolean typesChanged = false;
 		Set<ImmutabilityTypes> yTypes = getTypes(y);
 		Set<ImmutabilityTypes> fTypes = getTypes(f);
-		
 		// x must be mutable
 		if(setTypes(x, ImmutabilityTypes.MUTABLE)){
 			typesChanged = true;
 			Log.info(x.getAttr(XCSG.name) + " Types Changed " + getTypes(x));
 		}
-		
 		ImmutabilityTypes xType = ImmutabilityTypes.MUTABLE;
 		
+		// if a field changes in an object then any container objects which contain
+		// that field have also changed
+		if(x.taggedWith(XCSG.Field)){
+			for(GraphElement containerField : getContainerFields(x)){
+				if(setTypes(containerField, ImmutabilityTypes.MUTABLE)){
+					typesChanged = true;
+					Log.info(containerField.getAttr(XCSG.name) + " Types Changed " + getTypes(containerField));
+				}
+			}
+		}
+
 		// process s(y)
 		Set<ImmutabilityTypes> yTypesToRemove = new HashSet<ImmutabilityTypes>();
 		for(ImmutabilityTypes yType : yTypes){
@@ -341,16 +347,11 @@ public class PurityAnalysis {
 				yTypesToRemove.add(yType);
 			}
 		}
-		Set<ImmutabilityTypes> yDiff = new HashSet<ImmutabilityTypes>();
-		yDiff.addAll(yTypes);
-		yDiff.removeAll(yTypesToRemove);
-		if(yDiff.size() >= 1){
-			if(removeTypes(y, yTypesToRemove)){
-				typesChanged = true;
-				Log.info(y.getAttr(XCSG.name) + " Types Changed " + getTypes(y));
-			}
+		if(removeTypes(y, yTypesToRemove)){
+			typesChanged = true;
+			Log.info(y.getAttr(XCSG.name) + " Types Changed " + getTypes(y));
 		}
-
+		
 		// process s(f)
 		Set<ImmutabilityTypes> fTypesToRemove = new HashSet<ImmutabilityTypes>();
 		for(ImmutabilityTypes fType : fTypes){
@@ -365,17 +366,10 @@ public class PurityAnalysis {
 				fTypesToRemove.add(fType);
 			}
 		}
-		Set<ImmutabilityTypes> fDiff = new HashSet<ImmutabilityTypes>();
-		fDiff.addAll(fTypes);
-		fDiff.removeAll(fTypesToRemove);
-		if(fDiff.size() >= 1){
-			if(removeTypes(f, fTypesToRemove)){
-				typesChanged = true;
-				Log.info(f.getAttr(XCSG.name) + " Types Changed " + getTypes(f));
-			}
+		if(removeTypes(f, fTypesToRemove)){
+			typesChanged = true;
+			Log.info(f.getAttr(XCSG.name) + " Types Changed " + getTypes(f));
 		}
-		
-		
 		return typesChanged;
 	}
 	
@@ -394,6 +388,16 @@ public class PurityAnalysis {
 		Set<ImmutabilityTypes> xTypes = getTypes(x);
 		Set<ImmutabilityTypes> yTypes = getTypes(y);
 		
+		// if x is only MUTABLE then the field and its container fields must be mutable as well
+		if(xTypes.contains(ImmutabilityTypes.MUTABLE) && xTypes.size() == 1){
+			for(GraphElement containerField : getContainerFields(f)){
+				if(setTypes(containerField, ImmutabilityTypes.MUTABLE)){
+					typesChanged = true;
+					Log.info(containerField.getAttr(XCSG.name) + " Types Changed " + getTypes(containerField));
+				}
+			}
+		}
+		
 		// process s(x)
 		Set<ImmutabilityTypes> xTypesToRemove = new HashSet<ImmutabilityTypes>();
 		for(ImmutabilityTypes xType : xTypes){
@@ -410,16 +414,11 @@ public class PurityAnalysis {
 				xTypesToRemove.add(xType);
 			}
 		}
-		Set<ImmutabilityTypes> xDiff = new HashSet<ImmutabilityTypes>();
-		xDiff.addAll(xTypes);
-		xDiff.removeAll(xTypesToRemove);
-		if(xDiff.size() >= 1){
-			if(removeTypes(x, xTypesToRemove)){
-				typesChanged = true;
-				Log.info(x.getAttr(XCSG.name) + " Types Changed " + getTypes(x));
-			}
+		if(removeTypes(x, xTypesToRemove)){
+			typesChanged = true;
+			Log.info(x.getAttr(XCSG.name) + " Types Changed " + getTypes(x));
 		}
-
+		
 		// process s(y)
 		Set<ImmutabilityTypes> yTypesToRemove = new HashSet<ImmutabilityTypes>();
 		for(ImmutabilityTypes yType : yTypes){
@@ -436,15 +435,9 @@ public class PurityAnalysis {
 				yTypesToRemove.add(yType);
 			}
 		}
-		
-		Set<ImmutabilityTypes> yDiff = new HashSet<ImmutabilityTypes>();
-		yDiff.addAll(yTypes);
-		yDiff.removeAll(yTypesToRemove);
-		if(yDiff.size() >= 1){
-			if(removeTypes(y, yTypesToRemove)){
-				typesChanged = true;
-				Log.info(y.getAttr(XCSG.name) + " Types Changed " + getTypes(y));
-			}
+		if(removeTypes(y, yTypesToRemove)){
+			typesChanged = true;
+			Log.info(y.getAttr(XCSG.name) + " Types Changed " + getTypes(y));
 		}
 		
 		// process s(f)
@@ -463,15 +456,9 @@ public class PurityAnalysis {
 				fTypesToRemove.add(fType);
 			}
 		}
-		
-		Set<ImmutabilityTypes> fDiff = new HashSet<ImmutabilityTypes>();
-		fDiff.addAll(fTypes);
-		fDiff.removeAll(fTypesToRemove);
-		if(fDiff.size() >= 1){
-			if(removeTypes(f, fTypesToRemove)){
-				typesChanged = true;
-				Log.info(f.getAttr(XCSG.name) + " Types Changed " + getTypes(f));
-			}
+		if(removeTypes(f, fTypesToRemove)){
+			typesChanged = true;
+			Log.info(f.getAttr(XCSG.name) + " Types Changed " + getTypes(f));
 		}
 		
 		return typesChanged;
@@ -485,7 +472,14 @@ public class PurityAnalysis {
 	 */
 	private static boolean removeTypes(GraphElement ge, Set<ImmutabilityTypes> typesToRemove){
 		Set<ImmutabilityTypes> typeSet = getTypes(ge);
-		return typeSet.removeAll(typesToRemove);
+		
+		Log.info("Before Remove: " + ge.getAttr(XCSG.name) + ", " + typeSet.toString());
+		
+		boolean result = typeSet.removeAll(typesToRemove);
+		
+		Log.info("After Remove: " + ge.getAttr(XCSG.name) + ", " + typeSet.toString());
+		
+		return result;
 	}
 	
 	/**
@@ -510,13 +504,21 @@ public class PurityAnalysis {
 	 */
 	private static boolean setTypes(GraphElement ge, Set<ImmutabilityTypes> typesToSet){
 		Set<ImmutabilityTypes> typeSet = getTypes(ge);
+		
+		Log.info("Before Set: " + ge.getAttr(XCSG.name) + ", " + typeSet.toString());
+		
+		boolean result;
 		if(typeSet.containsAll(typesToSet) && typesToSet.containsAll(typeSet)){
-			return false;
+			result = false;
 		} else {
 			typeSet.clear();
 			typeSet.addAll(typesToSet);
-			return true;
+			result = true;
 		}
+		
+		Log.info("After Set: " + ge.getAttr(XCSG.name) + ", " + typeSet.toString());
+		
+		return result;
 	}
 	
 	/**
@@ -540,11 +542,22 @@ public class PurityAnalysis {
 		} else {
 			HashSet<ImmutabilityTypes> qualifiers = new HashSet<ImmutabilityTypes>();
 			
-			if(ge.taggedWith(XCSG.Instantiation) || ge.taggedWith(XCSG.ArrayInstantiation)){
+			Q typeOfEdges = Common.universe().edgesTaggedWithAny(XCSG.TypeOf);
+			GraphElement geType = typeOfEdges.successors(Common.toQ(ge)).eval().nodes().getFirst();
+			
+			GraphElement nullType = Common.universe().nodesTaggedWithAny(XCSG.Java.NullType).eval().nodes().getFirst();
+			if(ge.equals(nullType)){
+				// assignments of null mutate objects
+				// see https://github.com/proganalysis/type-inference/blob/master/inference-framework/checker-framework/checkers/src/checkers/inference2/reim/ReimChecker.java#L181
+				qualifiers.add(ImmutabilityTypes.MUTABLE);
+			} else if(ge.taggedWith(XCSG.Instantiation) || ge.taggedWith(XCSG.ArrayInstantiation)){
 				// Type Rule 1 - TNEW
 				// return type of a constructor is only mutable
 				// x = new C(); // no effect on qualifier to x
 				qualifiers.add(ImmutabilityTypes.MUTABLE);
+			} else if(isDefaultReadonlyType(ge) || isDefaultReadonlyType(geType)){
+				// several java objects are readonly for all practical purposes
+				qualifiers.add(ImmutabilityTypes.READONLY);
 			} else if(ge.taggedWith(XCSG.MasterReturn)){
 				// Section 2.4 of Reference 1
 				// "Method returns are initialized S(ret) = {readonly, polyread} for each method m"
@@ -567,6 +580,28 @@ public class PurityAnalysis {
 			ge.putAttr(IMMUTABILITY_TYPES, qualifiers);
 			return qualifiers;
 		}
+	}
+	
+	/**
+	 * Returns the fields of containers that are types of the type for the given field 
+	 * and the resulting reachable fields
+	 * @param field
+	 * @return
+	 */
+	public static AtlasSet<GraphElement> getContainerFields(GraphElement field){
+		Q containsEdges = Common.universe().edgesTaggedWithAny(XCSG.Contains);
+		Q typeOfEdges = Common.universe().edgesTaggedWithAny(XCSG.TypeOf);
+		
+		AtlasSet<GraphElement> fields = new AtlasHashSet<GraphElement>();
+		fields.add(field);
+		boolean foundNewFields = false;
+		do {
+			Q fieldTypes = containsEdges.predecessors(Common.toQ(fields));
+			AtlasSet<GraphElement> reachableFields = typeOfEdges.predecessors(fieldTypes).nodesTaggedWithAny(XCSG.InstanceVariable).eval().nodes();
+			foundNewFields = fields.addAll(reachableFields);
+		} while(foundNewFields);
+		
+		return fields;
 	}
 	
 	/**
@@ -613,10 +648,8 @@ public class PurityAnalysis {
 	}
 	
 	private static boolean isDefaultReadonlyType(GraphElement type) {
-		// null types
-		GraphElement nullType = Common.universe().nodesTaggedWithAny(XCSG.Java.NullType).eval().nodes().getFirst();
-		if (type.equals(nullType)) {
-			return true;
+		if(type == null){
+			return false;
 		}
 		
 		// primitive types
@@ -644,9 +677,18 @@ public class PurityAnalysis {
 			return true;
 		}
 		
-		// strings are a special case
-		GraphElement stringType = Common.typeSelect("java.lang", "String").eval().nodes().getFirst();
-		if(type.equals(stringType)){
+		// a few other objects are special cases for all practical purposes
+		if(type.equals(Common.typeSelect("java.lang", "String").eval().nodes().getFirst())){
+			return true;
+		} else if(type.equals(Common.typeSelect("java.lang", "Number").eval().nodes().getFirst())){
+			return true;
+		} else if(type.equals(Common.typeSelect("java.util.concurrent.atomic", "AtomicInteger").eval().nodes().getFirst())){
+			return true;
+		} else if(type.equals(Common.typeSelect("java.util.concurrent.atomic", "AtomicLong").eval().nodes().getFirst())){
+			return true;
+		} else if(type.equals(Common.typeSelect("java.math", "BigDecimal").eval().nodes().getFirst())){
+			return true;
+		} else if(type.equals(Common.typeSelect("java.math", "BigInteger").eval().nodes().getFirst())){
 			return true;
 		}
 		
