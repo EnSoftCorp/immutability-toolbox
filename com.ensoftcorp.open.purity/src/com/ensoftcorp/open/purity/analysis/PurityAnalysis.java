@@ -27,8 +27,9 @@ import com.ensoftcorp.atlas.core.xcsg.XCSG;
  */
 public class PurityAnalysis {
 
+	public static final String PURE_METHOD = "PURE";
+	
 	private static final String IMMUTABILITY_QUALIFIERS = "IMMUTABILITY_QUALIFIERS";
-	private static final String IMMUTABILITY_QUALIFIER = "IMMUTABILITY_QUALIFIER";
 	
 	/**
 	 * Encodes the immutability qualifications as types 
@@ -66,11 +67,12 @@ public class PurityAnalysis {
 		}
 		
 		/**
-		 * Viewpoint adaptation is a concept from Universe Types.
+		 * Viewpoint adaptation is a concept from Universe Types, 
+		 * it deals with context-sensitivity issues.
 		 * 
-		 * Specifically for fields, 
+		 * Specifically, 
 		 * context=? and declaration=readonly => readonly
-		 * context=q and declaration=mutable => q
+		 * context=? and declaration=mutable => mutable
 		 * context=q and declaration=polyread => q
 		 * 
 		 * @param context
@@ -91,12 +93,14 @@ public class PurityAnalysis {
 //				return context;
 //			}
 			
+			// using the more accurate ReIm' definition of field viewpoint adaptation
 			// see https://github.com/proganalysis/type-inference/blob/master/inference-framework/checker-framework/checkers/src/checkers/inference2/reim/ReimChecker.java#L272
 			return getAdaptedMethodViewpoint(context, declaration);
 		}
 		
 		/**
-		 * Viewpoint adaptation is a concept from Universe Types.
+		 * Viewpoint adaptation is a concept from Universe Types, 
+		 * it deals with context-sensitivity issues.
 		 * 
 		 * Specifically, 
 		 * context=? and declaration=readonly => readonly
@@ -122,6 +126,10 @@ public class PurityAnalysis {
 		}
 	}
 	
+	/**
+	 * Runs the side effect (purity) analysis
+	 * @return Returns the time in milliseconds taken to complete the analysis
+	 */
 	public static double run(){
 		long start = System.nanoTime();
 		runAnalysis();
@@ -129,6 +137,9 @@ public class PurityAnalysis {
 		return (stop-start)/1000.0/1000.0;
 	}
 	
+	/**
+	 * Runs the side effect (purity) analysis
+	 */
 	private static void runAnalysis(){
 		Q parameters = Common.universe().nodesTaggedWithAny(XCSG.Parameter);
 		Q masterReturns = Common.universe().nodesTaggedWithAny(XCSG.MasterReturn);
@@ -145,7 +156,6 @@ public class PurityAnalysis {
 
 		// add all assignments to worklist
 		Q assignments = Common.universe().nodesTaggedWithAny(XCSG.Assignment);
-//		Q initializerAssignments = Common.universe().methods("<init>").contained().nodesTaggedWithAny(XCSG.Assignment);
 		for(GraphElement assignment : assignments.eval().nodes()){
 			worklist.add(assignment);
 		}
@@ -166,10 +176,24 @@ public class PurityAnalysis {
 			}
 		}
 		
-		// TODO: maximize types
-//		extractMaximalTypes();
+		// flattens the type hierarchy to the maximal types
+		// and sets the final attribute values for the
+		// IMMUTABILITY_QUALIFIER attribute
+		extractMaximalTypes();
+		
+		// tags pure methods
+		// must be run after extractMaximalTypes()
+		tagPureMethods();
 	}
 	
+	/**
+	 * Given a graph element, each inference rule (TNEW, TASSIGN, TWRITE, TREAD, TCALL) is checked
+	 * and unsatisfied qualifier types are removed or reduced (a new type may be added, but it will 
+	 * replace other types reducing the total number of types) from graph elements
+	 * 
+	 * @param workItem Returns true if any type qualifier sets changed
+	 * @return
+	 */
 	private static boolean applyInferenceRules(GraphElement workItem){
 		Graph localDFGraph = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow).eval();
 		Graph interproceduralDFGraph = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow).eval();
@@ -893,48 +917,10 @@ public class PurityAnalysis {
 	}
 	
 	/**
-	 * Returns the least common ancestor for two sets of ImmutabilityTypes
-	 * @param a
-	 * @param b
+	 * Returns true if the given type is a default readonly type
+	 * @param type
 	 * @return
 	 */
-	public static ImmutabilityTypes leastCommonAncestor(Set<ImmutabilityTypes> a, Set<ImmutabilityTypes> b){
-		HashSet<ImmutabilityTypes> commonTypes = new HashSet<ImmutabilityTypes>();
-		commonTypes.addAll(a);
-		commonTypes.retainAll(b);
-		LinkedList<ImmutabilityTypes> orderedTypes = new LinkedList<ImmutabilityTypes>();
-		orderedTypes.addAll(commonTypes);
-		Collections.sort(orderedTypes);
-		return orderedTypes.getLast();
-	}
-	
-	/**
-	 * Returns true if the method is pure
-	 * @param method
-	 */
-	public static boolean isPureMethod(GraphElement method){
-		if(!method.taggedWith(XCSG.Method)){
-			return false;
-		} else if(isPureMethodDefault(method)){
-			return true;
-		} else {
-			boolean isPure = true;
-			// TODO: check if "this" receiver object in any callsite is not mutable
-			// TODO: check if parameter is not mutable
-			// TODO: check if static immutability type is not mutable
-			return isPure;
-		}
-	}
-	
-	private static boolean isPureMethodDefault(GraphElement method){
-		// from : https://github.com/SoftwareEngineeringToolDemos/FSE-2012-ReImInfer/blob/master/inference-framework/checker-framework/checkers/src/checkers/inference/reim/ReimChecker.java
-//		  defaultPurePatterns.add(Pattern.compile(".*\\.equals\\(java\\.lang\\.Object\\)$"));
-//        defaultPurePatterns.add(Pattern.compile(".*\\.hashCode\\(\\)$"));
-//        defaultPurePatterns.add(Pattern.compile(".*\\.toString\\(\\)$"));
-//        defaultPurePatterns.add(Pattern.compile(".*\\.compareTo\\(.*\\)$"));
-		return false;
-	}
-	
 	private static boolean isDefaultReadonlyType(GraphElement type) {
 		if(type == null){
 			return false;
@@ -984,7 +970,8 @@ public class PurityAnalysis {
 	}
 	
 	/**
-	 * Flattens the applied immutability qualifiers to the maximal type
+	 * Flattens the remaining immutability qualifiers to the maximal type
+	 * and applies the maximal type as a tag
 	 */
 	private static void extractMaximalTypes(){
 		AtlasSet<GraphElement> attributedGraphElements = Common.universe().selectNode(IMMUTABILITY_QUALIFIERS).eval().nodes();
@@ -993,9 +980,65 @@ public class PurityAnalysis {
 			orderedTypes.addAll(getTypes(attributedGraphElement));
 			Collections.sort(orderedTypes);
 			ImmutabilityTypes maximalType = orderedTypes.getLast();
-			attributedGraphElement.removeAttr(IMMUTABILITY_QUALIFIERS);
-			attributedGraphElement.putAttr(IMMUTABILITY_QUALIFIER, maximalType.toString());
+//			attributedGraphElement.removeAttr(IMMUTABILITY_QUALIFIERS); // TODO: uncomment
+			attributedGraphElement.tag(maximalType.toString());
 		}
+	}
+	
+	/**
+	 * Tags pure methods with "PURE"
+	 */
+	private static void tagPureMethods(){
+		AtlasSet<GraphElement> methods = Common.universe().nodesTaggedWithAny(XCSG.Method).eval().nodes();
+		for(GraphElement method : methods){
+			if(isPureMethod(method)){
+				method.tag(PURE_METHOD);
+			}
+		}
+	}
+	
+	/**
+	 * Returns true if the method is pure
+	 * Assumes the maximal immutability qualifiers have already been extracted
+	 * @param method
+	 */
+	private static boolean isPureMethod(GraphElement method){
+		if(!method.taggedWith(XCSG.Method)){
+			return false;
+		} else if(isPureMethodDefault(method)){
+			return true;
+		} else {
+			// check if receiver object in any callsite is not mutable
+			Q dataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.DataFlow_Edge);
+			Q receivers = dataFlowEdges.predecessors(Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity));
+			Q mutableReceivers = receivers.nodesTaggedWithAny(ImmutabilityTypes.MUTABLE.toString());
+			if(mutableReceivers.eval().nodes().size() > 0){
+				return false;
+			}
+			
+			// check if any parameter is not mutable
+			Q parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter);
+			Q mutableParameters = parameters.nodesTaggedWithAny(ImmutabilityTypes.MUTABLE.toString());
+			if(mutableParameters.eval().nodes().size() > 0){
+				return false;
+			}
+			
+			// TODO: check if static immutability type is not mutable
+			
+			return true;
+		}
+	}
+	
+	/**
+	 * Returns true if the method is a default pure method
+	 * @param method
+	 * @return
+	 */
+	private static boolean isPureMethodDefault(GraphElement method){
+		// note by convention .equals, .hashCode, .toString, and .compareTo
+		// are pure methods, but this is not enforced in Java, so we are not
+		// assuming this to be true
+		return false;
 	}
 	
 }
