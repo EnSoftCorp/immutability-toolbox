@@ -27,8 +27,32 @@ import com.ensoftcorp.atlas.core.xcsg.XCSG;
  */
 public class PurityAnalysis {
 
+	/**
+	 * Tag applied to "pure" methods
+	 */
 	public static final String PURE_METHOD = "PURE";
 	
+	/**
+	 * Tag applied to fields, parameters, variables, etc. denoting a "readonly" immutability
+	 * Readonly means that in any context the reference is readonly (never mutated)
+	 */
+	public static final String READONLY = "READONLY";
+	
+	/**
+	 * Tag applied to fields, parameters, variables, etc. denoting a "polyread" immutability
+	 * Polyread means that depending on the context a reference may be mutable or readonly
+	 */
+	public static final String POLYREAD = "POLYREAD";
+	
+	/**
+	 * Tag applied to fields, parameters, variables, etc. denoting a "mutable" immutability
+	 * Mutable means that in any context the reference is mutable
+	 */
+	public static final String MUTABLE = "MUTABLE";
+	
+	/**
+	 * Used as an attribute key to temporarily compute the potential immutability qualifiers
+	 */
 	private static final String IMMUTABILITY_QUALIFIERS = "IMMUTABILITY_QUALIFIERS";
 	
 	/**
@@ -36,12 +60,12 @@ public class PurityAnalysis {
 	 * 
 	 * @author Ben Holland
 	 */
-	public static enum ImmutabilityTypes {
+	private static enum ImmutabilityTypes {
 		// note that MUTABLE <: POLYREAD <: READONLY
 		// <: denotes a subtype relationship
 		// MUTABLE is a subtype of POLYREAD and POLYREAD is a subtype of READONLY
 		// MUTABLE is the most specific type and READONLY is the most generic type
-		MUTABLE("MUTABLE"), POLYREAD("POLYREAD"), READONLY("READONLY");
+		MUTABLE(PurityAnalysis.MUTABLE), POLYREAD(PurityAnalysis.POLYREAD), READONLY(PurityAnalysis.READONLY);
 		
 		private String name;
 		
@@ -52,18 +76,6 @@ public class PurityAnalysis {
 		@Override
 		public String toString(){
 			return name;
-		}
-		
-		public static ImmutabilityTypes getImmutabilityType(String s){
-			if(s.equals("MUTABLE")){
-				return ImmutabilityTypes.MUTABLE;
-			} else if(s.equals("POLYREAD")){
-				return ImmutabilityTypes.POLYREAD;
-			} else if(s.equals("READONLY")){
-				return ImmutabilityTypes.READONLY;
-			} else {
-				return null;
-			}
 		}
 		
 		/**
@@ -298,8 +310,7 @@ public class PurityAnalysis {
 				GraphElement identity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
 				
 				// Method (method) -Contains-> Parameter (p1, p2, ...)
-				AtlasSet<GraphElement> parameters = Common.universe().edgesTaggedWithAny(XCSG.Contains)
-						.successors(Common.toQ(method)).nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
+				AtlasSet<GraphElement> parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
 				
 				// ControlFlow -Contains-> CallSite
 				// CallSite -Contains-> ParameterPassed (z1, z2, ...)
@@ -862,8 +873,7 @@ public class PurityAnalysis {
 			}
 
 			// Method (method) -Contains-> Parameter (p1, p2, ...)
-			AtlasSet<GraphElement> overriddenMethodParameters = Common.universe().edgesTaggedWithAny(XCSG.Contains)
-					.successors(Common.toQ(overriddenMethod)).nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
+			AtlasSet<GraphElement> overriddenMethodParameters = Common.toQ(overriddenMethod).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
 			
 			// get the parameters of the method
 			AtlasSet<GraphElement> parameters = new AtlasHashSet<GraphElement>();
@@ -875,49 +885,51 @@ public class PurityAnalysis {
 			// for each parameter and overridden parameter pair
 			// constraint: p <: pOverriden
 			long numParams = overriddenMethodParameters.size();
-			for(long i=0; i<numParams; i++){
-				GraphElement p = Common.toQ(parameters).selectNode(XCSG.parameterIndex, i).eval().nodes().getFirst();
-				GraphElement pOverridden = Common.toQ(overriddenMethodParameters).selectNode(XCSG.parameterIndex, i).eval().nodes().getFirst();
-				
-				Set<ImmutabilityTypes> pTypes = getTypes(p);
-				Set<ImmutabilityTypes> pOverriddenTypes = getTypes(pOverridden);
-				
-				// process s(p)
-				Set<ImmutabilityTypes> pTypesToRemove = new HashSet<ImmutabilityTypes>();
-				for(ImmutabilityTypes pType : pTypes){
-					boolean isSatisfied = false;
-					satisfied:
-					for(ImmutabilityTypes pOverriddenType : pOverriddenTypes){
-						if(pOverriddenType.compareTo(pType) >= 0){
-							isSatisfied = true;
-							break satisfied;
-						}
-					}
-					if(!isSatisfied){
-						pTypesToRemove.add(pType);
-					}
-				}
-				if(removeTypes(p, pTypesToRemove)){
-					typesChanged = true;
-				}
-				
-				// process s(pOverridden)
-				Set<ImmutabilityTypes> pOverriddenTypesToRemove = new HashSet<ImmutabilityTypes>();
-				for(ImmutabilityTypes pOverriddenType : pOverriddenTypes){
-					boolean isSatisfied = false;
-					satisfied:
+			if(numParams > 0){
+				for(int i=0; i<numParams; i++){
+					GraphElement p = Common.toQ(parameters).selectNode(XCSG.parameterIndex, i).eval().nodes().getFirst();
+					GraphElement pOverridden = Common.toQ(overriddenMethodParameters).selectNode(XCSG.parameterIndex, i).eval().nodes().getFirst();
+					
+					Set<ImmutabilityTypes> pTypes = getTypes(p);
+					Set<ImmutabilityTypes> pOverriddenTypes = getTypes(pOverridden);
+					
+					// process s(p)
+					Set<ImmutabilityTypes> pTypesToRemove = new HashSet<ImmutabilityTypes>();
 					for(ImmutabilityTypes pType : pTypes){
-						if(pOverriddenType.compareTo(pType) >= 0){
-							isSatisfied = true;
-							break satisfied;
+						boolean isSatisfied = false;
+						satisfied:
+						for(ImmutabilityTypes pOverriddenType : pOverriddenTypes){
+							if(pOverriddenType.compareTo(pType) >= 0){
+								isSatisfied = true;
+								break satisfied;
+							}
+						}
+						if(!isSatisfied){
+							pTypesToRemove.add(pType);
 						}
 					}
-					if(!isSatisfied){
-						pOverriddenTypesToRemove.add(pOverriddenType);
+					if(removeTypes(p, pTypesToRemove)){
+						typesChanged = true;
 					}
-				}
-				if(removeTypes(pOverridden, pOverriddenTypesToRemove)){
-					typesChanged = true;
+					
+					// process s(pOverridden)
+					Set<ImmutabilityTypes> pOverriddenTypesToRemove = new HashSet<ImmutabilityTypes>();
+					for(ImmutabilityTypes pOverriddenType : pOverriddenTypes){
+						boolean isSatisfied = false;
+						satisfied:
+						for(ImmutabilityTypes pType : pTypes){
+							if(pOverriddenType.compareTo(pType) >= 0){
+								isSatisfied = true;
+								break satisfied;
+							}
+						}
+						if(!isSatisfied){
+							pOverriddenTypesToRemove.add(pOverriddenType);
+						}
+					}
+					if(removeTypes(pOverridden, pOverriddenTypesToRemove)){
+						typesChanged = true;
+					}
 				}
 			}
 		}
@@ -998,7 +1010,7 @@ public class PurityAnalysis {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public static Set<ImmutabilityTypes> getTypes(GraphElement ge){
+	private static Set<ImmutabilityTypes> getTypes(GraphElement ge){
 		if(ge.hasAttr(IMMUTABILITY_QUALIFIERS)){
 			return (Set<ImmutabilityTypes>) ge.getAttr(IMMUTABILITY_QUALIFIERS);
 		} else {
@@ -1050,7 +1062,7 @@ public class PurityAnalysis {
 	 * @param field
 	 * @return
 	 */
-	public static AtlasSet<GraphElement> getContainerFields(GraphElement field){
+	private static AtlasSet<GraphElement> getContainerFields(GraphElement field){
 		Q containsEdges = Common.universe().edgesTaggedWithAny(XCSG.Contains);
 		Q typeOfEdges = Common.universe().edgesTaggedWithAny(XCSG.TypeOf);
 		Q supertypeEdges = Common.universe().edgesTaggedWithAny(XCSG.Supertype);
