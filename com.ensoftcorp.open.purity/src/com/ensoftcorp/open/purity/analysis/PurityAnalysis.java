@@ -27,7 +27,8 @@ import com.ensoftcorp.atlas.core.xcsg.XCSG;
  */
 public class PurityAnalysis {
 
-	private static final String IMMUTABILITY_TYPES = "IMMUTABILITY_QUALIFIER";
+	private static final String IMMUTABILITY_QUALIFIERS = "IMMUTABILITY_QUALIFIERS";
+	private static final String IMMUTABILITY_QUALIFIER = "IMMUTABILITY_QUALIFIER";
 	
 	/**
 	 * Encodes the immutability qualifications as types 
@@ -129,7 +130,6 @@ public class PurityAnalysis {
 	}
 	
 	private static void runAnalysis(){
-		
 		Q parameters = Common.universe().nodesTaggedWithAny(XCSG.Parameter);
 		Q masterReturns = Common.universe().nodesTaggedWithAny(XCSG.MasterReturn);
 		Q instanceVariables = Common.universe().nodesTaggedWithAny(XCSG.InstanceVariable);
@@ -165,6 +165,9 @@ public class PurityAnalysis {
 				break;
 			}
 		}
+		
+		// TODO: maximize types
+//		extractMaximalTypes();
 	}
 	
 	private static boolean applyInferenceRules(GraphElement workItem){
@@ -381,7 +384,7 @@ public class PurityAnalysis {
 		// that field have also changed
 		if(x.taggedWith(XCSG.Field)){
 			for(GraphElement containerField : getContainerFields(x)){
-				if(setTypes(containerField, ImmutabilityTypes.MUTABLE)){
+				if(setTypes(containerField, ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD)){
 					typesChanged = true;
 				}
 			}
@@ -447,7 +450,7 @@ public class PurityAnalysis {
 		// if x is only MUTABLE then the field and its container fields must be mutable as well
 		if(xTypes.contains(ImmutabilityTypes.MUTABLE) && xTypes.size() == 1){
 			for(GraphElement containerField : getContainerFields(f)){
-				if(setTypes(containerField, ImmutabilityTypes.MUTABLE)){
+				if(setTypes(containerField, ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD)){
 					typesChanged = true;
 				}
 			}
@@ -528,6 +531,27 @@ public class PurityAnalysis {
 		Set<ImmutabilityTypes> yTypes = getTypes(y);
 		Set<ImmutabilityTypes> identityTypes = getTypes(identity);
 		Set<ImmutabilityTypes> retTypes = getTypes(ret);
+		
+		// if x is only MUTABLE then the return value must be mutable or polyread
+		if(xTypes.contains(ImmutabilityTypes.MUTABLE) && xTypes.size() == 1){
+			if(setTypes(ret, ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD)){
+				typesChanged = true;
+			}
+			
+			// if the return value is a field then the field and its container fields must be mutable as well
+			Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
+			Q returnValues = localDataFlowEdges.predecessors(Common.toQ(ret));
+			Q instanceVariableValues = localDataFlowEdges.predecessors(returnValues).nodesTaggedWithAny(XCSG.InstanceVariableValue);
+			Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
+			Q instanceVariables = interproceduralDataFlowEdges.predecessors(instanceVariableValues);
+			for(GraphElement instanceVariable : instanceVariables.eval().nodes()){
+				for(GraphElement containerField : getContainerFields(instanceVariable)){
+					if(setTypes(containerField, ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD)){
+						typesChanged = true;
+					}
+				}
+			}
+		}
 		
 		/////////////////////// start qx adapt qret <: qx /////////////////////// 
 		// process s(x)
@@ -796,8 +820,8 @@ public class PurityAnalysis {
 	
 	@SuppressWarnings("unchecked")
 	public static Set<ImmutabilityTypes> getTypes(GraphElement ge){
-		if(ge.hasAttr(IMMUTABILITY_TYPES)){
-			return (Set<ImmutabilityTypes>) ge.getAttr(IMMUTABILITY_TYPES);
+		if(ge.hasAttr(IMMUTABILITY_QUALIFIERS)){
+			return (Set<ImmutabilityTypes>) ge.getAttr(IMMUTABILITY_QUALIFIERS);
 		} else {
 			HashSet<ImmutabilityTypes> qualifiers = new HashSet<ImmutabilityTypes>();
 			
@@ -836,7 +860,7 @@ public class PurityAnalysis {
 				qualifiers.add(ImmutabilityTypes.MUTABLE);
 			}
 
-			ge.putAttr(IMMUTABILITY_TYPES, qualifiers);
+			ge.putAttr(IMMUTABILITY_QUALIFIERS, qualifiers);
 			return qualifiers;
 		}
 	}
@@ -957,6 +981,21 @@ public class PurityAnalysis {
 		}
 		
 		return false;
+	}
+	
+	/**
+	 * Flattens the applied immutability qualifiers to the maximal type
+	 */
+	private static void extractMaximalTypes(){
+		AtlasSet<GraphElement> attributedGraphElements = Common.universe().selectNode(IMMUTABILITY_QUALIFIERS).eval().nodes();
+		for(GraphElement attributedGraphElement : attributedGraphElements){
+			LinkedList<ImmutabilityTypes> orderedTypes = new LinkedList<ImmutabilityTypes>();
+			orderedTypes.addAll(getTypes(attributedGraphElement));
+			Collections.sort(orderedTypes);
+			ImmutabilityTypes maximalType = orderedTypes.getLast();
+			attributedGraphElement.removeAttr(IMMUTABILITY_QUALIFIERS);
+			attributedGraphElement.putAttr(IMMUTABILITY_QUALIFIER, maximalType.toString());
+		}
 	}
 	
 }
