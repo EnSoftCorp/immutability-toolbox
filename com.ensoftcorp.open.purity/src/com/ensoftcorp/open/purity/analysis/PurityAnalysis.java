@@ -1225,16 +1225,26 @@ public class PurityAnalysis {
 	private static boolean isPureMethodDefault(GraphElement method){
 		// note by convention .equals, .hashCode, .toString, and .compareTo
 		// are pure methods, but this is not enforced in overridden methods
-		// so we are not assuming it to be universally true
+		// so we are not assuming it to be universally true (unlike ReIm)
 		
 		// we could however consider some of the java.lang.Object native methods as pure
 		// Object's native methods include: getClass, clone, hashCode, notifyAll, notify, wait, registerNatives
 		if(method.taggedWith(XCSG.Java.nativeMethod)){
-			if(method.getAttr(XCSG.name).equals("registerNatives")){
-				// registerNatives is a JNI function that registers native implementations and Object's native methods
+			if(!Common.toQ(method).intersection(Common.typeSelect("java.lang", "Object").children()).eval().nodes().isEmpty()){
+				if(method.getAttr(XCSG.name).equals("getClass")){
+					return true;
+				}
+				if(method.getAttr(XCSG.name).equals("hashCode")){
+					return true;
+				}
+				if(method.getAttr(XCSG.name).equals("clone")){
+					// clone is a pure method, but it is also a special case
+					// to be consider since its return type is a duplication 
+					// of a reference
+					// see https://en.wikipedia.org/wiki/Clone_(Java_method)
+					return true;
+				}
 				return false;
-			} else if(!Common.toQ(method).intersection(Common.typeSelect("java.lang", "Object").children()).eval().nodes().isEmpty()){
-				return true;
 			}
 		}
 
