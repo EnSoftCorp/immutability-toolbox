@@ -204,7 +204,8 @@ public class PurityAnalysis {
 			} else {
 				// nothing more can change based on these work items
 				// so don't consider them anymore
-				worklist.removeAll(mutables);
+				// TODO: uncomment
+//				worklist.removeAll(mutables);
 			}
 		}
 		
@@ -1195,10 +1196,17 @@ public class PurityAnalysis {
 		} else if(isPureMethodDefault(method)){
 			return true;
 		} else {
-			// TODO: fixme (may be off by one in the edges)
 			// check if receiver object in any callsite is not mutable
-			Q dataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.DataFlow_Edge);
-			Q receivers = dataFlowEdges.predecessors(Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity));
+			Q identity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity);
+			Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
+			Q identityPassed = interproceduralDataFlowEdges.predecessors(identity);
+			Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
+			Q receivers = localDataFlowEdges.predecessors(identityPassed);
+			// a receiver may be a local reference or a field
+			// TODO: receiver could also be a callsite...
+			Q instanceVariableValues = receivers.nodesTaggedWithAny(XCSG.InstanceVariableValue);
+			Q instanceVariables = interproceduralDataFlowEdges.predecessors(instanceVariableValues);
+			receivers = receivers.union(instanceVariables);
 			Q mutableReceivers = receivers.nodesTaggedWithAny(ImmutabilityTypes.MUTABLE.toString());
 			if(mutableReceivers.eval().nodes().size() > 0){
 				return false;
@@ -1212,6 +1220,7 @@ public class PurityAnalysis {
 			}
 			
 			// TODO: check if static immutability type is not mutable
+			// means check if the method's "this" is not mutable?
 			
 			return true;
 		}
