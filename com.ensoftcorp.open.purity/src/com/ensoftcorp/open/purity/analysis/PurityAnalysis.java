@@ -311,7 +311,7 @@ public class PurityAnalysis {
 						.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
 				
 				Log.info("TCALL (x=y.m(z), x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", m=" + method.getAttr("##signature") + ")");
-				if(handleCall(x, y, identity, ret, parametersPassedEdges)){
+				if(handleCall(x, y, identity, method, ret, parametersPassedEdges)){
 					typesChanged = true;
 				}
 				
@@ -549,7 +549,7 @@ public class PurityAnalysis {
 		return typesChanged;
 	}
 	
-	private static boolean handleCall(GraphElement x, GraphElement y, GraphElement identity, GraphElement ret, AtlasSet<GraphElement> parametersPassedEdges) {
+	private static boolean handleCall(GraphElement x, GraphElement y, GraphElement identity, GraphElement method, GraphElement ret, AtlasSet<GraphElement> parametersPassedEdges) {
 		boolean typesChanged = false;
 		Set<ImmutabilityTypes> xTypes = getTypes(x);
 		Set<ImmutabilityTypes> yTypes = getTypes(y);
@@ -766,6 +766,161 @@ public class PurityAnalysis {
 		}
 		
 		/////////////////////// end qz <: qx adapt qp ///////////////////////
+		
+		// check if method overrides another method
+		Q overridesEdges = Common.universe().edgesTaggedWithAny(XCSG.Overrides);
+		GraphElement overriddenMethod = overridesEdges.successors(Common.toQ(method)).eval().nodes().getFirst();
+		if(overriddenMethod != null){
+			Log.info("TCALL (Overridden Method)");
+			
+			// Method (method) -Contains-> ReturnValue (ret)
+			GraphElement overriddenMethodReturn = Common.toQ(overriddenMethod).children().nodesTaggedWithAny(XCSG.ReturnValue).eval().nodes().getFirst();
+			Set<ImmutabilityTypes> overriddenRetTypes = getTypes(overriddenMethodReturn);
+			
+			// constraint: overriddenReturn <: return
+			
+			// process s(ret)
+			retTypesToRemove = new HashSet<ImmutabilityTypes>();
+			for(ImmutabilityTypes retType : retTypes){
+				boolean isSatisfied = false;
+				satisfied:
+				for(ImmutabilityTypes overriddenRetType : overriddenRetTypes){
+					if(retType.compareTo(overriddenRetType) >= 0){
+						isSatisfied = true;
+						break satisfied;
+					}
+				}
+				if(!isSatisfied){
+					retTypesToRemove.add(retType);
+				}
+			}
+			if(removeTypes(ret, retTypesToRemove)){
+				typesChanged = true;
+			}
+			
+			// process s(overriddenRet)
+			HashSet<ImmutabilityTypes> overriddenRetTypesToRemove = new HashSet<ImmutabilityTypes>();
+			for(ImmutabilityTypes overriddenRetType : overriddenRetTypes){
+				boolean isSatisfied = false;
+				satisfied:
+				for(ImmutabilityTypes retType : retTypes){
+					if(retType.compareTo(overriddenRetType) >= 0){
+						isSatisfied = true;
+						break satisfied;
+					}
+				}
+				if(!isSatisfied){
+					overriddenRetTypesToRemove.add(overriddenRetType);
+				}
+			}
+			if(removeTypes(overriddenMethodReturn, overriddenRetTypesToRemove)){
+				typesChanged = true;
+			}
+			
+			// Method (method) -Contains-> Identity
+			GraphElement overriddenMethodIdentity = Common.toQ(overriddenMethod).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
+			Set<ImmutabilityTypes> overriddenIdentityTypes = getTypes(overriddenMethodIdentity);
+
+			// constraint: this <: overriddenThis 
+			
+			// process s(this)
+			identityTypesToRemove = new HashSet<ImmutabilityTypes>();
+			for(ImmutabilityTypes identityType : identityTypes){
+				boolean isSatisfied = false;
+				satisfied:
+				for(ImmutabilityTypes overriddenIdentityType : overriddenIdentityTypes){
+					if(overriddenIdentityType.compareTo(identityType) >= 0){
+						isSatisfied = true;
+						break satisfied;
+					}
+				}
+				if(!isSatisfied){
+					identityTypesToRemove.add(identityType);
+				}
+			}
+			if(removeTypes(identity, identityTypesToRemove)){
+				typesChanged = true;
+			}
+			
+			// process s(overriddenRet)
+			HashSet<ImmutabilityTypes> overriddenIdentityTypesToRemove = new HashSet<ImmutabilityTypes>();
+			for(ImmutabilityTypes overriddenIdentityType : overriddenIdentityTypes){
+				boolean isSatisfied = false;
+				satisfied:
+				for(ImmutabilityTypes identityType : identityTypes){
+					if(overriddenIdentityType.compareTo(identityType) >= 0){
+						isSatisfied = true;
+						break satisfied;
+					}
+				}
+				if(!isSatisfied){
+					overriddenIdentityTypesToRemove.add(overriddenIdentityType);
+				}
+			}
+			if(removeTypes(overriddenMethodIdentity, overriddenIdentityTypesToRemove)){
+				typesChanged = true;
+			}
+
+			// Method (method) -Contains-> Parameter (p1, p2, ...)
+			AtlasSet<GraphElement> overriddenMethodParameters = Common.universe().edgesTaggedWithAny(XCSG.Contains)
+					.successors(Common.toQ(overriddenMethod)).nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
+			
+			// get the parameters of the method
+			AtlasSet<GraphElement> parameters = new AtlasHashSet<GraphElement>();
+			for(GraphElement parametersPassedEdge : parametersPassedEdges){
+				GraphElement p = parametersPassedEdge.getNode(EdgeDirection.TO);
+				parameters.add(p);
+			}
+			
+			// for each parameter and overridden parameter pair
+			// constraint: p <: pOverriden
+			long numParams = overriddenMethodParameters.size();
+			for(long i=0; i<numParams; i++){
+				GraphElement p = Common.toQ(parameters).selectNode(XCSG.parameterIndex, i).eval().nodes().getFirst();
+				GraphElement pOverridden = Common.toQ(overriddenMethodParameters).selectNode(XCSG.parameterIndex, i).eval().nodes().getFirst();
+				
+				Set<ImmutabilityTypes> pTypes = getTypes(p);
+				Set<ImmutabilityTypes> pOverriddenTypes = getTypes(pOverridden);
+				
+				// process s(p)
+				Set<ImmutabilityTypes> pTypesToRemove = new HashSet<ImmutabilityTypes>();
+				for(ImmutabilityTypes pType : pTypes){
+					boolean isSatisfied = false;
+					satisfied:
+					for(ImmutabilityTypes pOverriddenType : pOverriddenTypes){
+						if(pOverriddenType.compareTo(pType) >= 0){
+							isSatisfied = true;
+							break satisfied;
+						}
+					}
+					if(!isSatisfied){
+						pTypesToRemove.add(pType);
+					}
+				}
+				if(removeTypes(p, pTypesToRemove)){
+					typesChanged = true;
+				}
+				
+				// process s(pOverridden)
+				Set<ImmutabilityTypes> pOverriddenTypesToRemove = new HashSet<ImmutabilityTypes>();
+				for(ImmutabilityTypes pOverriddenType : pOverriddenTypes){
+					boolean isSatisfied = false;
+					satisfied:
+					for(ImmutabilityTypes pType : pTypes){
+						if(pOverriddenType.compareTo(pType) >= 0){
+							isSatisfied = true;
+							break satisfied;
+						}
+					}
+					if(!isSatisfied){
+						pOverriddenTypesToRemove.add(pOverriddenType);
+					}
+				}
+				if(removeTypes(pOverridden, pOverriddenTypesToRemove)){
+					typesChanged = true;
+				}
+			}
+		}
 		
 		return typesChanged;
 	}
@@ -1008,6 +1163,7 @@ public class PurityAnalysis {
 		} else if(isPureMethodDefault(method)){
 			return true;
 		} else {
+			// TODO: fixme (may be off by one in the edges)
 			// check if receiver object in any callsite is not mutable
 			Q dataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.DataFlow_Edge);
 			Q receivers = dataFlowEdges.predecessors(Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity));
