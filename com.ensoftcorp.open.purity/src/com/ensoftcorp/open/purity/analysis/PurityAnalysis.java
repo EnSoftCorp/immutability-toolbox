@@ -150,7 +150,9 @@ public class PurityAnalysis {
 			worklist.add(assignment);
 		}
 		
+		int iteration = 0;
 		while(true){
+			Log.info("Iteration: " + iteration++);
 			boolean fixedPoint = true;
 			// TODO: consider removing workItems that only have the mutable tag from future iterations...
 			for(GraphElement workItem : worklist){
@@ -187,7 +189,6 @@ public class PurityAnalysis {
 			if(to.taggedWith(XCSG.InstanceVariableAssignment)){
 				// Type Rule 3 - TWRITE
 				// let, x.f = y
-				Log.info("TWRITE");
 
 				// Reference (y) -LocalDataFlow-> InstanceVariableAssignment (.f)
 				GraphElement y = from;
@@ -205,6 +206,7 @@ public class PurityAnalysis {
 					x = interproceduralEdgeToField.getNode(EdgeDirection.FROM);
 				}
 				
+				Log.info("TWRITE (x.f=y, x=" + x.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")");
 				if(handleFieldWrite(x, f, y)){
 					typesChanged = true;
 				}
@@ -216,7 +218,6 @@ public class PurityAnalysis {
 			if(from.taggedWith(XCSG.InstanceVariableValue)){
 				// Type Rule 4 - TREAD
 				// let, x = y.f
-				Log.info("TREAD");
 				
 				GraphElement x = to;
 				GraphElement instanceVariableValue = from; // (.f)
@@ -233,6 +234,7 @@ public class PurityAnalysis {
 					y = interproceduralEdgeFromField.getNode(EdgeDirection.FROM);
 				}
 				
+				Log.info("TREAD (x=y.f, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ")");
 				if(handleFieldRead(x, y, f)){
 					typesChanged = true;
 				}
@@ -245,8 +247,7 @@ public class PurityAnalysis {
 			if(from.taggedWith(XCSG.CallSite)){
 				// Type Rule 5 - TCALL
 				// let, x = y.m(z)
-				Log.info("TCALL");
-				
+
 				GraphElement x = to;
 				GraphElement callsite = from;
 				
@@ -282,6 +283,7 @@ public class PurityAnalysis {
 				AtlasSet<GraphElement> parametersPassedEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow)
 						.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
 				
+				Log.info("TCALL (x=y.m(z), x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", m=" + method.getAttr("##signature") + ")");
 				if(handleCall(x, y, identity, ret, parametersPassedEdges)){
 					typesChanged = true;
 				}
@@ -291,9 +293,9 @@ public class PurityAnalysis {
 			
 			// TASSIGN
 			if(!involvesField && !involvesCallsite){
-				Log.info("TASSIGN");
 				GraphElement x = to;
 				GraphElement y = from;
+				Log.info("TASSIGN (x=y, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")");
 				if(handleAssignment(x, y)){
 					typesChanged = true;
 				}
@@ -333,7 +335,6 @@ public class PurityAnalysis {
 		}
 		if(removeTypes(x, xTypesToRemove)){
 			typesChanged = true;
-			Log.info(x.getAttr(XCSG.name) + " Types Changed " + getTypes(x));
 		}
 		
 		// process s(y)
@@ -353,7 +354,6 @@ public class PurityAnalysis {
 		}
 		if(removeTypes(y, yTypesToRemove)){
 			typesChanged = true;
-			Log.info(y.getAttr(XCSG.name) + " Types Changed " + getTypes(y));
 		}
 		return typesChanged;
 	}
@@ -374,7 +374,6 @@ public class PurityAnalysis {
 		// x must be mutable
 		if(setTypes(x, ImmutabilityTypes.MUTABLE)){
 			typesChanged = true;
-			Log.info(x.getAttr(XCSG.name) + " Types Changed " + getTypes(x));
 		}
 		ImmutabilityTypes xType = ImmutabilityTypes.MUTABLE;
 		
@@ -384,7 +383,6 @@ public class PurityAnalysis {
 			for(GraphElement containerField : getContainerFields(x)){
 				if(setTypes(containerField, ImmutabilityTypes.MUTABLE)){
 					typesChanged = true;
-					Log.info(containerField.getAttr(XCSG.name) + " Types Changed " + getTypes(containerField));
 				}
 			}
 		}
@@ -407,7 +405,6 @@ public class PurityAnalysis {
 		}
 		if(removeTypes(y, yTypesToRemove)){
 			typesChanged = true;
-			Log.info(y.getAttr(XCSG.name) + " Types Changed " + getTypes(y));
 		}
 		
 		// process s(f)
@@ -428,7 +425,6 @@ public class PurityAnalysis {
 		}
 		if(removeTypes(f, fTypesToRemove)){
 			typesChanged = true;
-			Log.info(f.getAttr(XCSG.name) + " Types Changed " + getTypes(f));
 		}
 		return typesChanged;
 	}
@@ -453,7 +449,6 @@ public class PurityAnalysis {
 			for(GraphElement containerField : getContainerFields(f)){
 				if(setTypes(containerField, ImmutabilityTypes.MUTABLE)){
 					typesChanged = true;
-					Log.info(containerField.getAttr(XCSG.name) + " Types Changed " + getTypes(containerField));
 				}
 			}
 		}
@@ -478,7 +473,6 @@ public class PurityAnalysis {
 		}
 		if(removeTypes(x, xTypesToRemove)){
 			typesChanged = true;
-			Log.info(x.getAttr(XCSG.name) + " Types Changed " + getTypes(x));
 		}
 		
 		// process s(y)
@@ -501,7 +495,6 @@ public class PurityAnalysis {
 		}
 		if(removeTypes(y, yTypesToRemove)){
 			typesChanged = true;
-			Log.info(y.getAttr(XCSG.name) + " Types Changed " + getTypes(y));
 		}
 		
 		// process s(f)
@@ -524,7 +517,6 @@ public class PurityAnalysis {
 		}
 		if(removeTypes(f, fTypesToRemove)){
 			typesChanged = true;
-			Log.info(f.getAttr(XCSG.name) + " Types Changed " + getTypes(f));
 		}
 		
 		return typesChanged;
@@ -556,7 +548,6 @@ public class PurityAnalysis {
 		}
 		if(removeTypes(x, xTypesToRemove)){
 			typesChanged = true;
-			Log.info(x.getAttr(XCSG.name) + " Types Changed " + getTypes(x));
 		}
 		
 		// process s(ret)
@@ -577,7 +568,6 @@ public class PurityAnalysis {
 		}
 		if(removeTypes(ret, retTypesToRemove)){
 			typesChanged = true;
-			Log.info(ret.getAttr(XCSG.name) + " Types Changed " + getTypes(ret));
 		}
 		/////////////////////// end qx adapt qret <: qx /////////////////////// 
 		
@@ -603,7 +593,6 @@ public class PurityAnalysis {
 		}
 		if(removeTypes(y, yTypesToRemove)){
 			typesChanged = true;
-			Log.info(y.getAttr(XCSG.name) + " Types Changed " + getTypes(y));
 		}
 		
 		// process s(x)
@@ -626,7 +615,6 @@ public class PurityAnalysis {
 		}
 		if(removeTypes(x, xTypesToRemove)){
 			typesChanged = true;
-			Log.info(x.getAttr(XCSG.name) + " Types Changed " + getTypes(x));
 		}
 		
 		// process s(identity)
@@ -649,7 +637,6 @@ public class PurityAnalysis {
 		}
 		if(removeTypes(identity, identityTypesToRemove)){
 			typesChanged = true;
-			Log.info(identity.getAttr(XCSG.name) + " Types Changed " + getTypes(identity));
 		}
 		
 		/////////////////////// end qy <: qx adapt qthis ///////////////////////
@@ -683,7 +670,6 @@ public class PurityAnalysis {
 			}
 			if(removeTypes(x, xTypesToRemove)){
 				typesChanged = true;
-				Log.info(x.getAttr(XCSG.name) + " Types Changed " + getTypes(x));
 			}
 			
 			// process s(z)
@@ -706,7 +692,6 @@ public class PurityAnalysis {
 			}
 			if(removeTypes(z, zTypesToRemove)){
 				typesChanged = true;
-				Log.info(z.getAttr(XCSG.name) + " Types Changed " + getTypes(z));
 			}
 			
 			// process s(p)
@@ -729,7 +714,6 @@ public class PurityAnalysis {
 			}
 			if(removeTypes(p, pTypesToRemove)){
 				typesChanged = true;
-				Log.info(p.getAttr(XCSG.name) + " Types Changed " + getTypes(p));
 			}
 		}
 		
@@ -746,8 +730,12 @@ public class PurityAnalysis {
 	 */
 	private static boolean removeTypes(GraphElement ge, Set<ImmutabilityTypes> typesToRemove){
 		Set<ImmutabilityTypes> typeSet = getTypes(ge);
-		Log.info("Remove: " + typesToRemove.toString() + " from " + typeSet.toString() + " for " + ge.getAttr(XCSG.name));
-		return typeSet.removeAll(typesToRemove);
+		String logMessage = "Remove: " + typesToRemove.toString() + " from " + typeSet.toString() + " for " + ge.getAttr(XCSG.name);
+		boolean typesChanged = typeSet.removeAll(typesToRemove);
+		if(typesChanged){
+			Log.info(logMessage);
+		}
+		return typesChanged;
 	}
 	
 	/**
@@ -774,17 +762,22 @@ public class PurityAnalysis {
 	private static boolean setTypes(GraphElement ge, Set<ImmutabilityTypes> typesToSet){
 		Set<ImmutabilityTypes> typeSet = getTypes(ge);
 		
-		Log.info("Set: " + typeSet.toString() + " to " + typesToSet.toString() + " for " + ge.getAttr(XCSG.name));
+		String logMessage = "Set: " + typeSet.toString() + " to " + typesToSet.toString() + " for " + ge.getAttr(XCSG.name);
 		
-		boolean result;
+		boolean typesChanged;
 		if(typeSet.containsAll(typesToSet) && typesToSet.containsAll(typeSet)){
-			result = false;
+			typesChanged = false;
 		} else {
 			typeSet.clear();
 			typeSet.addAll(typesToSet);
-			result = true;
+			typesChanged = true;
 		}
-		return result;
+		
+		if(typesChanged){
+			Log.info(logMessage);
+		}
+		
+		return typesChanged;
 	}
 	
 	/**
