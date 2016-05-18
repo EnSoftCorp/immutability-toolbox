@@ -320,9 +320,11 @@ public class PurityAnalysis {
 		Set<ImmutabilityTypes> xTypesToRemove = new HashSet<ImmutabilityTypes>();
 		for(ImmutabilityTypes xType : xTypes){
 			boolean isSatisfied = false;
+			satisfied:
 			for(ImmutabilityTypes yType : yTypes){
 				if(xType.compareTo(yType) >= 0){
 					isSatisfied = true;
+					break satisfied;
 				}
 			}
 			if(!isSatisfied){
@@ -338,9 +340,11 @@ public class PurityAnalysis {
 		Set<ImmutabilityTypes> yTypesToRemove = new HashSet<ImmutabilityTypes>();
 		for(ImmutabilityTypes yType : yTypes){
 			boolean isSatisfied = false;
+			satisfied:
 			for(ImmutabilityTypes xType : xTypes){
 				if(xType.compareTo(yType) >= 0){
 					isSatisfied = true;
+					break satisfied;
 				}
 			}
 			if(!isSatisfied){
@@ -389,10 +393,12 @@ public class PurityAnalysis {
 		Set<ImmutabilityTypes> yTypesToRemove = new HashSet<ImmutabilityTypes>();
 		for(ImmutabilityTypes yType : yTypes){
 			boolean isSatisfied = false;
+			satisfied:
 			for(ImmutabilityTypes fType : fTypes){
 				ImmutabilityTypes xAdaptedF = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, fType);
 				if(xAdaptedF.compareTo(yType) >= 0){
 					isSatisfied = true;
+					break satisfied;
 				}
 			}
 			if(!isSatisfied){
@@ -408,10 +414,12 @@ public class PurityAnalysis {
 		Set<ImmutabilityTypes> fTypesToRemove = new HashSet<ImmutabilityTypes>();
 		for(ImmutabilityTypes fType : fTypes){
 			boolean isSatisfied = false;
+			satisfied:
 			for(ImmutabilityTypes yType : yTypes){
 				ImmutabilityTypes xAdaptedF = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, fType);
 				if(xAdaptedF.compareTo(yType) >= 0){
 					isSatisfied = true;
+					break satisfied;
 				}
 			}
 			if(!isSatisfied){
@@ -454,11 +462,13 @@ public class PurityAnalysis {
 		Set<ImmutabilityTypes> xTypesToRemove = new HashSet<ImmutabilityTypes>();
 		for(ImmutabilityTypes xType : xTypes){
 			boolean isSatisfied = false;
+			satisfied:
 			for(ImmutabilityTypes yType : yTypes){
 				for(ImmutabilityTypes fType : fTypes){
 					ImmutabilityTypes yAdaptedF = ImmutabilityTypes.getAdaptedFieldViewpoint(yType, fType);
 					if(xType.compareTo(yAdaptedF) >= 0){
 						isSatisfied = true;
+						break satisfied;
 					}
 				}
 			}
@@ -475,11 +485,13 @@ public class PurityAnalysis {
 		Set<ImmutabilityTypes> yTypesToRemove = new HashSet<ImmutabilityTypes>();
 		for(ImmutabilityTypes yType : yTypes){
 			boolean isSatisfied = false;
+			satisfied:
 			for(ImmutabilityTypes xType : xTypes){
 				for(ImmutabilityTypes fType : fTypes){
 					ImmutabilityTypes yAdaptedF = ImmutabilityTypes.getAdaptedFieldViewpoint(yType, fType);
 					if(xType.compareTo(yAdaptedF) >= 0){
 						isSatisfied = true;
+						break satisfied;
 					}
 				}
 			}
@@ -496,11 +508,13 @@ public class PurityAnalysis {
 		Set<ImmutabilityTypes> fTypesToRemove = new HashSet<ImmutabilityTypes>();
 		for(ImmutabilityTypes fType : fTypes){
 			boolean isSatisfied = false;
+			satisfied:
 			for(ImmutabilityTypes xType : xTypes){
 				for(ImmutabilityTypes yType : yTypes){
 					ImmutabilityTypes yAdaptedF = ImmutabilityTypes.getAdaptedFieldViewpoint(yType, fType);
 					if(xType.compareTo(yAdaptedF) >= 0){
 						isSatisfied = true;
+						break satisfied;
 					}
 				}
 			}
@@ -525,114 +539,199 @@ public class PurityAnalysis {
 		
 		/////////////////////// start qx adapt qret <: qx /////////////////////// 
 		// process s(x)
-//		Set<ImmutabilityTypes> xTypesToRemove = new HashSet<ImmutabilityTypes>();
-//		for(ImmutabilityTypes xType : xTypes){
-//			boolean isSatisfied = false;
-//			for(ImmutabilityTypes retType : retTypes){
-//				ImmutabilityTypes xAdaptedRet = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, retType);
-//				if(xType.compareTo(xAdaptedRet) >= 0){
-//					isSatisfied = true;
-//				}
-//			}
-//			if(!isSatisfied){
-//				xTypesToRemove.add(xType);
-//			}
-//		}
-//		if(removeTypes(x, xTypesToRemove)){
-//			typesChanged = true;
-//			Log.info(x.getAttr(XCSG.name) + " Types Changed " + getTypes(x));
-//		}
-//		
-//		// process s(ret)
-//		Set<ImmutabilityTypes> retTypesToRemove = new HashSet<ImmutabilityTypes>();
-//		for(ImmutabilityTypes retType : retTypes){
-//			boolean isSatisfied = false;
-//			for(ImmutabilityTypes xType : xTypes){
-//				ImmutabilityTypes xAdaptedRet = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, retType);
-//				if(xType.compareTo(xAdaptedRet) >= 0){
-//					isSatisfied = true;
-//				}
-//			}
-//			if(!isSatisfied){
-//				retTypesToRemove.add(retType);
-//			}
-//		}
-//		if(removeTypes(ret, retTypesToRemove)){
-//			typesChanged = true;
-//			Log.info(ret.getAttr(XCSG.name) + " Types Changed " + getTypes(ret));
-//		}
-//		/////////////////////// end qx adapt qret <: qx /////////////////////// 
-//		
-//		/////////////////////// start qy <: qx adapt qthis /////////////////////// 
-//		
-//		// process s(y)
-//		Set<ImmutabilityTypes> yTypesToRemove = new HashSet<ImmutabilityTypes>();
-//		for(ImmutabilityTypes yType : yTypes){
-//			boolean isSatisfied = false;
-//			for(ImmutabilityTypes xType : xTypes){
-//				for(ImmutabilityTypes identityType : identityTypes){
-//					ImmutabilityTypes xAdaptedThis = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, identityType);
-//					if(xAdaptedThis.compareTo(yType) >= 0){
-//						isSatisfied = true;
-//					}
-//				}
-//			}
-//			if(!isSatisfied){
-//				yTypesToRemove.add(yType);
-//			}
-//		}
-//		if(removeTypes(y, yTypesToRemove)){
-//			typesChanged = true;
-//			Log.info(y.getAttr(XCSG.name) + " Types Changed " + getTypes(y));
-//		}
-//		
-//		// process s(x)
-//		Set<ImmutabilityTypes> xTypesToRemove = new HashSet<ImmutabilityTypes>();
-//		for(ImmutabilityTypes xType : xTypes){
-//			boolean isSatisfied = false;
-//			for(ImmutabilityTypes yType : yTypes){
-//				for(ImmutabilityTypes identityType : identityTypes){
-//					ImmutabilityTypes xAdaptedThis = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, identityType);
-//					if(xAdaptedThis.compareTo(yType) >= 0){
-//						isSatisfied = true;
-//					}
-//				}
-//			}
-//			if(!isSatisfied){
-//				xTypesToRemove.add(xType);
-//			}
-//		}
-//		if(removeTypes(x, xTypesToRemove)){
-//			typesChanged = true;
-//			Log.info(x.getAttr(XCSG.name) + " Types Changed " + getTypes(x));
-//		}
-//		
-//		// process s(identity)
-//		Set<ImmutabilityTypes> identityTypesToRemove = new HashSet<ImmutabilityTypes>();
-//		for(ImmutabilityTypes identityType : identityTypes){
-//			boolean isSatisfied = false;
-//			for(ImmutabilityTypes xType : xTypes){
-//				for(ImmutabilityTypes yType : yTypes){
-//					ImmutabilityTypes xAdaptedThis = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, identityType);
-//					if(xAdaptedThis.compareTo(yType) >= 0){
-//						isSatisfied = true;
-//					}
-//				}
-//			}
-//			if(!isSatisfied){
-//				identityTypesToRemove.add(identityType);
-//			}
-//		}
-//		if(removeTypes(identity, identityTypesToRemove)){
-//			typesChanged = true;
-//			Log.info(identity.getAttr(XCSG.name) + " Types Changed " + getTypes(identity));
-//		}
+		Set<ImmutabilityTypes> xTypesToRemove = new HashSet<ImmutabilityTypes>();
+		for(ImmutabilityTypes xType : xTypes){
+			boolean isSatisfied = false;
+			satisfied:
+			for(ImmutabilityTypes retType : retTypes){
+				ImmutabilityTypes xAdaptedRet = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, retType);
+				if(xType.compareTo(xAdaptedRet) >= 0){
+					isSatisfied = true;
+					break satisfied;
+				}
+			}
+			if(!isSatisfied){
+				xTypesToRemove.add(xType);
+			}
+		}
+		if(removeTypes(x, xTypesToRemove)){
+			typesChanged = true;
+			Log.info(x.getAttr(XCSG.name) + " Types Changed " + getTypes(x));
+		}
+		
+		// process s(ret)
+		Set<ImmutabilityTypes> retTypesToRemove = new HashSet<ImmutabilityTypes>();
+		for(ImmutabilityTypes retType : retTypes){
+			boolean isSatisfied = false;
+			satisfied:
+			for(ImmutabilityTypes xType : xTypes){
+				ImmutabilityTypes xAdaptedRet = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, retType);
+				if(xType.compareTo(xAdaptedRet) >= 0){
+					isSatisfied = true;
+					break satisfied;
+				}
+			}
+			if(!isSatisfied){
+				retTypesToRemove.add(retType);
+			}
+		}
+		if(removeTypes(ret, retTypesToRemove)){
+			typesChanged = true;
+			Log.info(ret.getAttr(XCSG.name) + " Types Changed " + getTypes(ret));
+		}
+		/////////////////////// end qx adapt qret <: qx /////////////////////// 
+		
+		/////////////////////// start qy <: qx adapt qthis /////////////////////// 
+		
+		// process s(y)
+		Set<ImmutabilityTypes> yTypesToRemove = new HashSet<ImmutabilityTypes>();
+		for(ImmutabilityTypes yType : yTypes){
+			boolean isSatisfied = false;
+			satisfied:
+			for(ImmutabilityTypes xType : xTypes){
+				for(ImmutabilityTypes identityType : identityTypes){
+					ImmutabilityTypes xAdaptedThis = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, identityType);
+					if(xAdaptedThis.compareTo(yType) >= 0){
+						isSatisfied = true;
+						break satisfied;
+					}
+				}
+			}
+			if(!isSatisfied){
+				yTypesToRemove.add(yType);
+			}
+		}
+		if(removeTypes(y, yTypesToRemove)){
+			typesChanged = true;
+			Log.info(y.getAttr(XCSG.name) + " Types Changed " + getTypes(y));
+		}
+		
+		// process s(x)
+		xTypesToRemove = new HashSet<ImmutabilityTypes>();
+		for(ImmutabilityTypes xType : xTypes){
+			boolean isSatisfied = false;
+			satisfied:
+			for(ImmutabilityTypes yType : yTypes){
+				for(ImmutabilityTypes identityType : identityTypes){
+					ImmutabilityTypes xAdaptedThis = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, identityType);
+					if(xAdaptedThis.compareTo(yType) >= 0){
+						isSatisfied = true;
+						break satisfied;
+					}
+				}
+			}
+			if(!isSatisfied){
+				xTypesToRemove.add(xType);
+			}
+		}
+		if(removeTypes(x, xTypesToRemove)){
+			typesChanged = true;
+			Log.info(x.getAttr(XCSG.name) + " Types Changed " + getTypes(x));
+		}
+		
+		// process s(identity)
+		Set<ImmutabilityTypes> identityTypesToRemove = new HashSet<ImmutabilityTypes>();
+		for(ImmutabilityTypes identityType : identityTypes){
+			boolean isSatisfied = false;
+			satisfied:
+			for(ImmutabilityTypes xType : xTypes){
+				for(ImmutabilityTypes yType : yTypes){
+					ImmutabilityTypes xAdaptedThis = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, identityType);
+					if(xAdaptedThis.compareTo(yType) >= 0){
+						isSatisfied = true;
+						break satisfied;
+					}
+				}
+			}
+			if(!isSatisfied){
+				identityTypesToRemove.add(identityType);
+			}
+		}
+		if(removeTypes(identity, identityTypesToRemove)){
+			typesChanged = true;
+			Log.info(identity.getAttr(XCSG.name) + " Types Changed " + getTypes(identity));
+		}
 		
 		/////////////////////// end qy <: qx adapt qthis ///////////////////////
-		
+
 		/////////////////////// start qz <: qx adapt qp ///////////////////////
 				
-		// TODO: implement
+		// for each z,p pair process s(x), s(z), and s(p)
+		for(GraphElement parametersPassedEdge : parametersPassedEdges){
+			GraphElement z = parametersPassedEdge.getNode(EdgeDirection.FROM);
+			GraphElement p = parametersPassedEdge.getNode(EdgeDirection.TO);
+			Set<ImmutabilityTypes> zTypes = getTypes(z);
+			Set<ImmutabilityTypes> pTypes = getTypes(p);
+			
+			// process s(x)
+			xTypesToRemove = new HashSet<ImmutabilityTypes>();
+			for(ImmutabilityTypes xType : xTypes){
+				boolean isSatisfied = false;
+				satisfied:
+				for(ImmutabilityTypes zType : zTypes){
+					for(ImmutabilityTypes pType : pTypes){
+						ImmutabilityTypes xAdaptedP = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, pType);
+						if(xAdaptedP.compareTo(zType) >= 0){
+							isSatisfied = true;
+							break satisfied;
+						}
+					}
+				}
+				if(!isSatisfied){
+					xTypesToRemove.add(xType);
+				}
+			}
+			if(removeTypes(x, xTypesToRemove)){
+				typesChanged = true;
+				Log.info(x.getAttr(XCSG.name) + " Types Changed " + getTypes(x));
+			}
+			
+			// process s(z)
+			Set<ImmutabilityTypes> zTypesToRemove = new HashSet<ImmutabilityTypes>();
+			for(ImmutabilityTypes zType : zTypes){
+				boolean isSatisfied = false;
+				satisfied:
+				for(ImmutabilityTypes xType : xTypes){
+					for(ImmutabilityTypes pType : pTypes){
+						ImmutabilityTypes xAdaptedP = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, pType);
+						if(xAdaptedP.compareTo(zType) >= 0){
+							isSatisfied = true;
+							break satisfied;
+						}
+					}
+				}
+				if(!isSatisfied){
+					zTypesToRemove.add(zType);
+				}
+			}
+			if(removeTypes(z, zTypesToRemove)){
+				typesChanged = true;
+				Log.info(z.getAttr(XCSG.name) + " Types Changed " + getTypes(z));
+			}
+			
+			// process s(p)
+			Set<ImmutabilityTypes> pTypesToRemove = new HashSet<ImmutabilityTypes>();
+			for(ImmutabilityTypes pType : pTypes){
+				boolean isSatisfied = false;
+				satisfied:
+				for(ImmutabilityTypes xType : xTypes){
+					for(ImmutabilityTypes zType : zTypes){
+						ImmutabilityTypes xAdaptedP = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, pType);
+						if(xAdaptedP.compareTo(zType) >= 0){
+							isSatisfied = true;
+							break satisfied;
+						}
+					}
+				}
+				if(!isSatisfied){
+					pTypesToRemove.add(pType);
+				}
+			}
+			if(removeTypes(p, pTypesToRemove)){
+				typesChanged = true;
+				Log.info(p.getAttr(XCSG.name) + " Types Changed " + getTypes(p));
+			}
+		}
 		
 		/////////////////////// end qz <: qx adapt qp ///////////////////////
 		
