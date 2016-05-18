@@ -56,6 +56,11 @@ public class PurityAnalysis {
 	private static final String IMMUTABILITY_QUALIFIERS = "IMMUTABILITY_QUALIFIERS";
 	
 	/**
+	 * Enables logging to the Atlas log
+	 */
+	private static final boolean LOG_ENABLED = true;
+	
+	/**
 	 * Encodes the immutability qualifications as types 
 	 * 
 	 * @author Ben Holland
@@ -174,10 +179,21 @@ public class PurityAnalysis {
 		
 		int iteration = 0;
 		while(true){
-			Log.info("Iteration: " + iteration++);
+			if(LOG_ENABLED) Log.info("Iteration: " + iteration++);
 			boolean fixedPoint = true;
-			// TODO: consider removing workItems that only have the mutable tag from future iterations...
+
+			// mutable only work items to remove
+			// need to remove them after this iteration is completed
+			// because they will have changed in the last iteration
+			// and may still have information to communicate to neighbors
+			HashSet<GraphElement> mutables = new HashSet<GraphElement>();
+			
 			for(GraphElement workItem : worklist){
+				Set<ImmutabilityTypes> workItemTypes = getTypes(workItem);
+				if(workItemTypes.contains(ImmutabilityTypes.MUTABLE) && workItemTypes.size() == 1){
+					mutables.add(workItem);
+				}
+				
 				boolean typesChanged = applyInferenceRules(workItem);
 				if(typesChanged){
 					fixedPoint = false;
@@ -185,6 +201,10 @@ public class PurityAnalysis {
 			}
 			if(fixedPoint){
 				break;
+			} else {
+				// nothing more can change based on these work items
+				// so don't consider them anymore
+				worklist.removeAll(mutables);
 			}
 		}
 		
@@ -245,7 +265,7 @@ public class PurityAnalysis {
 					x = interproceduralEdgeToField.getNode(EdgeDirection.FROM);
 				}
 				
-				Log.info("TWRITE (x.f=y, x=" + x.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")");
+				if(LOG_ENABLED) Log.info("TWRITE (x.f=y, x=" + x.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")");
 				if(handleFieldWrite(x, f, y)){
 					typesChanged = true;
 				}
@@ -273,7 +293,7 @@ public class PurityAnalysis {
 					y = interproceduralEdgeFromField.getNode(EdgeDirection.FROM);
 				}
 				
-				Log.info("TREAD (x=y.f, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ")");
+				if(LOG_ENABLED) Log.info("TREAD (x=y.f, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ")");
 				if(handleFieldRead(x, y, f)){
 					typesChanged = true;
 				}
@@ -321,7 +341,7 @@ public class PurityAnalysis {
 				AtlasSet<GraphElement> parametersPassedEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow)
 						.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
 				
-				Log.info("TCALL (x=y.m(z), x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", m=" + method.getAttr("##signature") + ")");
+				if(LOG_ENABLED) Log.info("TCALL (x=y.m(z), x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", m=" + method.getAttr("##signature") + ")");
 				if(handleCall(x, y, identity, method, ret, parametersPassedEdges)){
 					typesChanged = true;
 				}
@@ -333,7 +353,7 @@ public class PurityAnalysis {
 			if(!involvesField && !involvesCallsite){
 				GraphElement x = to;
 				GraphElement y = from;
-				Log.info("TASSIGN (x=y, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")");
+				if(LOG_ENABLED) Log.info("TASSIGN (x=y, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")");
 				if(handleAssignment(x, y)){
 					typesChanged = true;
 				}
@@ -782,7 +802,7 @@ public class PurityAnalysis {
 		Q overridesEdges = Common.universe().edgesTaggedWithAny(XCSG.Overrides);
 		GraphElement overriddenMethod = overridesEdges.successors(Common.toQ(method)).eval().nodes().getFirst();
 		if(overriddenMethod != null){
-			Log.info("TCALL (Overridden Method)");
+			if(LOG_ENABLED) Log.info("TCALL (Overridden Method)");
 			
 			// Method (method) -Contains-> ReturnValue (ret)
 			GraphElement overriddenMethodReturn = Common.toQ(overriddenMethod).children().nodesTaggedWithAny(XCSG.ReturnValue).eval().nodes().getFirst();
@@ -948,7 +968,7 @@ public class PurityAnalysis {
 		String logMessage = "Remove: " + typesToRemove.toString() + " from " + typeSet.toString() + " for " + ge.getAttr(XCSG.name);
 		boolean typesChanged = typeSet.removeAll(typesToRemove);
 		if(typesChanged){
-			Log.info(logMessage);
+			if(LOG_ENABLED) Log.info(logMessage);
 		}
 		return typesChanged;
 	}
@@ -989,7 +1009,7 @@ public class PurityAnalysis {
 		}
 		
 		if(typesChanged){
-			Log.info(logMessage);
+			if(LOG_ENABLED) Log.info(logMessage);
 		}
 		
 		return typesChanged;
@@ -1204,8 +1224,20 @@ public class PurityAnalysis {
 	 */
 	private static boolean isPureMethodDefault(GraphElement method){
 		// note by convention .equals, .hashCode, .toString, and .compareTo
-		// are pure methods, but this is not enforced in Java, so we are not
-		// assuming this to be true
+		// are pure methods, but this is not enforced in overridden methods
+		// so we are not assuming it to be universally true
+		
+		// we could however consider some of the java.lang.Object native methods as pure
+		// Object's native methods include: getClass, clone, hashCode, notifyAll, notify, wait, registerNatives
+		if(method.taggedWith(XCSG.Java.nativeMethod)){
+			if(method.getAttr(XCSG.name).equals("registerNatives")){
+				// registerNatives is a JNI function that registers native implementations and Object's native methods
+				return false;
+			} else if(!Common.toQ(method).intersection(Common.typeSelect("java.lang", "Object").children()).eval().nodes().isEmpty()){
+				return true;
+			}
+		}
+
 		return false;
 	}
 	
