@@ -1,7 +1,7 @@
 package com.ensoftcorp.open.purity.analysis;
 
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.Set;
 import java.util.TreeSet;
@@ -53,6 +53,12 @@ public class PurityAnalysis {
 	public static final String MUTABLE = "MUTABLE";
 	
 	/**
+	 * Theoretically each item should only ever be visited at most 3 times
+	 * So after 4 iterations the fixed point should have been reached
+	 */
+	private static final int MAX_ITERATIONS = 4;
+	
+	/**
 	 * Used as an attribute key to temporarily compute the potential immutability qualifiers
 	 */
 	private static final String IMMUTABILITY_QUALIFIERS = "IMMUTABILITY_QUALIFIERS";
@@ -65,7 +71,7 @@ public class PurityAnalysis {
 	/**
 	 * Enables inference rule logging to the Atlas log
 	 */
-	private static final boolean LOG_INFERENCE_RULES_ENABLED = true;
+	private static final boolean LOG_INFERENCE_RULES_ENABLED = false;
 	
 	/**
 	 * Enables verbose debug logging to the Atlas log
@@ -159,17 +165,26 @@ public class PurityAnalysis {
 	 * Runs the side effect (purity) analysis
 	 * @return Returns the time in milliseconds taken to complete the analysis
 	 */
-	public static double run(){
+	public static boolean run(){
+		if(LOG_ENABLED) Log.info("Purity analysis started");
 		long start = System.nanoTime();
-		runAnalysis();
+		boolean successful = runAnalysis();
 		long stop = System.nanoTime();
-		return (stop-start)/1000.0/1000.0;
+		double runtime = (stop-start)/1000.0/1000.0;
+		if(LOG_ENABLED) {
+			if(successful){
+				Log.info("Purity analysis completed successfully in " + runtime + " ms");
+			} else {
+				Log.warning("Purity analysis completed unsuccessfully in " + runtime + " ms");
+			}
+		}
+		return successful;
 	}
 	
 	/**
 	 * Runs the side effect (purity) analysis
 	 */
-	private static void runAnalysis(){
+	private static boolean runAnalysis(){
 		TreeSet<GraphElement> worklist = new TreeSet<GraphElement>();
 
 		// add all assignments to worklist
@@ -178,24 +193,14 @@ public class PurityAnalysis {
 			worklist.add(assignment);
 		}
 		
-		int iteration = 0;
+		boolean successful = false;
+		int iteration = 1;
 		while(true){
-			if(LOG_ENABLED) Log.info("Purity analysis iteration: " + iteration++);
+			if(LOG_ENABLED) Log.info("Purity analysis iteration: " + iteration);
 			long startIteration = System.nanoTime();
 			boolean fixedPoint = true;
 
-			// mutable only work items to remove
-			// need to remove them after this iteration is completed
-			// because they will have changed in the last iteration
-			// and may still have information to communicate to neighbors
-			HashSet<GraphElement> mutables = new HashSet<GraphElement>();
-			
 			for(GraphElement workItem : worklist){
-				Set<ImmutabilityTypes> workItemTypes = getTypes(workItem);
-				if(workItemTypes.contains(ImmutabilityTypes.MUTABLE) && workItemTypes.size() == 1){
-					mutables.add(workItem);
-				}
-				
 				if(DEBUG_LOG_ENABLED) Log.info("Applying inference rules for " + workItem.getAttr(XCSG.name) + ", Address: " + workItem.address().toAddressString());
 				long startInferenceRules = System.nanoTime();
 				boolean typesChanged = applyInferenceRules(workItem);
@@ -211,15 +216,18 @@ public class PurityAnalysis {
 			if(LOG_ENABLED) Log.info("Purity analysis iteration: " + iteration + " completed in " + (stopIteration-startIteration)/1000.0/1000.0 + "ms");
 			
 			if(fixedPoint){
+				if(LOG_ENABLED) Log.info("Purity analysis reached fixed point in " + iteration + " iterations");
+				successful = true;
+				break;
+			} else if(iteration == MAX_ITERATIONS){
+				Log.warning("Purity analysis terminated. The maximum number of iterations was exceeded and the result may not be correct for all case!");
 				break;
 			} else {
-				// nothing more can change based on these work items
-				// so don't consider them anymore
-				worklist.removeAll(mutables);
+				// fixed point has not been reached
+				// go for another pass
+				iteration++;
 			}
 		}
-		
-		if(LOG_ENABLED) Log.info("Purity analysis reached fixed point in " + iteration + " iterations");
 		
 		// flattens the type hierarchy to the maximal types
 		// and sets the final attribute values for the
@@ -232,7 +240,7 @@ public class PurityAnalysis {
 		if(LOG_ENABLED) Log.info("Applying method purity tags...");
 		tagPureMethods();
 		
-		if(LOG_ENABLED) Log.info("Purity analysis completed");
+		return successful;
 	}
 	
 	/**
@@ -287,7 +295,7 @@ public class PurityAnalysis {
 						typesChanged = true;
 					}
 				} catch (Exception e){
-					if(LOG_ENABLED) Log.error("Error parsing field write", e);
+					if(LOG_ENABLED) Log.error("Error parsing field write for work item: " + workItem.address().toAddressString(), e);
 				}
 				
 				involvesField = true;
@@ -317,7 +325,7 @@ public class PurityAnalysis {
 						typesChanged = true;
 					}
 				} catch (Exception e){
-					if(LOG_ENABLED) Log.error("Error parsing field read", e);
+					if(LOG_ENABLED) Log.error("Error parsing field read for work item: " + workItem.address().toAddressString(), e);
 				}
 				
 				involvesField = true;
@@ -367,7 +375,7 @@ public class PurityAnalysis {
 						typesChanged = true;
 					}
 				} catch (Exception e){
-					if(LOG_ENABLED) Log.error("Error parsing callsite", e);
+					if(LOG_ENABLED) Log.error("Error parsing callsite for work item: " + workItem.address().toAddressString(), e);
 				}
 				
 				involvesCallsite = true;
@@ -417,7 +425,7 @@ public class PurityAnalysis {
 		
 		// process s(x)
 		if(DEBUG_LOG_ENABLED) Log.info("Process s(x)");
-		Set<ImmutabilityTypes> xTypesToRemove = new HashSet<ImmutabilityTypes>();
+		Set<ImmutabilityTypes> xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes xType : xTypes){
 			boolean isSatisfied = false;
 			satisfied:
@@ -437,7 +445,7 @@ public class PurityAnalysis {
 		
 		// process s(y)
 		if(DEBUG_LOG_ENABLED) Log.info("Process s(y)");
-		Set<ImmutabilityTypes> yTypesToRemove = new HashSet<ImmutabilityTypes>();
+		Set<ImmutabilityTypes> yTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes yType : yTypes){
 			boolean isSatisfied = false;
 			satisfied:
@@ -508,7 +516,7 @@ public class PurityAnalysis {
 
 		// process s(y)
 		if(DEBUG_LOG_ENABLED) Log.info("Process s(y)");
-		Set<ImmutabilityTypes> yTypesToRemove = new HashSet<ImmutabilityTypes>();
+		Set<ImmutabilityTypes> yTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes yType : yTypes){
 			boolean isSatisfied = false;
 			satisfied:
@@ -529,7 +537,7 @@ public class PurityAnalysis {
 		
 		// process s(f)
 		if(DEBUG_LOG_ENABLED) Log.info("Process s(f)");
-		Set<ImmutabilityTypes> fTypesToRemove = new HashSet<ImmutabilityTypes>();
+		Set<ImmutabilityTypes> fTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes fType : fTypes){
 			boolean isSatisfied = false;
 			satisfied:
@@ -596,7 +604,7 @@ public class PurityAnalysis {
 		
 		// process s(x)
 		if(DEBUG_LOG_ENABLED) Log.info("Process s(x)");
-		Set<ImmutabilityTypes> xTypesToRemove = new HashSet<ImmutabilityTypes>();
+		Set<ImmutabilityTypes> xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes xType : xTypes){
 			boolean isSatisfied = false;
 			satisfied:
@@ -619,7 +627,7 @@ public class PurityAnalysis {
 		
 		// process s(y)
 		if(DEBUG_LOG_ENABLED) Log.info("Process s(y)");
-		Set<ImmutabilityTypes> yTypesToRemove = new HashSet<ImmutabilityTypes>();
+		Set<ImmutabilityTypes> yTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes yType : yTypes){
 			boolean isSatisfied = false;
 			satisfied:
@@ -642,7 +650,7 @@ public class PurityAnalysis {
 		
 		// process s(f)
 		if(DEBUG_LOG_ENABLED) Log.info("Process s(f)");
-		Set<ImmutabilityTypes> fTypesToRemove = new HashSet<ImmutabilityTypes>();
+		Set<ImmutabilityTypes> fTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes fType : fTypes){
 			boolean isSatisfied = false;
 			satisfied:
@@ -723,7 +731,7 @@ public class PurityAnalysis {
 		
 		// process s(x)
 		if(DEBUG_LOG_ENABLED) Log.info("Process s(x)");
-		Set<ImmutabilityTypes> xTypesToRemove = new HashSet<ImmutabilityTypes>();
+		Set<ImmutabilityTypes> xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes xType : xTypes){
 			boolean isSatisfied = false;
 			satisfied:
@@ -744,7 +752,7 @@ public class PurityAnalysis {
 		
 		// process s(ret)
 		if(DEBUG_LOG_ENABLED) Log.info("Process s(ret)");
-		Set<ImmutabilityTypes> retTypesToRemove = new HashSet<ImmutabilityTypes>();
+		Set<ImmutabilityTypes> retTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes retType : retTypes){
 			boolean isSatisfied = false;
 			satisfied:
@@ -770,7 +778,7 @@ public class PurityAnalysis {
 		
 		// process s(y)
 		if(DEBUG_LOG_ENABLED) Log.info("Process s(y)");
-		Set<ImmutabilityTypes> yTypesToRemove = new HashSet<ImmutabilityTypes>();
+		Set<ImmutabilityTypes> yTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes yType : yTypes){
 			boolean isSatisfied = false;
 			satisfied:
@@ -793,7 +801,7 @@ public class PurityAnalysis {
 		
 		// process s(x)
 		if(DEBUG_LOG_ENABLED) Log.info("Process s(x)");
-		xTypesToRemove = new HashSet<ImmutabilityTypes>();
+		xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes xType : xTypes){
 			boolean isSatisfied = false;
 			satisfied:
@@ -816,7 +824,7 @@ public class PurityAnalysis {
 		
 		// process s(identity)
 		if(DEBUG_LOG_ENABLED) Log.info("Process s(identity)");
-		Set<ImmutabilityTypes> identityTypesToRemove = new HashSet<ImmutabilityTypes>();
+		Set<ImmutabilityTypes> identityTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes identityType : identityTypes){
 			boolean isSatisfied = false;
 			satisfied:
@@ -852,7 +860,7 @@ public class PurityAnalysis {
 			
 			// process s(x)
 			if(DEBUG_LOG_ENABLED) Log.info("Process s(x)");
-			xTypesToRemove = new HashSet<ImmutabilityTypes>();
+			xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 			for(ImmutabilityTypes xType : xTypes){
 				boolean isSatisfied = false;
 				satisfied:
@@ -875,7 +883,7 @@ public class PurityAnalysis {
 			
 			// process s(z)
 			if(DEBUG_LOG_ENABLED) Log.info("Process s(z)");
-			Set<ImmutabilityTypes> zTypesToRemove = new HashSet<ImmutabilityTypes>();
+			Set<ImmutabilityTypes> zTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 			for(ImmutabilityTypes zType : zTypes){
 				boolean isSatisfied = false;
 				satisfied:
@@ -898,7 +906,7 @@ public class PurityAnalysis {
 			
 			// process s(p)
 			if(DEBUG_LOG_ENABLED) Log.info("Process s(p)");
-			Set<ImmutabilityTypes> pTypesToRemove = new HashSet<ImmutabilityTypes>();
+			Set<ImmutabilityTypes> pTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 			for(ImmutabilityTypes pType : pTypes){
 				boolean isSatisfied = false;
 				satisfied:
@@ -937,7 +945,7 @@ public class PurityAnalysis {
 			
 			// process s(ret)
 			if(DEBUG_LOG_ENABLED) Log.info("Process s(ret)");
-			retTypesToRemove = new HashSet<ImmutabilityTypes>();
+			retTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 			for(ImmutabilityTypes retType : retTypes){
 				boolean isSatisfied = false;
 				satisfied:
@@ -957,7 +965,7 @@ public class PurityAnalysis {
 			
 			// process s(overriddenRet)
 			if(DEBUG_LOG_ENABLED) Log.info("Process s(overriddenRet)");
-			HashSet<ImmutabilityTypes> overriddenRetTypesToRemove = new HashSet<ImmutabilityTypes>();
+			EnumSet<ImmutabilityTypes> overriddenRetTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 			for(ImmutabilityTypes overriddenRetType : overriddenRetTypes){
 				boolean isSatisfied = false;
 				satisfied:
@@ -984,7 +992,7 @@ public class PurityAnalysis {
 			
 			// process s(this)
 			if(DEBUG_LOG_ENABLED) Log.info("Process s(this)");
-			identityTypesToRemove = new HashSet<ImmutabilityTypes>();
+			identityTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 			for(ImmutabilityTypes identityType : identityTypes){
 				boolean isSatisfied = false;
 				satisfied:
@@ -1004,7 +1012,7 @@ public class PurityAnalysis {
 			
 			// process s(overriddenRet)
 			if(DEBUG_LOG_ENABLED) Log.info("Process s(overriddenRet)");
-			HashSet<ImmutabilityTypes> overriddenIdentityTypesToRemove = new HashSet<ImmutabilityTypes>();
+			EnumSet<ImmutabilityTypes> overriddenIdentityTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 			for(ImmutabilityTypes overriddenIdentityType : overriddenIdentityTypes){
 				boolean isSatisfied = false;
 				satisfied:
@@ -1046,7 +1054,7 @@ public class PurityAnalysis {
 					
 					// process s(p)
 					if(DEBUG_LOG_ENABLED) Log.info("Process s(p)");
-					Set<ImmutabilityTypes> pTypesToRemove = new HashSet<ImmutabilityTypes>();
+					Set<ImmutabilityTypes> pTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 					for(ImmutabilityTypes pType : pTypes){
 						boolean isSatisfied = false;
 						satisfied:
@@ -1066,7 +1074,7 @@ public class PurityAnalysis {
 					
 					// process s(pOverridden)
 					if(DEBUG_LOG_ENABLED) Log.info("Process s(pOverridden)");
-					Set<ImmutabilityTypes> pOverriddenTypesToRemove = new HashSet<ImmutabilityTypes>();
+					Set<ImmutabilityTypes> pOverriddenTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 					for(ImmutabilityTypes pOverriddenType : pOverriddenTypes){
 						boolean isSatisfied = false;
 						satisfied:
@@ -1114,7 +1122,7 @@ public class PurityAnalysis {
 	 */
 	@SuppressWarnings("unused")
 	private static boolean removeTypes(GraphElement ge, ImmutabilityTypes... types){
-		HashSet<ImmutabilityTypes> typesToRemove = new HashSet<ImmutabilityTypes>();
+		EnumSet<ImmutabilityTypes> typesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes type : types){
 			typesToRemove.add(type);
 		}
@@ -1155,7 +1163,7 @@ public class PurityAnalysis {
 	 * @return Returns true if the type qualifier changed
 	 */
 	private static boolean setTypes(GraphElement ge, ImmutabilityTypes... types){
-		HashSet<ImmutabilityTypes> typesToSet = new HashSet<ImmutabilityTypes>();
+		EnumSet<ImmutabilityTypes> typesToSet = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes type : types){
 			typesToSet.add(type);
 		}
@@ -1167,7 +1175,7 @@ public class PurityAnalysis {
 		if(ge.hasAttr(IMMUTABILITY_QUALIFIERS)){
 			return (Set<ImmutabilityTypes>) ge.getAttr(IMMUTABILITY_QUALIFIERS);
 		} else {
-			HashSet<ImmutabilityTypes> qualifiers = new HashSet<ImmutabilityTypes>();
+			EnumSet<ImmutabilityTypes> qualifiers = EnumSet.noneOf(ImmutabilityTypes.class);
 			
 			Q typeOfEdges = Common.universe().edgesTaggedWithAny(XCSG.TypeOf);
 			GraphElement geType = typeOfEdges.successors(Common.toQ(ge)).eval().nodes().getFirst();
