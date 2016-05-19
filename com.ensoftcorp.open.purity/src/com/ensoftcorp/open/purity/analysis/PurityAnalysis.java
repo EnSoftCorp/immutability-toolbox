@@ -58,10 +58,14 @@ public class PurityAnalysis {
 	private static final String IMMUTABILITY_QUALIFIERS = "IMMUTABILITY_QUALIFIERS";
 	
 	/**
-	 * Enables logging to the Atlas log
+	 * Enables general logging to the Atlas log
 	 */
 	private static final boolean LOG_ENABLED = true;
-	private static final boolean VERBOSE_LOG_ENABLED = false;
+
+	/**
+	 * Enables verbose debug logging to the Atlas log
+	 */
+	private static final boolean DEBUG_LOG_ENABLED = false;
 	
 	/**
 	 * Encodes the immutability qualifications as types 
@@ -182,7 +186,8 @@ public class PurityAnalysis {
 		
 		int iteration = 0;
 		while(true){
-			if(LOG_ENABLED) Log.info("Purity Analysis Iteration: " + iteration++);
+			if(LOG_ENABLED) Log.info("Purity analysis iteration: " + iteration++);
+			long startIteration = System.nanoTime();
 			boolean fixedPoint = true;
 
 			// mutable only work items to remove
@@ -197,16 +202,20 @@ public class PurityAnalysis {
 					mutables.add(workItem);
 				}
 				
-				if(VERBOSE_LOG_ENABLED) Log.info("Applying Inference Rules for " + workItem.getAttr(XCSG.name) + ", Address: " + workItem.address().toAddressString());
-				long start = System.nanoTime();
+				if(DEBUG_LOG_ENABLED) Log.info("Applying inference rules for " + workItem.getAttr(XCSG.name) + ", Address: " + workItem.address().toAddressString());
+				long startInferenceRules = System.nanoTime();
 				boolean typesChanged = applyInferenceRules(workItem);
-				long stop = System.nanoTime();
-				if(VERBOSE_LOG_ENABLED) Log.info("Applied Inference Rules for " + workItem.getAttr(XCSG.name) + ", Address: " + workItem.address().toAddressString() + " in " + (stop-start)/1000.0/1000.0 + "ms");
+				long stopInferenceRules = System.nanoTime();
+				if(DEBUG_LOG_ENABLED) Log.info("Applied inference rules for " + workItem.getAttr(XCSG.name) + ", Address: " + workItem.address().toAddressString() + " in " + (stopInferenceRules-startInferenceRules)/1000.0/1000.0 + "ms");
 				
 				if(typesChanged){
 					fixedPoint = false;
 				}
 			}
+			
+			long stopIteration = System.nanoTime();
+			if(LOG_ENABLED) Log.info("Purity analysis iteration: " + iteration + " completed in " + (stopIteration-startIteration)/1000.0/1000.0 + "ms");
+			
 			if(fixedPoint){
 				break;
 			} else {
@@ -217,14 +226,20 @@ public class PurityAnalysis {
 			}
 		}
 		
+		if(LOG_ENABLED) Log.info("Purity analysis reached fixed point in " + iteration + " iterations");
+		
 		// flattens the type hierarchy to the maximal types
 		// and sets the final attribute values for the
 		// IMMUTABILITY_QUALIFIER attribute
+		if(LOG_ENABLED) Log.info("Extracting maximal types...");
 		extractMaximalTypes();
 		
 		// tags pure methods
 		// must be run after extractMaximalTypes()
+		if(LOG_ENABLED) Log.info("Applying method purity tags...");
 		tagPureMethods();
+		
+		if(LOG_ENABLED) Log.info("Purity analysis completed.");
 	}
 	
 	/**
@@ -275,12 +290,12 @@ public class PurityAnalysis {
 						x = interproceduralEdgeToField.getNode(EdgeDirection.FROM);
 					}
 					
-					if(LOG_ENABLED) Log.info("TWRITE (x.f=y, x=" + x.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")");
+					if(DEBUG_LOG_ENABLED) Log.info("TWRITE (x.f=y, x=" + x.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")");
 					if(handleFieldWrite(x, f, y)){
 						typesChanged = true;
 					}
 				} catch (Exception e){
-					Log.error("Error parsing field write", e);
+					if(LOG_ENABLED) Log.error("Error parsing field write", e);
 				}
 				
 				involvesField = true;
@@ -306,12 +321,12 @@ public class PurityAnalysis {
 						y = interproceduralEdgeFromField.getNode(EdgeDirection.FROM);
 					}
 					
-					if(LOG_ENABLED) Log.info("TREAD (x=y.f, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ")");
+					if(DEBUG_LOG_ENABLED) Log.info("TREAD (x=y.f, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ")");
 					if(handleFieldRead(x, y, f)){
 						typesChanged = true;
 					}
 				} catch (Exception e){
-					Log.error("Error parsing field read", e);
+					if(LOG_ENABLED) Log.error("Error parsing field read", e);
 				}
 				
 				involvesField = true;
@@ -357,12 +372,12 @@ public class PurityAnalysis {
 					AtlasSet<GraphElement> parametersPassedEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow)
 							.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
 					
-					if(LOG_ENABLED) Log.info("TCALL (x=y.m(z), x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", m=" + method.getAttr("##signature") + ")");
+					if(DEBUG_LOG_ENABLED) Log.info("TCALL (x=y.m(z), x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", m=" + method.getAttr("##signature") + ")");
 					if(handleCall(x, y, identity, method, ret, parametersPassedEdges)){
 						typesChanged = true;
 					}
 				} catch (Exception e){
-					Log.error("Error parsing callsite", e);
+					if(LOG_ENABLED) Log.error("Error parsing callsite", e);
 				}
 				
 				involvesCallsite = true;
@@ -372,7 +387,7 @@ public class PurityAnalysis {
 			if(!involvesField && !involvesCallsite){
 				GraphElement x = to;
 				GraphElement y = from;
-				if(LOG_ENABLED) Log.info("TASSIGN (x=y, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")");
+				if(DEBUG_LOG_ENABLED) Log.info("TASSIGN (x=y, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")");
 				if(handleAssignment(x, y)){
 					typesChanged = true;
 				}
@@ -406,10 +421,10 @@ public class PurityAnalysis {
 		Set<ImmutabilityTypes> xTypes = getTypes(x);
 		Set<ImmutabilityTypes> yTypes = getTypes(y);
 		
-		if(VERBOSE_LOG_ENABLED) Log.info("Process Constraint qy <: qx");
+		if(DEBUG_LOG_ENABLED) Log.info("Process Constraint qy <: qx");
 		
 		// process s(x)
-		if(VERBOSE_LOG_ENABLED) Log.info("Process s(x)");
+		if(DEBUG_LOG_ENABLED) Log.info("Process s(x)");
 		Set<ImmutabilityTypes> xTypesToRemove = new HashSet<ImmutabilityTypes>();
 		for(ImmutabilityTypes xType : xTypes){
 			boolean isSatisfied = false;
@@ -429,7 +444,7 @@ public class PurityAnalysis {
 		}
 		
 		// process s(y)
-		if(VERBOSE_LOG_ENABLED) Log.info("Process s(y)");
+		if(DEBUG_LOG_ENABLED) Log.info("Process s(y)");
 		Set<ImmutabilityTypes> yTypesToRemove = new HashSet<ImmutabilityTypes>();
 		for(ImmutabilityTypes yType : yTypes){
 			boolean isSatisfied = false;
@@ -495,10 +510,10 @@ public class PurityAnalysis {
 			}
 		}
 		
-		if(VERBOSE_LOG_ENABLED) Log.info("Process Constraint qy <: qx adapt qf");
+		if(DEBUG_LOG_ENABLED) Log.info("Process Constraint qy <: qx adapt qf");
 
 		// process s(y)
-		if(VERBOSE_LOG_ENABLED) Log.info("Process s(y)");
+		if(DEBUG_LOG_ENABLED) Log.info("Process s(y)");
 		Set<ImmutabilityTypes> yTypesToRemove = new HashSet<ImmutabilityTypes>();
 		for(ImmutabilityTypes yType : yTypes){
 			boolean isSatisfied = false;
@@ -519,7 +534,7 @@ public class PurityAnalysis {
 		}
 		
 		// process s(f)
-		if(VERBOSE_LOG_ENABLED) Log.info("Process s(f)");
+		if(DEBUG_LOG_ENABLED) Log.info("Process s(f)");
 		Set<ImmutabilityTypes> fTypesToRemove = new HashSet<ImmutabilityTypes>();
 		for(ImmutabilityTypes fType : fTypes){
 			boolean isSatisfied = false;
@@ -581,10 +596,10 @@ public class PurityAnalysis {
 			}
 		}
 		
-		if(VERBOSE_LOG_ENABLED) Log.info("Process Constraint qy adapt qf <: qx");
+		if(DEBUG_LOG_ENABLED) Log.info("Process Constraint qy adapt qf <: qx");
 		
 		// process s(x)
-		if(VERBOSE_LOG_ENABLED) Log.info("Process s(x)");
+		if(DEBUG_LOG_ENABLED) Log.info("Process s(x)");
 		Set<ImmutabilityTypes> xTypesToRemove = new HashSet<ImmutabilityTypes>();
 		for(ImmutabilityTypes xType : xTypes){
 			boolean isSatisfied = false;
@@ -607,7 +622,7 @@ public class PurityAnalysis {
 		}
 		
 		// process s(y)
-		if(VERBOSE_LOG_ENABLED) Log.info("Process s(y)");
+		if(DEBUG_LOG_ENABLED) Log.info("Process s(y)");
 		Set<ImmutabilityTypes> yTypesToRemove = new HashSet<ImmutabilityTypes>();
 		for(ImmutabilityTypes yType : yTypes){
 			boolean isSatisfied = false;
@@ -630,7 +645,7 @@ public class PurityAnalysis {
 		}
 		
 		// process s(f)
-		if(VERBOSE_LOG_ENABLED) Log.info("Process s(f)");
+		if(DEBUG_LOG_ENABLED) Log.info("Process s(f)");
 		Set<ImmutabilityTypes> fTypesToRemove = new HashSet<ImmutabilityTypes>();
 		for(ImmutabilityTypes fType : fTypes){
 			boolean isSatisfied = false;
@@ -706,10 +721,10 @@ public class PurityAnalysis {
 		
 		/////////////////////// start qx adapt qret <: qx /////////////////////// 
 		
-		if(VERBOSE_LOG_ENABLED) Log.info("Process Constraint qx adapt qret <: qx");
+		if(DEBUG_LOG_ENABLED) Log.info("Process Constraint qx adapt qret <: qx");
 		
 		// process s(x)
-		if(VERBOSE_LOG_ENABLED) Log.info("Process s(x)");
+		if(DEBUG_LOG_ENABLED) Log.info("Process s(x)");
 		Set<ImmutabilityTypes> xTypesToRemove = new HashSet<ImmutabilityTypes>();
 		for(ImmutabilityTypes xType : xTypes){
 			boolean isSatisfied = false;
@@ -730,7 +745,7 @@ public class PurityAnalysis {
 		}
 		
 		// process s(ret)
-		if(VERBOSE_LOG_ENABLED) Log.info("Process s(ret)");
+		if(DEBUG_LOG_ENABLED) Log.info("Process s(ret)");
 		Set<ImmutabilityTypes> retTypesToRemove = new HashSet<ImmutabilityTypes>();
 		for(ImmutabilityTypes retType : retTypes){
 			boolean isSatisfied = false;
@@ -753,10 +768,10 @@ public class PurityAnalysis {
 		
 		/////////////////////// start qy <: qx adapt qthis /////////////////////// 
 		
-		if(VERBOSE_LOG_ENABLED) Log.info("Process Constraint qy <: qx adapt qthis");
+		if(DEBUG_LOG_ENABLED) Log.info("Process Constraint qy <: qx adapt qthis");
 		
 		// process s(y)
-		if(VERBOSE_LOG_ENABLED) Log.info("Process s(y)");
+		if(DEBUG_LOG_ENABLED) Log.info("Process s(y)");
 		Set<ImmutabilityTypes> yTypesToRemove = new HashSet<ImmutabilityTypes>();
 		for(ImmutabilityTypes yType : yTypes){
 			boolean isSatisfied = false;
@@ -779,7 +794,7 @@ public class PurityAnalysis {
 		}
 		
 		// process s(x)
-		if(VERBOSE_LOG_ENABLED) Log.info("Process s(x)");
+		if(DEBUG_LOG_ENABLED) Log.info("Process s(x)");
 		xTypesToRemove = new HashSet<ImmutabilityTypes>();
 		for(ImmutabilityTypes xType : xTypes){
 			boolean isSatisfied = false;
@@ -802,7 +817,7 @@ public class PurityAnalysis {
 		}
 		
 		// process s(identity)
-		if(VERBOSE_LOG_ENABLED) Log.info("Process s(identity)");
+		if(DEBUG_LOG_ENABLED) Log.info("Process s(identity)");
 		Set<ImmutabilityTypes> identityTypesToRemove = new HashSet<ImmutabilityTypes>();
 		for(ImmutabilityTypes identityType : identityTypes){
 			boolean isSatisfied = false;
@@ -828,7 +843,7 @@ public class PurityAnalysis {
 
 		/////////////////////// start qz <: qx adapt qp ///////////////////////
 				
-		if(VERBOSE_LOG_ENABLED) Log.info("Process Constraint qz <: qx adapt qp");
+		if(DEBUG_LOG_ENABLED) Log.info("Process Constraint qz <: qx adapt qp");
 		
 		// for each z,p pair process s(x), s(z), and s(p)
 		for(GraphElement parametersPassedEdge : parametersPassedEdges){
@@ -838,7 +853,7 @@ public class PurityAnalysis {
 			Set<ImmutabilityTypes> pTypes = getTypes(p);
 			
 			// process s(x)
-			if(VERBOSE_LOG_ENABLED) Log.info("Process s(x)");
+			if(DEBUG_LOG_ENABLED) Log.info("Process s(x)");
 			xTypesToRemove = new HashSet<ImmutabilityTypes>();
 			for(ImmutabilityTypes xType : xTypes){
 				boolean isSatisfied = false;
@@ -861,7 +876,7 @@ public class PurityAnalysis {
 			}
 			
 			// process s(z)
-			if(VERBOSE_LOG_ENABLED) Log.info("Process s(z)");
+			if(DEBUG_LOG_ENABLED) Log.info("Process s(z)");
 			Set<ImmutabilityTypes> zTypesToRemove = new HashSet<ImmutabilityTypes>();
 			for(ImmutabilityTypes zType : zTypes){
 				boolean isSatisfied = false;
@@ -884,7 +899,7 @@ public class PurityAnalysis {
 			}
 			
 			// process s(p)
-			if(VERBOSE_LOG_ENABLED) Log.info("Process s(p)");
+			if(DEBUG_LOG_ENABLED) Log.info("Process s(p)");
 			Set<ImmutabilityTypes> pTypesToRemove = new HashSet<ImmutabilityTypes>();
 			for(ImmutabilityTypes pType : pTypes){
 				boolean isSatisfied = false;
@@ -920,10 +935,10 @@ public class PurityAnalysis {
 			Set<ImmutabilityTypes> overriddenRetTypes = getTypes(overriddenMethodReturn);
 			
 			// constraint: overriddenReturn <: return
-			if(VERBOSE_LOG_ENABLED) Log.info("Process Constraint overriddenReturn <: return");
+			if(DEBUG_LOG_ENABLED) Log.info("Process Constraint overriddenReturn <: return");
 			
 			// process s(ret)
-			if(VERBOSE_LOG_ENABLED) Log.info("Process s(ret)");
+			if(DEBUG_LOG_ENABLED) Log.info("Process s(ret)");
 			retTypesToRemove = new HashSet<ImmutabilityTypes>();
 			for(ImmutabilityTypes retType : retTypes){
 				boolean isSatisfied = false;
@@ -943,7 +958,7 @@ public class PurityAnalysis {
 			}
 			
 			// process s(overriddenRet)
-			if(VERBOSE_LOG_ENABLED) Log.info("Process s(overriddenRet)");
+			if(DEBUG_LOG_ENABLED) Log.info("Process s(overriddenRet)");
 			HashSet<ImmutabilityTypes> overriddenRetTypesToRemove = new HashSet<ImmutabilityTypes>();
 			for(ImmutabilityTypes overriddenRetType : overriddenRetTypes){
 				boolean isSatisfied = false;
@@ -967,10 +982,10 @@ public class PurityAnalysis {
 			Set<ImmutabilityTypes> overriddenIdentityTypes = getTypes(overriddenMethodIdentity);
 
 			// constraint: this <: overriddenThis 
-			if(VERBOSE_LOG_ENABLED) Log.info("Process Constraint this <: overriddenThis");
+			if(DEBUG_LOG_ENABLED) Log.info("Process Constraint this <: overriddenThis");
 			
 			// process s(this)
-			if(VERBOSE_LOG_ENABLED) Log.info("Process s(this)");
+			if(DEBUG_LOG_ENABLED) Log.info("Process s(this)");
 			identityTypesToRemove = new HashSet<ImmutabilityTypes>();
 			for(ImmutabilityTypes identityType : identityTypes){
 				boolean isSatisfied = false;
@@ -990,7 +1005,7 @@ public class PurityAnalysis {
 			}
 			
 			// process s(overriddenRet)
-			if(VERBOSE_LOG_ENABLED) Log.info("Process s(overriddenRet)");
+			if(DEBUG_LOG_ENABLED) Log.info("Process s(overriddenRet)");
 			HashSet<ImmutabilityTypes> overriddenIdentityTypesToRemove = new HashSet<ImmutabilityTypes>();
 			for(ImmutabilityTypes overriddenIdentityType : overriddenIdentityTypes){
 				boolean isSatisfied = false;
@@ -1021,7 +1036,7 @@ public class PurityAnalysis {
 			
 			// for each parameter and overridden parameter pair
 			// constraint: p <: pOverriden
-			if(VERBOSE_LOG_ENABLED) Log.info("Process Constraint p <: pOverriden");
+			if(DEBUG_LOG_ENABLED) Log.info("Process Constraint p <: pOverriden");
 			long numParams = overriddenMethodParameters.size();
 			if(numParams > 0){
 				for(int i=0; i<numParams; i++){
@@ -1032,7 +1047,7 @@ public class PurityAnalysis {
 					Set<ImmutabilityTypes> pOverriddenTypes = getTypes(pOverridden);
 					
 					// process s(p)
-					if(VERBOSE_LOG_ENABLED) Log.info("Process s(p)");
+					if(DEBUG_LOG_ENABLED) Log.info("Process s(p)");
 					Set<ImmutabilityTypes> pTypesToRemove = new HashSet<ImmutabilityTypes>();
 					for(ImmutabilityTypes pType : pTypes){
 						boolean isSatisfied = false;
@@ -1052,7 +1067,7 @@ public class PurityAnalysis {
 					}
 					
 					// process s(pOverridden)
-					if(VERBOSE_LOG_ENABLED) Log.info("Process s(pOverridden)");
+					if(DEBUG_LOG_ENABLED) Log.info("Process s(pOverridden)");
 					Set<ImmutabilityTypes> pOverriddenTypesToRemove = new HashSet<ImmutabilityTypes>();
 					for(ImmutabilityTypes pOverriddenType : pOverriddenTypes){
 						boolean isSatisfied = false;
