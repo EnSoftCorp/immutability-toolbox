@@ -172,10 +172,14 @@ public class PurityAnalysis {
 		long stop = System.nanoTime();
 		double runtime = (stop-start)/1000.0/1000.0;
 		if(LOG_ENABLED) {
+			long numReadOnly = Common.universe().nodesTaggedWithAny(READONLY).eval().nodes().size();
+			long numPolyRead = Common.universe().nodesTaggedWithAny(POLYREAD).eval().nodes().size();
+			long numMutable = Common.universe().nodesTaggedWithAny(MUTABLE).eval().nodes().size();
+			String summary = "READONLY: " + numReadOnly + ", POLYREAD: " + numPolyRead + ", MUTABLE: " + numMutable;
 			if(successful){
-				Log.info("Purity analysis completed successfully in " + runtime + " ms");
+				Log.info("Purity analysis completed successfully in " + runtime + " ms\n" + summary);
 			} else {
-				Log.warning("Purity analysis completed unsuccessfully in " + runtime + " ms");
+				Log.warning("Purity analysis completed unsuccessfully in " + runtime + " ms\n" + summary);
 			}
 		}
 		return successful;
