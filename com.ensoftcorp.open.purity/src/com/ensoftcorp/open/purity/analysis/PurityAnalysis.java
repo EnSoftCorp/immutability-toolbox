@@ -170,18 +170,6 @@ public class PurityAnalysis {
 	 * Runs the side effect (purity) analysis
 	 */
 	private static void runAnalysis(){
-		Q parameters = Common.universe().nodesTaggedWithAny(XCSG.Parameter);
-		Q masterReturns = Common.universe().nodesTaggedWithAny(XCSG.MasterReturn);
-		Q instanceVariables = Common.universe().nodesTaggedWithAny(XCSG.InstanceVariable);
-		Q thisNodes = Common.universe().nodesTaggedWithAll(XCSG.InstanceMethod).children().nodesTaggedWithAny(XCSG.Identity);
-		
-		// create default types on each tracked item
-		// note local variables may also get tracked, but only if need be during the analysis
-		if(LOG_ENABLED) Log.info("Initializing type qualifiers...");
-		for(GraphElement trackedItem : parameters.union(masterReturns, instanceVariables, thisNodes).eval().nodes()){
-			getTypes(trackedItem);
-		}
-		
 		TreeSet<GraphElement> worklist = new TreeSet<GraphElement>();
 
 		// add all assignments to worklist
@@ -1315,6 +1303,18 @@ public class PurityAnalysis {
 			// leaving the remaining type qualifiers on the graph element is useful for debugging
 			if(!DEBUG_LOG_ENABLED) attributedGraphElement.removeAttr(IMMUTABILITY_QUALIFIERS);
 			attributedGraphElement.tag(maximalType.toString());
+			
+			// tag the graph elements that were never touched as readonly
+			Q parameters = Common.universe().nodesTaggedWithAny(XCSG.Parameter);
+			Q masterReturns = Common.universe().nodesTaggedWithAny(XCSG.MasterReturn);
+			Q instanceVariables = Common.universe().nodesTaggedWithAny(XCSG.InstanceVariable);
+			Q thisNodes = Common.universe().nodesTaggedWithAll(XCSG.InstanceMethod).children().nodesTaggedWithAny(XCSG.Identity);
+			// note local variables may also get tracked, but only if need be during the analysis
+			Q trackedItems = parameters.union(masterReturns, instanceVariables, thisNodes);
+			Q untouchedTrackedItems = trackedItems.difference(trackedItems.nodesTaggedWithAny(READONLY, POLYREAD, MUTABLE));
+			for(GraphElement untouchedTrackedItem : untouchedTrackedItems.eval().nodes()){
+				untouchedTrackedItem.tag(READONLY);
+			}
 		}
 	}
 	
