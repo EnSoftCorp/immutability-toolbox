@@ -63,6 +63,11 @@ public class PurityAnalysis {
 	private static final boolean LOG_ENABLED = true;
 
 	/**
+	 * Enables inference rule logging to the Atlas log
+	 */
+	private static final boolean LOG_INFERENCE_RULES_ENABLED = true;
+	
+	/**
 	 * Enables verbose debug logging to the Atlas log
 	 */
 	private static final boolean DEBUG_LOG_ENABLED = false;
@@ -165,16 +170,17 @@ public class PurityAnalysis {
 	 * Runs the side effect (purity) analysis
 	 */
 	private static void runAnalysis(){
-//		Q parameters = Common.universe().nodesTaggedWithAny(XCSG.Parameter);
-//		Q masterReturns = Common.universe().nodesTaggedWithAny(XCSG.MasterReturn);
-//		Q instanceVariables = Common.universe().nodesTaggedWithAny(XCSG.InstanceVariable);
-//		Q thisNodes = Common.universe().nodesTaggedWithAll(XCSG.InstanceMethod).children().nodesTaggedWithAny(XCSG.Identity);
-//		
-//		// create default types on each tracked item
-//		// note local variables may also get tracked, but only if need be during the analysis
-//		for(GraphElement trackedItem : parameters.union(masterReturns, instanceVariables, thisNodes).eval().nodes()){
-//			getTypes(trackedItem);
-//		}
+		Q parameters = Common.universe().nodesTaggedWithAny(XCSG.Parameter);
+		Q masterReturns = Common.universe().nodesTaggedWithAny(XCSG.MasterReturn);
+		Q instanceVariables = Common.universe().nodesTaggedWithAny(XCSG.InstanceVariable);
+		Q thisNodes = Common.universe().nodesTaggedWithAll(XCSG.InstanceMethod).children().nodesTaggedWithAny(XCSG.Identity);
+		
+		// create default types on each tracked item
+		// note local variables may also get tracked, but only if need be during the analysis
+		if(LOG_ENABLED) Log.info("Initializing type qualifiers...");
+		for(GraphElement trackedItem : parameters.union(masterReturns, instanceVariables, thisNodes).eval().nodes()){
+			getTypes(trackedItem);
+		}
 		
 		TreeSet<GraphElement> worklist = new TreeSet<GraphElement>();
 
@@ -221,7 +227,6 @@ public class PurityAnalysis {
 			} else {
 				// nothing more can change based on these work items
 				// so don't consider them anymore
-				// TODO: uncomment
 				worklist.removeAll(mutables);
 			}
 		}
@@ -239,7 +244,7 @@ public class PurityAnalysis {
 		if(LOG_ENABLED) Log.info("Applying method purity tags...");
 		tagPureMethods();
 		
-		if(LOG_ENABLED) Log.info("Purity analysis completed.");
+		if(LOG_ENABLED) Log.info("Purity analysis completed");
 	}
 	
 	/**
@@ -290,7 +295,6 @@ public class PurityAnalysis {
 						x = interproceduralEdgeToField.getNode(EdgeDirection.FROM);
 					}
 					
-					if(DEBUG_LOG_ENABLED) Log.info("TWRITE (x.f=y, x=" + x.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")");
 					if(handleFieldWrite(x, f, y)){
 						typesChanged = true;
 					}
@@ -321,7 +325,6 @@ public class PurityAnalysis {
 						y = interproceduralEdgeFromField.getNode(EdgeDirection.FROM);
 					}
 					
-					if(DEBUG_LOG_ENABLED) Log.info("TREAD (x=y.f, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ")");
 					if(handleFieldRead(x, y, f)){
 						typesChanged = true;
 					}
@@ -334,7 +337,7 @@ public class PurityAnalysis {
 			
 			// TCALL
 			boolean involvesCallsite = false;
-			if(from.taggedWith(XCSG.CallSite)){
+			if(from.taggedWith(XCSG.CallSite) && from.taggedWith(XCSG.DynamicDispatchCallSite)){
 				// Type Rule 5 - TCALL
 				// let, x = y.m(z)
 				try {
@@ -372,7 +375,6 @@ public class PurityAnalysis {
 					AtlasSet<GraphElement> parametersPassedEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow)
 							.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
 					
-					if(DEBUG_LOG_ENABLED) Log.info("TCALL (x=y.m(z), x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", m=" + method.getAttr("##signature") + ")");
 					if(handleCall(x, y, identity, method, ret, parametersPassedEdges)){
 						typesChanged = true;
 					}
@@ -387,7 +389,7 @@ public class PurityAnalysis {
 			if(!involvesField && !involvesCallsite){
 				GraphElement x = to;
 				GraphElement y = from;
-				if(DEBUG_LOG_ENABLED) Log.info("TASSIGN (x=y, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")");
+				
 				if(handleAssignment(x, y)){
 					typesChanged = true;
 				}
@@ -416,6 +418,8 @@ public class PurityAnalysis {
 			Log.warning("y is null!");
 			return false;
 		}
+		
+		if(LOG_INFERENCE_RULES_ENABLED) Log.info("TASSIGN (x=y, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")");
 		
 		boolean typesChanged = false;
 		Set<ImmutabilityTypes> xTypes = getTypes(x);
@@ -490,6 +494,8 @@ public class PurityAnalysis {
 			Log.warning("y is null!");
 			return false;
 		}
+		
+		if(LOG_INFERENCE_RULES_ENABLED) Log.info("TWRITE (x.f=y, x=" + x.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")");
 		
 		boolean typesChanged = false;
 		Set<ImmutabilityTypes> yTypes = getTypes(y);
@@ -582,6 +588,8 @@ public class PurityAnalysis {
 			return false;
 		}
 
+		if(LOG_INFERENCE_RULES_ENABLED) Log.info("TREAD (x=y.f, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ")");
+		
 		boolean typesChanged = false;
 		Set<ImmutabilityTypes> fTypes = getTypes(f);
 		Set<ImmutabilityTypes> xTypes = getTypes(x);
@@ -691,6 +699,8 @@ public class PurityAnalysis {
 			Log.warning("return is null!");
 			return false;
 		}
+		
+		if(LOG_INFERENCE_RULES_ENABLED) Log.info("TCALL (x=y.m(z), x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", m=" + method.getAttr("##signature") + ")");
 		
 		boolean typesChanged = false;
 		Set<ImmutabilityTypes> xTypes = getTypes(x);
@@ -928,7 +938,7 @@ public class PurityAnalysis {
 		Q overridesEdges = Common.universe().edgesTaggedWithAny(XCSG.Overrides);
 		GraphElement overriddenMethod = overridesEdges.successors(Common.toQ(method)).eval().nodes().getFirst();
 		if(overriddenMethod != null){
-			if(LOG_ENABLED) Log.info("TCALL (Overridden Method)");
+			if(LOG_INFERENCE_RULES_ENABLED) Log.info("TCALL (Overridden Method)");
 			
 			// Method (method) -Contains-> ReturnValue (ret)
 			GraphElement overriddenMethodReturn = Common.toQ(overriddenMethod).children().nodesTaggedWithAny(XCSG.ReturnValue).eval().nodes().getFirst();
@@ -1103,7 +1113,7 @@ public class PurityAnalysis {
 		String logMessage = "Remove: " + typesToRemove.toString() + " from " + typeSet.toString() + " for " + ge.getAttr(XCSG.name);
 		boolean typesChanged = typeSet.removeAll(typesToRemove);
 		if(typesChanged){
-			if(LOG_ENABLED) Log.info(logMessage);
+			if(DEBUG_LOG_ENABLED) Log.info(logMessage);
 		}
 		return typesChanged;
 	}
@@ -1144,7 +1154,7 @@ public class PurityAnalysis {
 		}
 		
 		if(typesChanged){
-			if(LOG_ENABLED) Log.info(logMessage);
+			if(DEBUG_LOG_ENABLED) Log.info(logMessage);
 		}
 		
 		return typesChanged;
@@ -1302,7 +1312,8 @@ public class PurityAnalysis {
 			orderedTypes.addAll(getTypes(attributedGraphElement));
 			Collections.sort(orderedTypes);
 			ImmutabilityTypes maximalType = orderedTypes.getLast();
-//			attributedGraphElement.removeAttr(IMMUTABILITY_QUALIFIERS); // TODO: uncomment
+			// leaving the remaining type qualifiers on the graph element is useful for debugging
+			if(!DEBUG_LOG_ENABLED) attributedGraphElement.removeAttr(IMMUTABILITY_QUALIFIERS);
 			attributedGraphElement.tag(maximalType.toString());
 		}
 	}
