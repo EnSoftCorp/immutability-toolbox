@@ -71,12 +71,12 @@ public class PurityAnalysis {
 	/**
 	 * Enables inference rule logging to the Atlas log
 	 */
-	private static final boolean LOG_INFERENCE_RULES_ENABLED = false;
+	private static final boolean LOG_INFERENCE_RULES_ENABLED = true;
 	
 	/**
 	 * Enables verbose debug logging to the Atlas log
 	 */
-	private static final boolean DEBUG_LOG_ENABLED = false;
+	private static final boolean DEBUG_LOG_ENABLED = true;
 	
 	/**
 	 * Encodes the immutability qualifications as types 
@@ -115,9 +115,9 @@ public class PurityAnalysis {
 		 * @return
 		 */
 		public static ImmutabilityTypes getAdaptedFieldViewpoint(ImmutabilityTypes context, ImmutabilityTypes declaration){
-			// see https://github.com/SoftwareEngineeringToolDemos/FSE-2012-ReImInfer/blob/master/inference-framework/checker-framework/checkers/src/checkers/inference/reim/ReimChecker.java#L216
+//			// see https://github.com/SoftwareEngineeringToolDemos/FSE-2012-ReImInfer/blob/master/inference-framework/checker-framework/checkers/src/checkers/inference/reim/ReimChecker.java#L216
 //			if(declaration == ImmutabilityTypes.READONLY){
-//				// ? and READONLY = READONLY
+//				// q and READONLY = READONLY
 //				return ImmutabilityTypes.READONLY;
 //			} else if(declaration == ImmutabilityTypes.MUTABLE){
 //				// q and MUTABLE = q
@@ -277,10 +277,13 @@ public class PurityAnalysis {
 			if(to.taggedWith(XCSG.InstanceVariableAssignment)){
 				// Type Rule 3 - TWRITE
 				// let, x.f = y
-
 				try {
 					// Reference (y) -LocalDataFlow-> InstanceVariableAssignment (.f)
 					GraphElement y = from;
+					if(y.taggedWith(XCSG.InstanceVariableValue)){
+						GraphElement interproceduralEdgeFromField = interproceduralDFGraph.edges(y, NodeDirection.IN).getFirst();
+						y = interproceduralEdgeFromField.getNode(EdgeDirection.FROM);
+					}
 					GraphElement instanceVariableAssignment = to; // (.f)
 					
 					// InstanceVariableAssignment (.f) -InterproceduralDataFlow-> InstanceVariable (f)
@@ -290,10 +293,6 @@ public class PurityAnalysis {
 					// Reference (x) -InstanceVariableAccessed-> InstanceVariableAssignment (.f)
 					GraphElement instanceVariableAccessedEdge = instanceVariableAccessedGraph.edges(instanceVariableAssignment, NodeDirection.IN).getFirst();
 					GraphElement x = instanceVariableAccessedEdge.getNode(EdgeDirection.FROM);
-					if(x.taggedWith(XCSG.InstanceVariableValue)){
-						interproceduralEdgeToField = interproceduralDFGraph.edges(x, NodeDirection.IN).getFirst();
-						x = interproceduralEdgeToField.getNode(EdgeDirection.FROM);
-					}
 					
 					if(handleFieldWrite(x, f, y)){
 						typesChanged = true;
@@ -311,6 +310,11 @@ public class PurityAnalysis {
 				// let, x = y.f
 				try {
 					GraphElement x = to;
+					if(x.taggedWith(XCSG.InstanceVariableValue)){
+						GraphElement interproceduralEdgeFromField = interproceduralDFGraph.edges(x, NodeDirection.IN).getFirst();
+						x = interproceduralEdgeFromField.getNode(EdgeDirection.FROM);
+					}
+					
 					GraphElement instanceVariableValue = from; // (.f)
 					
 					// InstanceVariable (f) -InterproceduralDataFlow-> InstanceVariableValue (.f) 
@@ -320,10 +324,6 @@ public class PurityAnalysis {
 					// Reference (y) -InstanceVariableAccessed-> InstanceVariableValue (.f)
 					GraphElement instanceVariableAccessedEdge = instanceVariableAccessedGraph.edges(instanceVariableValue, NodeDirection.IN).getFirst();
 					GraphElement y = instanceVariableAccessedEdge.getNode(EdgeDirection.FROM);
-					if(y.taggedWith(XCSG.InstanceVariableValue)){
-						interproceduralEdgeFromField = interproceduralDFGraph.edges(y, NodeDirection.IN).getFirst();
-						y = interproceduralEdgeFromField.getNode(EdgeDirection.FROM);
-					}
 					
 					if(handleFieldRead(x, y, f)){
 						typesChanged = true;
@@ -425,10 +425,8 @@ public class PurityAnalysis {
 		Set<ImmutabilityTypes> xTypes = getTypes(x);
 		Set<ImmutabilityTypes> yTypes = getTypes(y);
 		
-		if(DEBUG_LOG_ENABLED) Log.info("Process Constraint qy <: qx");
-		
 		// process s(x)
-		if(DEBUG_LOG_ENABLED) Log.info("Process s(x)");
+		if(DEBUG_LOG_ENABLED) Log.info("Process s(x) for constraint qy " + getTypes(y).toString() + " <: qx " + getTypes(x).toString());
 		Set<ImmutabilityTypes> xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes xType : xTypes){
 			boolean isSatisfied = false;
@@ -448,7 +446,7 @@ public class PurityAnalysis {
 		}
 		
 		// process s(y)
-		if(DEBUG_LOG_ENABLED) Log.info("Process s(y)");
+		if(DEBUG_LOG_ENABLED) Log.info("Process s(y) for constraint qy " + getTypes(y).toString() + " <: qx " + getTypes(x).toString());
 		Set<ImmutabilityTypes> yTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes yType : yTypes){
 			boolean isSatisfied = false;
@@ -498,67 +496,99 @@ public class PurityAnalysis {
 		if(LOG_INFERENCE_RULES_ENABLED) Log.info("TWRITE (x.f=y, x=" + x.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")");
 		
 		boolean typesChanged = false;
-		Set<ImmutabilityTypes> yTypes = getTypes(y);
-		Set<ImmutabilityTypes> fTypes = getTypes(f);
-		// x must be mutable
-		if(setTypes(x, ImmutabilityTypes.MUTABLE)){
-			typesChanged = true;
-		}
-		ImmutabilityTypes xType = ImmutabilityTypes.MUTABLE;
-		
-		// if a field changes in an object then any container objects which contain
-		// that field have also changed
-		if(x.taggedWith(XCSG.Field)){
-			for(GraphElement containerField : getContainerFields(x)){
-				if(setTypes(containerField, ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD)){
+
+		if(x.taggedWith(XCSG.InstanceVariableValue)){
+			// if a field changes in an object then that object and any container 
+			// objects which contain an object where the field is have also changed
+			for(GraphElement container : getAccessedContainers(x)){
+				if(removeTypes(container, ImmutabilityTypes.READONLY)){
 					typesChanged = true;
 				}
 			}
+			
+			// TODO: is this right?
+			// these constraints are too strong if x is a field...
+			return typesChanged;
 		}
 		
-		if(DEBUG_LOG_ENABLED) Log.info("Process Constraint qy <: qx adapt qf");
-
+		// the reference x must be mutable
+		if(removeTypes(x, ImmutabilityTypes.READONLY)){
+			typesChanged = true;
+		}
+		
+		Set<ImmutabilityTypes> xTypes = getTypes(x);
+		Set<ImmutabilityTypes> yTypes = getTypes(y);
+		Set<ImmutabilityTypes> fTypes = getTypes(f);
+		
+		// process s(x)
+		if(DEBUG_LOG_ENABLED) Log.info("Process s(x) for constraint qy " + getTypes(y).toString() + " <: qx " + getTypes(x).toString() + " adapt qf " + getTypes(f).toString());
+		Set<ImmutabilityTypes> xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
+		for(ImmutabilityTypes xType : xTypes){
+			boolean isSatisfied = false;
+			satisfied:
+			for(ImmutabilityTypes yType : yTypes){
+				for(ImmutabilityTypes fType : fTypes){
+					ImmutabilityTypes xAdaptedF = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, fType);
+					if(xAdaptedF.compareTo(yType) >= 0){
+						isSatisfied = true;
+						break satisfied;
+					}
+				}
+				if(!isSatisfied){
+					xTypesToRemove.add(xType);
+				}
+			}
+		}
+		if(removeTypes(x, xTypesToRemove)){
+			typesChanged = true;
+		}
+		
 		// process s(y)
-		if(DEBUG_LOG_ENABLED) Log.info("Process s(y)");
+		if(DEBUG_LOG_ENABLED) Log.info("Process s(y) for constraint qy " + getTypes(y).toString() + " <: qx " + getTypes(x).toString() + " adapt qf " + getTypes(f).toString());
 		Set<ImmutabilityTypes> yTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes yType : yTypes){
 			boolean isSatisfied = false;
 			satisfied:
-			for(ImmutabilityTypes fType : fTypes){
-				ImmutabilityTypes xAdaptedF = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, fType);
-				if(xAdaptedF.compareTo(yType) >= 0){
-					isSatisfied = true;
-					break satisfied;
+			for(ImmutabilityTypes xType : xTypes){
+				for(ImmutabilityTypes fType : fTypes){
+					ImmutabilityTypes xAdaptedF = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, fType);
+					if(xAdaptedF.compareTo(yType) >= 0){
+						isSatisfied = true;
+						break satisfied;
+					}
 				}
-			}
-			if(!isSatisfied){
-				yTypesToRemove.add(yType);
+				if(!isSatisfied){
+					yTypesToRemove.add(yType);
+				}
 			}
 		}
 		if(removeTypes(y, yTypesToRemove)){
 			typesChanged = true;
 		}
-		
+
 		// process s(f)
-		if(DEBUG_LOG_ENABLED) Log.info("Process s(f)");
+		if(DEBUG_LOG_ENABLED) Log.info("Process s(f) for constraint qy " + getTypes(y).toString() + " <: qx " + getTypes(x).toString() + " adapt qf " + getTypes(f).toString());
 		Set<ImmutabilityTypes> fTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes fType : fTypes){
 			boolean isSatisfied = false;
 			satisfied:
-			for(ImmutabilityTypes yType : yTypes){
-				ImmutabilityTypes xAdaptedF = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, fType);
-				if(xAdaptedF.compareTo(yType) >= 0){
-					isSatisfied = true;
-					break satisfied;
+			for(ImmutabilityTypes xType : xTypes){
+				for(ImmutabilityTypes yType : yTypes){
+					ImmutabilityTypes xAdaptedF = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, fType);
+					if(xAdaptedF.compareTo(yType) >= 0){
+						isSatisfied = true;
+						break satisfied;
+					}
 				}
-			}
-			if(!isSatisfied){
-				fTypesToRemove.add(fType);
+				if(!isSatisfied){
+					fTypesToRemove.add(fType);
+				}
 			}
 		}
 		if(removeTypes(f, fTypesToRemove)){
 			typesChanged = true;
 		}
+		
 		return typesChanged;
 	}
 	
@@ -595,19 +625,27 @@ public class PurityAnalysis {
 		Set<ImmutabilityTypes> xTypes = getTypes(x);
 		Set<ImmutabilityTypes> yTypes = getTypes(y);
 		
-		// if x is only MUTABLE then the field and its container fields must be mutable as well
-		if(xTypes.contains(ImmutabilityTypes.MUTABLE) && xTypes.size() == 1){
-			for(GraphElement containerField : getContainerFields(f)){
-				if(setTypes(containerField, ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD)){
+		boolean xIsPolyreadField = x.taggedWith(XCSG.Field) && (xTypes.contains(ImmutabilityTypes.POLYREAD) && xTypes.size() == 1);
+		boolean xIsMutableReference = !x.taggedWith(XCSG.Field) && (xTypes.contains(ImmutabilityTypes.MUTABLE) && xTypes.size() == 1);
+		 
+		if(xIsPolyreadField || xIsMutableReference){
+			// if x is a polyread field then the read field (f) and its container's must be polyread
+			// if x is a mutable reference then f and its container fields must be polyread
+			for(GraphElement containerField : getAccessedContainers(y)){
+				if(removeTypes(containerField, ImmutabilityTypes.READONLY)){
 					typesChanged = true;
 				}
 			}
 		}
 		
-		if(DEBUG_LOG_ENABLED) Log.info("Process Constraint qy adapt qf <: qx");
-		
+		// TODO: is this right?
+		if(y.taggedWith(XCSG.InstanceVariableValue)){
+			// these constraints are too strong if y is a field...
+			return typesChanged;
+		}
+
 		// process s(x)
-		if(DEBUG_LOG_ENABLED) Log.info("Process s(x)");
+		if(DEBUG_LOG_ENABLED) Log.info("Process s(x) for constraint qy " + getTypes(y).toString() + " adapt qf " + getTypes(f).toString() + " <: qx " + getTypes(x).toString());
 		Set<ImmutabilityTypes> xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes xType : xTypes){
 			boolean isSatisfied = false;
@@ -630,7 +668,7 @@ public class PurityAnalysis {
 		}
 		
 		// process s(y)
-		if(DEBUG_LOG_ENABLED) Log.info("Process s(y)");
+		if(DEBUG_LOG_ENABLED) Log.info("Process s(y) for constraint qy " + getTypes(y).toString() + " adapt qf " + getTypes(f).toString() + " <: qx " + getTypes(x).toString());
 		Set<ImmutabilityTypes> yTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes yType : yTypes){
 			boolean isSatisfied = false;
@@ -653,7 +691,7 @@ public class PurityAnalysis {
 		}
 		
 		// process s(f)
-		if(DEBUG_LOG_ENABLED) Log.info("Process s(f)");
+		if(DEBUG_LOG_ENABLED) Log.info("Process s(f) for constraint qy " + getTypes(y).toString() + " adapt qf " + getTypes(f).toString() + " <: qx " + getTypes(x).toString());
 		Set<ImmutabilityTypes> fTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes fType : fTypes){
 			boolean isSatisfied = false;
@@ -678,6 +716,16 @@ public class PurityAnalysis {
 		return typesChanged;
 	}
 	
+	/**
+	 * Let, x=y.m(z)
+	 * @param x
+	 * @param y
+	 * @param identity
+	 * @param method
+	 * @param ret
+	 * @param parametersPassedEdges
+	 * @return
+	 */
 	private static boolean handleCall(GraphElement x, GraphElement y, GraphElement identity, GraphElement method, GraphElement ret, AtlasSet<GraphElement> parametersPassedEdges) {
 		
 		if(x==null){
@@ -708,26 +756,32 @@ public class PurityAnalysis {
 		Set<ImmutabilityTypes> identityTypes = getTypes(identity);
 		Set<ImmutabilityTypes> retTypes = getTypes(ret);
 		
-		// if x is only MUTABLE then the return value must be mutable or polyread
-		if(xTypes.contains(ImmutabilityTypes.MUTABLE) && xTypes.size() == 1){
-			if(setTypes(ret, ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD)){
-				typesChanged = true;
-			}
-			
-			// if the return value is a field then the field and its container fields must be mutable as well
-			Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
-			Q returnValues = localDataFlowEdges.predecessors(Common.toQ(ret));
-			Q instanceVariableValues = localDataFlowEdges.predecessors(returnValues).nodesTaggedWithAny(XCSG.InstanceVariableValue);
-			Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
-			Q instanceVariables = interproceduralDataFlowEdges.predecessors(instanceVariableValues);
-			for(GraphElement instanceVariable : instanceVariables.eval().nodes()){
-				for(GraphElement containerField : getContainerFields(instanceVariable)){
-					if(setTypes(containerField, ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD)){
-						typesChanged = true;
-					}
-				}
-			}
-		}
+		// TODO: Re-evaluate
+//		boolean isPolyreadField = x.taggedWith(XCSG.Field) && (xTypes.contains(ImmutabilityTypes.POLYREAD) && xTypes.size() == 1);
+//		boolean isMutableReference = !x.taggedWith(XCSG.Field) && (xTypes.contains(ImmutabilityTypes.MUTABLE) && xTypes.size() == 1);
+//		
+//		// if x is a field and polyread then the return value must be polyread
+//		// if x is a reference and mutable then the return value must be polyread
+//		// whether the field or reference is polyread or mutable we know know that it
+//		// is at least not readonly
+//		if(isPolyreadField || isMutableReference){
+//			if(removeTypes(ret, ImmutabilityTypes.READONLY)){
+//				typesChanged = true;
+//			}
+//			// if the return value is a field then the field and its container fields must be mutable as well
+//			Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
+//			Q returnValues = localDataFlowEdges.predecessors(Common.toQ(ret));
+//			Q instanceVariableValues = localDataFlowEdges.predecessors(returnValues).nodesTaggedWithAny(XCSG.InstanceVariableValue);
+//			Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
+//			Q instanceVariables = interproceduralDataFlowEdges.predecessors(instanceVariableValues);
+//			for(GraphElement instanceVariable : instanceVariables.eval().nodes()){
+//				for(GraphElement containerField : getAccessedContainers(instanceVariable)){
+//					if(removeTypes(containerField, ImmutabilityTypes.READONLY)){
+//						typesChanged = true;
+//					}
+//				}
+//			}
+//		}	
 		
 		/////////////////////// start qx adapt qret <: qx /////////////////////// 
 		
@@ -1124,7 +1178,6 @@ public class PurityAnalysis {
 	 * @param qualifier
 	 * @return Returns true if the type qualifier changed
 	 */
-	@SuppressWarnings("unused")
 	private static boolean removeTypes(GraphElement ge, ImmutabilityTypes... types){
 		EnumSet<ImmutabilityTypes> typesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes type : types){
@@ -1133,46 +1186,49 @@ public class PurityAnalysis {
 		return removeTypes(ge, typesToRemove);
 	}
 	
-	/**
-	 * Sets the type qualifier for a graph element
-	 * @param ge
-	 * @param qualifier
-	 * @return Returns true if the type qualifier changed
-	 */
-	private static boolean setTypes(GraphElement ge, Set<ImmutabilityTypes> typesToSet){
-		Set<ImmutabilityTypes> typeSet = getTypes(ge);
-		
-		String logMessage = "Set: " + typeSet.toString() + " to " + typesToSet.toString() + " for " + ge.getAttr(XCSG.name);
-		
-		boolean typesChanged;
-		if(typeSet.containsAll(typesToSet) && typesToSet.containsAll(typeSet)){
-			typesChanged = false;
-		} else {
-			typeSet.clear();
-			typeSet.addAll(typesToSet);
-			typesChanged = true;
-		}
-		
-		if(typesChanged){
-			if(DEBUG_LOG_ENABLED) Log.info(logMessage);
-		}
-		
-		return typesChanged;
-	}
-	
-	/**
-	 * Sets the type qualifier for a graph element
-	 * @param ge
-	 * @param qualifier
-	 * @return Returns true if the type qualifier changed
-	 */
-	private static boolean setTypes(GraphElement ge, ImmutabilityTypes... types){
-		EnumSet<ImmutabilityTypes> typesToSet = EnumSet.noneOf(ImmutabilityTypes.class);
-		for(ImmutabilityTypes type : types){
-			typesToSet.add(type);
-		}
-		return setTypes(ge, typesToSet);
-	}
+	// be extremely careful using set types...
+	// better to just remove types if possible
+//	/**
+//	 * Sets the type qualifier for a graph element
+//	 * @param ge
+//	 * @param qualifier
+//	 * @return Returns true if the type qualifier changed
+//	 */
+//	private static boolean setTypes(GraphElement ge, Set<ImmutabilityTypes> typesToSet){
+//		Set<ImmutabilityTypes> typeSet = getTypes(ge);
+//		
+//		String logMessage = "Set: " + typeSet.toString() + " to " + typesToSet.toString() + " for " + ge.getAttr(XCSG.name);
+//		
+//		boolean typesChanged;
+//		if(typeSet.containsAll(typesToSet) && typesToSet.containsAll(typeSet)){
+//			typesChanged = false;
+//		} else {
+//			typeSet.clear();
+//			typeSet.addAll(typesToSet);
+//			typesChanged = true;
+//		}
+//		
+//		if(typesChanged){
+//			if(DEBUG_LOG_ENABLED) Log.info(logMessage);
+//		}
+//		
+//		return typesChanged;
+//	}
+//	
+//	/**
+//	 * Sets the type qualifier for a graph element
+//	 * @param ge
+//	 * @param qualifier
+//	 * @return Returns true if the type qualifier changed
+//	 */
+//	@SuppressWarnings("unused")
+//	private static boolean setTypes(GraphElement ge, ImmutabilityTypes... types){
+//		EnumSet<ImmutabilityTypes> typesToSet = EnumSet.noneOf(ImmutabilityTypes.class);
+//		for(ImmutabilityTypes type : types){
+//			typesToSet.add(type);
+//		}
+//		return setTypes(ge, typesToSet);
+//	}
 	
 	@SuppressWarnings("unchecked")
 	private static Set<ImmutabilityTypes> getTypes(GraphElement ge){
@@ -1211,7 +1267,7 @@ public class PurityAnalysis {
 				// Section 2.4 of Reference 1
 				// "All other references are initialized to the maximal
 				// set of qualifiers, i.e. S(x) = {readonly, polyread, mutable}"
-				qualifiers.add(ImmutabilityTypes.POLYREAD);
+//				qualifiers.add(ImmutabilityTypes.POLYREAD); // what does it mean for a local reference to be polyread? ~Ben
 				qualifiers.add(ImmutabilityTypes.READONLY);
 				qualifiers.add(ImmutabilityTypes.MUTABLE);
 			}
@@ -1221,31 +1277,46 @@ public class PurityAnalysis {
 		}
 	}
 	
+//	/**
+//	 * Returns the fields of containers that are types of the type for the given field 
+//	 * and the resulting reachable fields
+//	 * @param field
+//	 * @return
+//	 */
+//	private static AtlasSet<GraphElement> getContainerFields(GraphElement field){
+//		Q containsEdges = Common.universe().edgesTaggedWithAny(XCSG.Contains);
+//		Q typeOfEdges = Common.universe().edgesTaggedWithAny(XCSG.TypeOf);
+//		Q supertypeEdges = Common.universe().edgesTaggedWithAny(XCSG.Supertype);
+//		
+//		AtlasSet<GraphElement> fields = new AtlasHashSet<GraphElement>();
+//		fields.add(field);
+//		boolean foundNewFields = false;
+//		do {
+//			Q privateFields = Common.toQ(fields).nodesTaggedWithAny(XCSG.privateVisibility);
+//			Q accessibleFields = Common.toQ(fields).difference(privateFields);
+//			Q accessibleFieldContainers = containsEdges.predecessors(accessibleFields);
+//			Q accessibleFieldContainerSubtypes = supertypeEdges.reverse(accessibleFieldContainers);
+//			Q privateFieldContainers = containsEdges.predecessors(privateFields);
+//			AtlasSet<GraphElement> reachableFields = typeOfEdges.predecessors(accessibleFieldContainerSubtypes.union(privateFieldContainers)).nodesTaggedWithAny(XCSG.InstanceVariable).eval().nodes();
+//			foundNewFields = fields.addAll(reachableFields);
+//		} while(foundNewFields);
+//		
+//		return fields;
+//	}
+	
 	/**
-	 * Returns the fields of containers that are types of the type for the given field 
-	 * and the resulting reachable fields
-	 * @param field
+	 * Returns the fields or local variable accessed for an instance variable access
+	 * @param instanceVariableAccess
 	 * @return
 	 */
-	private static AtlasSet<GraphElement> getContainerFields(GraphElement field){
-		Q containsEdges = Common.universe().edgesTaggedWithAny(XCSG.Contains);
-		Q typeOfEdges = Common.universe().edgesTaggedWithAny(XCSG.TypeOf);
-		Q supertypeEdges = Common.universe().edgesTaggedWithAny(XCSG.Supertype);
-		
-		AtlasSet<GraphElement> fields = new AtlasHashSet<GraphElement>();
-		fields.add(field);
-		boolean foundNewFields = false;
-		do {
-			Q privateFields = Common.toQ(fields).nodesTaggedWithAny(XCSG.privateVisibility);
-			Q accessibleFields = Common.toQ(fields).difference(privateFields);
-			Q accessibleFieldContainers = containsEdges.predecessors(accessibleFields);
-			Q accessibleFieldContainerSubtypes = supertypeEdges.reverse(accessibleFieldContainers);
-			Q privateFieldContainers = containsEdges.predecessors(privateFields);
-			AtlasSet<GraphElement> reachableFields = typeOfEdges.predecessors(accessibleFieldContainerSubtypes.union(privateFieldContainers)).nodesTaggedWithAny(XCSG.InstanceVariable).eval().nodes();
-			foundNewFields = fields.addAll(reachableFields);
-		} while(foundNewFields);
-		
-		return fields;
+	public static AtlasSet<GraphElement> getAccessedContainers(GraphElement instanceVariableAccess){
+		Q instanceVariableAccessedEdges = Common.universe().edgesTaggedWithAny(XCSG.InstanceVariableAccessed);
+		Q variablesAccessed = instanceVariableAccessedEdges.reverse(Common.toQ(instanceVariableAccess));
+		Q instancesVariablesAccessed = variablesAccessed.nodesTaggedWithAny(XCSG.InstanceVariableAccess);
+		Q localVariables = variablesAccessed.difference(instancesVariablesAccessed);
+		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
+		Q fieldsAccessed = interproceduralDataFlowEdges.predecessors(instancesVariablesAccessed);
+		return localVariables.union(fieldsAccessed).eval().nodes();
 	}
 	
 	/**
@@ -1315,18 +1386,18 @@ public class PurityAnalysis {
 			// leaving the remaining type qualifiers on the graph element is useful for debugging
 			if(!DEBUG_LOG_ENABLED) attributedGraphElement.removeAttr(IMMUTABILITY_QUALIFIERS);
 			attributedGraphElement.tag(maximalType.toString());
-			
-			// tag the graph elements that were never touched as readonly
-			Q parameters = Common.universe().nodesTaggedWithAny(XCSG.Parameter);
-			Q masterReturns = Common.universe().nodesTaggedWithAny(XCSG.MasterReturn);
-			Q instanceVariables = Common.universe().nodesTaggedWithAny(XCSG.InstanceVariable);
-			Q thisNodes = Common.universe().nodesTaggedWithAll(XCSG.InstanceMethod).children().nodesTaggedWithAny(XCSG.Identity);
-			// note local variables may also get tracked, but only if need be during the analysis
-			Q trackedItems = parameters.union(masterReturns, instanceVariables, thisNodes);
-			Q untouchedTrackedItems = trackedItems.difference(trackedItems.nodesTaggedWithAny(READONLY, POLYREAD, MUTABLE));
-			for(GraphElement untouchedTrackedItem : untouchedTrackedItems.eval().nodes()){
-				untouchedTrackedItem.tag(READONLY);
-			}
+		}
+		
+		// tag the graph elements that were never touched as readonly
+		Q parameters = Common.universe().nodesTaggedWithAny(XCSG.Parameter);
+		Q masterReturns = Common.universe().nodesTaggedWithAny(XCSG.MasterReturn);
+		Q instanceVariables = Common.universe().nodesTaggedWithAny(XCSG.InstanceVariable);
+		Q thisNodes = Common.universe().nodesTaggedWithAll(XCSG.InstanceMethod).children().nodesTaggedWithAny(XCSG.Identity);
+		// note local variables may also get tracked, but only if need be during the analysis
+		Q trackedItems = parameters.union(masterReturns, instanceVariables, thisNodes);
+		Q untouchedTrackedItems = trackedItems.difference(trackedItems.nodesTaggedWithAny(READONLY, POLYREAD, MUTABLE));
+		for(GraphElement untouchedTrackedItem : untouchedTrackedItems.eval().nodes()){
+			untouchedTrackedItem.tag(READONLY);
 		}
 	}
 	
@@ -1353,31 +1424,22 @@ public class PurityAnalysis {
 		} else if(isPureMethodDefault(method)){
 			return true;
 		} else {
-			// check if receiver object in any callsite is not mutable
-			Q identity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity);
-			Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
-			Q identityPassed = interproceduralDataFlowEdges.predecessors(identity);
-			Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
-			Q receivers = localDataFlowEdges.predecessors(identityPassed);
-			// a receiver may be a local reference or a field
-			// TODO: receiver could also be a callsite...
-			Q instanceVariableValues = receivers.nodesTaggedWithAny(XCSG.InstanceVariableValue);
-			Q instanceVariables = interproceduralDataFlowEdges.predecessors(instanceVariableValues);
-			receivers = receivers.union(instanceVariables);
-			Q mutableReceivers = receivers.nodesTaggedWithAny(ImmutabilityTypes.MUTABLE.toString());
-			if(mutableReceivers.eval().nodes().size() > 0){
-				return false;
-			}
-			
-			// check if any parameter is not mutable
+			// from reference 1 section 3
+			// a method is pure if 
+			// 1) it does not mutate prestates reachable through parameters
+			// this includes the formal parameters and implicit "this" parameter
 			Q parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter);
-			Q mutableParameters = parameters.nodesTaggedWithAny(ImmutabilityTypes.MUTABLE.toString());
+			Q mutableParameters = parameters.nodesTaggedWithAny(MUTABLE);
 			if(mutableParameters.eval().nodes().size() > 0){
 				return false;
 			}
+			Q mutableIdentity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).nodesTaggedWithAny(MUTABLE);
+			if(mutableIdentity.eval().nodes().size() > 0){
+				return false;
+			}
 			
-			// TODO: check if static immutability type is not mutable
-			// means check if the method's "this" is not mutable?
+			// 2) it does not mutate prestates reachable through static fields
+			// TODO: implement static immutability type check
 			
 			return true;
 		}
