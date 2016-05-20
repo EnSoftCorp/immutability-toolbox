@@ -1,7 +1,10 @@
+package tests;
+import objects.Date;
+
 
 public class Test2 {
 
-	// mutable
+	// polyread
 	Date y;
 	
 	public void foo(Date x){
@@ -10,9 +13,9 @@ public class Test2 {
 		x = new Date();
 		
 		// y is now the local variable x
-		y = x;
+		this.y = x;
 		
-		// thing is mutable => y is mutable
+		// thing is polyread => y is polyread
 		x.thing.majig = 2;	
 	}
 	
