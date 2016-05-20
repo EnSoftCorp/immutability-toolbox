@@ -6,6 +6,6 @@ public class Date {
 	public int hour;
 	
 	// mutable
-	public Thing thing;
+	public Thing thing = new Thing();
 	
 }
