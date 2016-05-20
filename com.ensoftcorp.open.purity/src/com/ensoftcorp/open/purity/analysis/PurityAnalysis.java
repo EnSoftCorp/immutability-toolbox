@@ -497,28 +497,34 @@ public class PurityAnalysis {
 		
 		boolean typesChanged = false;
 
+		// if x is a reference it must be mutable
+		// if x is a field it must be polyread
+		if(removeTypes(x, ImmutabilityTypes.READONLY)){
+			typesChanged = true;
+		}
+		
 		if(x.taggedWith(XCSG.InstanceVariableValue)){
 			// if a field changes in an object then that object and any container 
 			// objects which contain an object where the field is have also changed
+			// for example z.x.f = y, x is being mutated and so is z
 			for(GraphElement container : getAccessedContainers(x)){
 				if(removeTypes(container, ImmutabilityTypes.READONLY)){
 					typesChanged = true;
 				}
 			}
-			
-			// TODO: is this right?
-			// these constraints are too strong if x is a field...
-			return typesChanged;
-		}
-		
-		// the reference x must be mutable
-		if(removeTypes(x, ImmutabilityTypes.READONLY)){
-			typesChanged = true;
 		}
 		
 		Set<ImmutabilityTypes> xTypes = getTypes(x);
 		Set<ImmutabilityTypes> yTypes = getTypes(y);
 		Set<ImmutabilityTypes> fTypes = getTypes(f);
+		
+//		// if y is only mutable then x cannot be readonly
+//		// if y is polyread then x could still be readonly
+		if((yTypes.contains(ImmutabilityTypes.MUTABLE)) && yTypes.size()==1){
+			if(removeTypes(f, ImmutabilityTypes.READONLY)){
+				typesChanged = true;
+			}
+		}
 		
 		// process s(x)
 		if(DEBUG_LOG_ENABLED) Log.info("Process s(x) for constraint qy " + getTypes(y).toString() + " <: qx " + getTypes(x).toString() + " adapt qf " + getTypes(f).toString());
@@ -631,6 +637,10 @@ public class PurityAnalysis {
 		if(xIsPolyreadField || xIsMutableReference){
 			// if x is a polyread field then the read field (f) and its container's must be polyread
 			// if x is a mutable reference then f and its container fields must be polyread
+			// for example x = z.y.f, if x has been mutated then so has f, y, and z
+			if(removeTypes(f, ImmutabilityTypes.READONLY)){
+				typesChanged = true;
+			}
 			for(GraphElement containerField : getAccessedContainers(y)){
 				if(removeTypes(containerField, ImmutabilityTypes.READONLY)){
 					typesChanged = true;
@@ -1381,6 +1391,10 @@ public class PurityAnalysis {
 		for(GraphElement attributedGraphElement : attributedGraphElements){
 			LinkedList<ImmutabilityTypes> orderedTypes = new LinkedList<ImmutabilityTypes>();
 			orderedTypes.addAll(getTypes(attributedGraphElement));
+			if(orderedTypes.isEmpty()){
+				Log.warning(attributedGraphElement.address().toAddressString() + " has no types!");
+				continue;
+			}
 			Collections.sort(orderedTypes);
 			ImmutabilityTypes maximalType = orderedTypes.getLast();
 			// leaving the remaining type qualifiers on the graph element is useful for debugging
