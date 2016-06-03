@@ -64,6 +64,11 @@ public class PurityAnalysis {
 	private static final String IMMUTABILITY_QUALIFIERS = "IMMUTABILITY_QUALIFIERS";
 	
 	/**
+	 * Used as an attribute key to temporarily compute the potential static immutability qualifiers
+	 */
+	private static final String STATIC_IMMUTABILITY_QUALIFIERS = "STATIC_IMMUTABILITY_QUALIFIERS";
+	
+	/**
 	 * Enables general logging to the Atlas log
 	 */
 	private static final boolean LOG_ENABLED = true;
@@ -71,12 +76,12 @@ public class PurityAnalysis {
 	/**
 	 * Enables inference rule logging to the Atlas log
 	 */
-	private static final boolean LOG_INFERENCE_RULES_ENABLED = true;
+	private static final boolean LOG_INFERENCE_RULES_ENABLED = false;
 	
 	/**
 	 * Enables verbose debug logging to the Atlas log
 	 */
-	private static final boolean DEBUG_LOG_ENABLED = true;
+	private static final boolean DEBUG_LOG_ENABLED = false;
 	
 	/**
 	 * Encodes the immutability qualifications as types 
@@ -335,6 +340,26 @@ public class PurityAnalysis {
 				involvesField = true;
 			}
 			
+			if(!involvesField){
+				// Type Rule 7 - TSREAD
+				// let, x = sf
+				try {
+					GraphElement x = to;
+					GraphElement interproceduralEdgeFromField = interproceduralDFGraph.edges(from, NodeDirection.IN).getFirst();
+					GraphElement sf = interproceduralEdgeFromField.getNode(EdgeDirection.FROM);
+//					TODO: ask Theo if this is equiv to code below, if(sf.taggedWith(XCSG.Field) && sf.taggedWith(Node.IS_STATIC))
+					if(sf.taggedWith(XCSG.ClassVariable)){
+						GraphElement m = getContainingMethod(x);
+						if(handleStaticFieldRead(x, sf, m)){
+							typesChanged = true;
+						}
+						involvesField = true;
+					}
+				} catch (Exception e){
+					if(LOG_ENABLED) Log.error("Error parsing static field read for work item: " + workItem.address().toAddressString(), e);
+				}
+			}
+			
 			// TCALL
 			boolean involvesCallsite = false;
 			if(from.taggedWith(XCSG.CallSite) && from.taggedWith(XCSG.DynamicDispatchCallSite)){
@@ -396,6 +421,123 @@ public class PurityAnalysis {
 			}
 		}
 		
+		// TODO: handle write to static field
+		// Type Rule 6 - TSWRITE
+		// let, sf = x
+		
+		
+		return typesChanged;
+	}
+
+	/**
+	 * Solves and satisfies constraints for Type Rule 7, - TSREAD
+	 * Let, x = sf
+	 * 
+	 * @param x The reference being written to
+	 * @param sf The static field being read from
+	 * @param m The method where the assignment happens
+	 * @return
+	 */
+	private static boolean handleStaticFieldRead(GraphElement x, GraphElement sf, GraphElement m) {
+		if(x==null){
+			Log.warning("x is null!");
+			return false;
+		}
+		
+		if(sf==null){
+			Log.warning("sf is null!");
+			return false;
+		}
+		
+		if(m==null){
+			Log.warning("m is null!");
+			return false;
+		}
+		
+		if(LOG_INFERENCE_RULES_ENABLED) Log.info("TSREAD (x=sf, x=" + x.getAttr(XCSG.name) + ", sf=" + sf.getAttr(XCSG.name) + ")");
+		
+		boolean typesChanged = false;
+		
+		Set<ImmutabilityTypes> xTypes = getTypes(x);
+		Set<ImmutabilityTypes> mStaticTypes = getStaticTypes(m);
+		
+		// process s(x)
+		if(DEBUG_LOG_ENABLED) Log.info("Process s(x) for constraint qm " + getTypes(m).toString() + " <: qx " + getTypes(x).toString());
+		Set<ImmutabilityTypes> xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
+		for(ImmutabilityTypes xType : xTypes){
+			boolean isSatisfied = false;
+			satisfied:
+			for(ImmutabilityTypes mStaticType : mStaticTypes){
+				if(xType.compareTo(mStaticType) >= 0){
+					isSatisfied = true;
+					break satisfied;
+				}
+			}
+			if(!isSatisfied){
+				xTypesToRemove.add(xType);
+			}
+		}
+		if(removeTypes(x, xTypesToRemove)){
+			typesChanged = true;
+		}
+		
+		// process s(m)
+		if(DEBUG_LOG_ENABLED) Log.info("Process s(m) for constraint qm " + getTypes(m).toString() + " <: qx " + getTypes(x).toString());
+		Set<ImmutabilityTypes> mStaticTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
+		for(ImmutabilityTypes mStaticType : mStaticTypes){
+			boolean isSatisfied = false;
+			satisfied:
+			for(ImmutabilityTypes xType : xTypes){
+				if(xType.compareTo(mStaticType) >= 0){
+					isSatisfied = true;
+					break satisfied;
+				}
+			}
+			if(!isSatisfied){
+				mStaticTypesToRemove.add(mStaticType);
+			}
+		}
+		if(removeStaticTypes(m, mStaticTypesToRemove)){
+			typesChanged = true;
+		}
+		
+		return typesChanged;
+	}
+	
+	/**
+	 * Solves and satisfies constraints for Type Rule 6, - TSWRITE
+	 * Let, sf = x
+	 * 
+	 * @param sf The static field being written to
+	 * @param x The reference being read from
+	 * @param m The method where the assignment happens
+	 * 
+	 * @return
+	 */
+	private static boolean handleStaticFieldWrite(GraphElement sf, GraphElement x, GraphElement m) {
+		if(sf==null){
+			Log.warning("sf is null!");
+			return false;
+		}
+		
+		if(x==null){
+			Log.warning("x is null!");
+			return false;
+		}
+
+		if(m==null){
+			Log.warning("m is null!");
+			return false;
+		}
+		
+		if(LOG_INFERENCE_RULES_ENABLED) Log.info("TSWRITE (sf=x, sf=" + sf.getAttr(XCSG.name) + ", x=" + x.getAttr(XCSG.name) + ")");
+		
+		boolean typesChanged = false;
+		
+		if(removeStaticTypes(m, ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)){
+			typesChanged = true;
+		}
+
 		return typesChanged;
 	}
 
@@ -1196,49 +1338,58 @@ public class PurityAnalysis {
 		return removeTypes(ge, typesToRemove);
 	}
 	
-	// be extremely careful using set types...
-	// better to just remove types if possible
-//	/**
-//	 * Sets the type qualifier for a graph element
-//	 * @param ge
-//	 * @param qualifier
-//	 * @return Returns true if the type qualifier changed
-//	 */
-//	private static boolean setTypes(GraphElement ge, Set<ImmutabilityTypes> typesToSet){
-//		Set<ImmutabilityTypes> typeSet = getTypes(ge);
-//		
-//		String logMessage = "Set: " + typeSet.toString() + " to " + typesToSet.toString() + " for " + ge.getAttr(XCSG.name);
-//		
-//		boolean typesChanged;
-//		if(typeSet.containsAll(typesToSet) && typesToSet.containsAll(typeSet)){
-//			typesChanged = false;
-//		} else {
-//			typeSet.clear();
-//			typeSet.addAll(typesToSet);
-//			typesChanged = true;
-//		}
-//		
-//		if(typesChanged){
-//			if(DEBUG_LOG_ENABLED) Log.info(logMessage);
-//		}
-//		
-//		return typesChanged;
-//	}
-//	
-//	/**
-//	 * Sets the type qualifier for a graph element
-//	 * @param ge
-//	 * @param qualifier
-//	 * @return Returns true if the type qualifier changed
-//	 */
-//	@SuppressWarnings("unused")
-//	private static boolean setTypes(GraphElement ge, ImmutabilityTypes... types){
-//		EnumSet<ImmutabilityTypes> typesToSet = EnumSet.noneOf(ImmutabilityTypes.class);
-//		for(ImmutabilityTypes type : types){
-//			typesToSet.add(type);
-//		}
-//		return setTypes(ge, typesToSet);
-//	}
+	/**
+	 * Sets the type qualifier for a graph element
+	 * @param ge
+	 * @param qualifier
+	 * @return Returns true if the type qualifier changed
+	 */
+	private static boolean removeStaticTypes(GraphElement ge, Set<ImmutabilityTypes> typesToRemove){
+		Set<ImmutabilityTypes> typeSet = getStaticTypes(ge);
+		String logMessage = "Remove: " + typesToRemove.toString() + " from " + typeSet.toString() + " for " + ge.getAttr(XCSG.name);
+		boolean typesChanged = typeSet.removeAll(typesToRemove);
+		if(typesChanged){
+			if(DEBUG_LOG_ENABLED) Log.info(logMessage);
+		}
+		return typesChanged;
+	}
+	
+	/**
+	 * Sets the type qualifier for a graph element
+	 * @param ge
+	 * @param qualifier
+	 * @return Returns true if the type qualifier changed
+	 */
+	private static boolean removeStaticTypes(GraphElement ge, ImmutabilityTypes... types){
+		EnumSet<ImmutabilityTypes> typesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
+		for(ImmutabilityTypes type : types){
+			typesToRemove.add(type);
+		}
+		return removeStaticTypes(ge, typesToRemove);
+	}
+	
+	@SuppressWarnings("unchecked")
+	private static Set<ImmutabilityTypes> getStaticTypes(GraphElement ge){
+		if(ge.hasAttr(STATIC_IMMUTABILITY_QUALIFIERS)){
+			return (Set<ImmutabilityTypes>) ge.getAttr(STATIC_IMMUTABILITY_QUALIFIERS);
+		} else {
+			EnumSet<ImmutabilityTypes> qualifiers = EnumSet.noneOf(ImmutabilityTypes.class);
+			if(ge.taggedWith(XCSG.Field)){
+				// Section 3 of Reference 1
+				// static fields can only be readonly or mutable
+				qualifiers.add(ImmutabilityTypes.READONLY);
+				qualifiers.add(ImmutabilityTypes.MUTABLE);
+			} else if(ge.taggedWith(XCSG.Method)){
+				qualifiers.add(ImmutabilityTypes.READONLY);
+				qualifiers.add(ImmutabilityTypes.POLYREAD);
+				qualifiers.add(ImmutabilityTypes.MUTABLE);
+			} else {
+				throw new IllegalArgumentException("Static types are only valid for fields and methods");
+			}
+			ge.putAttr(STATIC_IMMUTABILITY_QUALIFIERS, qualifiers);
+			return qualifiers;
+		}
+	}
 	
 	@SuppressWarnings("unchecked")
 	private static Set<ImmutabilityTypes> getTypes(GraphElement ge){
@@ -1286,33 +1437,6 @@ public class PurityAnalysis {
 			return qualifiers;
 		}
 	}
-	
-//	/**
-//	 * Returns the fields of containers that are types of the type for the given field 
-//	 * and the resulting reachable fields
-//	 * @param field
-//	 * @return
-//	 */
-//	private static AtlasSet<GraphElement> getContainerFields(GraphElement field){
-//		Q containsEdges = Common.universe().edgesTaggedWithAny(XCSG.Contains);
-//		Q typeOfEdges = Common.universe().edgesTaggedWithAny(XCSG.TypeOf);
-//		Q supertypeEdges = Common.universe().edgesTaggedWithAny(XCSG.Supertype);
-//		
-//		AtlasSet<GraphElement> fields = new AtlasHashSet<GraphElement>();
-//		fields.add(field);
-//		boolean foundNewFields = false;
-//		do {
-//			Q privateFields = Common.toQ(fields).nodesTaggedWithAny(XCSG.privateVisibility);
-//			Q accessibleFields = Common.toQ(fields).difference(privateFields);
-//			Q accessibleFieldContainers = containsEdges.predecessors(accessibleFields);
-//			Q accessibleFieldContainerSubtypes = supertypeEdges.reverse(accessibleFieldContainers);
-//			Q privateFieldContainers = containsEdges.predecessors(privateFields);
-//			AtlasSet<GraphElement> reachableFields = typeOfEdges.predecessors(accessibleFieldContainerSubtypes.union(privateFieldContainers)).nodesTaggedWithAny(XCSG.InstanceVariable).eval().nodes();
-//			foundNewFields = fields.addAll(reachableFields);
-//		} while(foundNewFields);
-//		
-//		return fields;
-//	}
 	
 	/**
 	 * Returns the fields or local variable accessed for an instance variable access
@@ -1491,6 +1615,43 @@ public class PurityAnalysis {
 		}
 
 		return false;
+	}
+	
+	/**
+	 * Returns the containing method of a given graph element or null if one is not found
+	 * @param ge
+	 * @return
+	 */
+	private static GraphElement getContainingMethod(GraphElement ge) {
+		// NOTE: the enclosing method may be two steps or more above
+		return getContainingNode(ge, XCSG.Method);
+	}
+	
+	/**
+	 * Find the next immediate containing node with the given tag.
+	 * 
+	 * @param node 
+	 * @param containingTag
+	 * @return the next immediate containing node, or null if none exists; never returns the given node
+	 */
+	private static GraphElement getContainingNode(GraphElement node,
+			String containingTag) {
+		if (node == null)
+			return null;
+		
+		while (true) {
+			GraphElement containsEdge = Graph.U.edges(node, NodeDirection.IN).taggedWithAll(XCSG.Contains).getFirst();
+			if (containsEdge == null)
+				return null;
+			
+			GraphElement parent = containsEdge.getNode(EdgeDirection.FROM);
+			
+			if (parent.taggedWith(containingTag))
+				return parent;
+			
+			node = parent;
+		}
+	
 	}
 	
 }
