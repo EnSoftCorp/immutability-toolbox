@@ -725,6 +725,11 @@ public class PurityAnalysis {
 				if(removeTypes(container, ImmutabilityTypes.READONLY)){
 					typesChanged = true;
 				}
+				if(container.taggedWith(XCSG.ClassVariable)){
+					if(removeStaticTypes(getContainingMethod(x), ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)){
+						typesChanged = true;
+					}
+				}
 			}
 		}
 		
@@ -732,8 +737,8 @@ public class PurityAnalysis {
 		Set<ImmutabilityTypes> yTypes = getTypes(y);
 		Set<ImmutabilityTypes> fTypes = getTypes(f);
 		
-//		// if y is only mutable then x cannot be readonly
-//		// if y is polyread then x could still be readonly
+		// if y is only mutable then x cannot be readonly
+		// if y is polyread then x could still be readonly
 		if((yTypes.contains(ImmutabilityTypes.MUTABLE)) && yTypes.size()==1){
 			if(removeTypes(f, ImmutabilityTypes.READONLY)){
 				typesChanged = true;
