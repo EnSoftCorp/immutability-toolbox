@@ -261,6 +261,7 @@ public class PurityAnalysis {
 	 * @return
 	 */
 	private static boolean applyInferenceRules(GraphElement workItem){
+		Graph dfGraph = Common.universe().edgesTaggedWithAny(XCSG.DataFlow_Edge).eval();
 		Graph localDFGraph = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow).eval();
 		Graph interproceduralDFGraph = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow).eval();
 		Graph instanceVariableAccessedGraph = Common.universe().edgesTaggedWithAny(XCSG.InstanceVariableAccessed).eval();
@@ -269,10 +270,11 @@ public class PurityAnalysis {
 		
 		boolean typesChanged = false;
 		
-		// consider incoming data flow edges
+		// consider data flow edges
 		// incoming edges represent a read relationship in an assignment
+		// outgoing edges represent a write relationship in an assignment
 		GraphElement to = workItem;
-		AtlasSet<GraphElement> inEdges = localDFGraph.edges(to, NodeDirection.IN);
+		AtlasSet<GraphElement> inEdges = dfGraph.edges(to, NodeDirection.IN);
 		for(GraphElement edge : inEdges){
 			GraphElement from = edge.getNode(EdgeDirection.FROM);
 
@@ -340,24 +342,36 @@ public class PurityAnalysis {
 				involvesField = true;
 			}
 			
-			if(!involvesField){
-				// Type Rule 7 - TSREAD
-				// let, x = sf
-				try {
+			// Type Rule 7 - TSREAD
+			// let, x = sf
+			try {
+				if(from.taggedWith(XCSG.ClassVariable)){
 					GraphElement x = to;
-					GraphElement interproceduralEdgeFromField = interproceduralDFGraph.edges(from, NodeDirection.IN).getFirst();
-					GraphElement sf = interproceduralEdgeFromField.getNode(EdgeDirection.FROM);
-//					TODO: ask Theo if this is equiv to code below, if(sf.taggedWith(XCSG.Field) && sf.taggedWith(Node.IS_STATIC))
-					if(sf.taggedWith(XCSG.ClassVariable)){
-						GraphElement m = getContainingMethod(x);
-						if(handleStaticFieldRead(x, sf, m)){
-							typesChanged = true;
-						}
-						involvesField = true;
+					GraphElement sf = from;
+					GraphElement m = getContainingMethod(x);
+					if(handleStaticFieldRead(x, sf, m)){
+						typesChanged = true;
 					}
-				} catch (Exception e){
-					if(LOG_ENABLED) Log.error("Error parsing static field read for work item: " + workItem.address().toAddressString(), e);
-				}
+					involvesField = true;
+				}	
+			} catch (Exception e){
+				if(LOG_ENABLED) Log.error("Error parsing static field read for work item: " + workItem.address().toAddressString(), e);
+			}
+			
+			// Type Rule 8 - TSWRITE
+			// let, sf = x
+			try {
+				if(to.taggedWith(XCSG.ClassVariable)){
+					GraphElement sf = to;
+					GraphElement x = from;
+					GraphElement m = getContainingMethod(x);
+					if(handleStaticFieldWrite(sf, x, m)){
+						typesChanged = true;
+					}
+					involvesField = true;
+				}	
+			} catch (Exception e){
+				if(LOG_ENABLED) Log.error("Error parsing static field read for work item: " + workItem.address().toAddressString(), e);
 			}
 			
 			// TCALL
@@ -420,11 +434,6 @@ public class PurityAnalysis {
 				}
 			}
 		}
-		
-		// TODO: handle write to static field
-		// Type Rule 6 - TSWRITE
-		// let, sf = x
-		
 		
 		return typesChanged;
 	}
