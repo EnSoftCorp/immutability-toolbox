@@ -69,19 +69,29 @@ public class PurityAnalysis {
 	private static final String STATIC_IMMUTABILITY_QUALIFIERS = "STATIC_IMMUTABILITY_QUALIFIERS";
 	
 	/**
+	 * Removes the qualifier sets after the maximal type has been extracted
+	 */
+	private static final boolean REMOVE_QUALIFIER_SETS = false;
+	
+	/**
 	 * Enables general logging to the Atlas log
 	 */
-	private static final boolean LOG_ENABLED = true;
+	private static final boolean DEBUG_LOG_L1_ENABLED = true;
 
 	/**
 	 * Enables inference rule logging to the Atlas log
 	 */
-	private static final boolean LOG_INFERENCE_RULES_ENABLED = false;
+	private static final boolean DEBUG_LOG_L2_ENABLED = true;
 	
 	/**
 	 * Enables verbose debug logging to the Atlas log
 	 */
-	private static final boolean DEBUG_LOG_ENABLED = false;
+	private static final boolean DEBUG_LOG_L3_ENABLED = false;
+	
+	// TODO: bug EnSoft to make tags like this...
+	private static final String CLASS_VARIABLE_ASSIGNMENT = "CLASS_VARIABLE_ASSIGNMENT";
+	private static final String CLASS_VARIABLE_VALUE = "CLASS_VARIABLE_VALUE";
+	private static final String CLASS_VARIABLE_ACCESS = "CLASS_VARIABLE_ACCESS";
 	
 	/**
 	 * Encodes the immutability qualifications as types 
@@ -171,12 +181,12 @@ public class PurityAnalysis {
 	 * @return Returns the time in milliseconds taken to complete the analysis
 	 */
 	public static boolean run(){
-		if(LOG_ENABLED) Log.info("Purity analysis started");
+		if(DEBUG_LOG_L1_ENABLED) Log.info("Purity analysis started");
 		long start = System.nanoTime();
 		boolean successful = runAnalysis();
 		long stop = System.nanoTime();
 		double runtime = (stop-start)/1000.0/1000.0;
-		if(LOG_ENABLED) {
+		if(DEBUG_LOG_L1_ENABLED) {
 			long numReadOnly = Common.universe().nodesTaggedWithAny(READONLY).eval().nodes().size();
 			long numPolyRead = Common.universe().nodesTaggedWithAny(POLYREAD).eval().nodes().size();
 			long numMutable = Common.universe().nodesTaggedWithAny(MUTABLE).eval().nodes().size();
@@ -194,6 +204,11 @@ public class PurityAnalysis {
 	 * Runs the side effect (purity) analysis
 	 */
 	private static boolean runAnalysis(){
+		
+		// initialize tags I wish were there
+		// TODO: remove when there are appropriate alternatives
+		graphSetup();
+		
 		TreeSet<GraphElement> worklist = new TreeSet<GraphElement>();
 
 		// add all assignments to worklist
@@ -205,16 +220,16 @@ public class PurityAnalysis {
 		boolean successful = false;
 		int iteration = 1;
 		while(true){
-			if(LOG_ENABLED) Log.info("Purity analysis iteration: " + iteration);
+			if(DEBUG_LOG_L1_ENABLED) Log.info("Purity analysis iteration: " + iteration);
 			long startIteration = System.nanoTime();
 			boolean fixedPoint = true;
 
 			for(GraphElement workItem : worklist){
-				if(DEBUG_LOG_ENABLED) Log.info("Applying inference rules for " + workItem.getAttr(XCSG.name) + ", Address: " + workItem.address().toAddressString());
+				if(DEBUG_LOG_L3_ENABLED) Log.info("Applying inference rules for " + workItem.getAttr(XCSG.name) + ", Address: " + workItem.address().toAddressString());
 				long startInferenceRules = System.nanoTime();
 				boolean typesChanged = applyInferenceRules(workItem);
 				long stopInferenceRules = System.nanoTime();
-				if(DEBUG_LOG_ENABLED) Log.info("Applied inference rules for " + workItem.getAttr(XCSG.name) + ", Address: " + workItem.address().toAddressString() + " in " + (stopInferenceRules-startInferenceRules)/1000.0/1000.0 + "ms");
+				if(DEBUG_LOG_L3_ENABLED) Log.info("Applied inference rules for " + workItem.getAttr(XCSG.name) + ", Address: " + workItem.address().toAddressString() + " in " + (stopInferenceRules-startInferenceRules)/1000.0/1000.0 + "ms");
 				
 				if(typesChanged){
 					fixedPoint = false;
@@ -222,10 +237,10 @@ public class PurityAnalysis {
 			}
 			
 			long stopIteration = System.nanoTime();
-			if(LOG_ENABLED) Log.info("Purity analysis iteration: " + iteration + " completed in " + (stopIteration-startIteration)/1000.0/1000.0 + "ms");
+			if(DEBUG_LOG_L1_ENABLED) Log.info("Purity analysis iteration: " + iteration + " completed in " + (stopIteration-startIteration)/1000.0/1000.0 + "ms");
 			
 			if(fixedPoint){
-				if(LOG_ENABLED) Log.info("Purity analysis reached fixed point in " + iteration + " iterations");
+				if(DEBUG_LOG_L1_ENABLED) Log.info("Purity analysis reached fixed point in " + iteration + " iterations");
 				successful = true;
 				break;
 			} else if(iteration == MAX_ITERATIONS){
@@ -241,15 +256,56 @@ public class PurityAnalysis {
 		// flattens the type hierarchy to the maximal types
 		// and sets the final attribute values for the
 		// IMMUTABILITY_QUALIFIER attribute
-		if(LOG_ENABLED) Log.info("Extracting maximal types...");
+		if(DEBUG_LOG_L1_ENABLED) Log.info("Extracting maximal types...");
 		extractMaximalTypes();
 		
 		// tags pure methods
 		// must be run after extractMaximalTypes()
-		if(LOG_ENABLED) Log.info("Applying method purity tags...");
+		if(DEBUG_LOG_L1_ENABLED) Log.info("Applying method purity tags...");
 		tagPureMethods();
 		
+		// TODO: remove when there are appropriate alternatives
+		graphTeardown();
+		
 		return successful;
+	}
+	
+	/**
+	 * Adds CLASS_VARIABLE_ASSIGNMENT, CLASS_VARIABLE_VALUE, and CLASS_VARIABLE_ACCESS
+	 * tags to reads/writes on static variables
+	 */
+	private static void graphSetup() {
+		Q classVariables = Common.universe().nodesTaggedWithAny(XCSG.ClassVariable);
+		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
+		AtlasSet<GraphElement> classVariableAssignments = interproceduralDataFlowEdges.predecessors(classVariables).eval().nodes();
+		for(GraphElement classVariableAssignment : classVariableAssignments){
+			classVariableAssignment.tag(CLASS_VARIABLE_ASSIGNMENT);
+			classVariableAssignment.tag(CLASS_VARIABLE_ACCESS);
+		}
+		AtlasSet<GraphElement> classVariableValues = interproceduralDataFlowEdges.successors(classVariables).eval().nodes();
+		for(GraphElement classVariableValue : classVariableValues){
+			classVariableValue.tag(CLASS_VARIABLE_VALUE);
+			classVariableValue.tag(CLASS_VARIABLE_ACCESS);
+		}
+	}
+	
+	/**
+	 * Removes CLASS_VARIABLE_ASSIGNMENT, CLASS_VARIABLE_VALUE, and CLASS_VARIABLE_ACCESS
+	 * tags to reads/writes on static variables
+	 */
+	private static void graphTeardown() {
+		Q classVariables = Common.universe().nodesTaggedWithAny(XCSG.ClassVariable);
+		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
+		AtlasSet<GraphElement> classVariableAssignments = interproceduralDataFlowEdges.predecessors(classVariables).eval().nodes();
+		for(GraphElement classVariableAssignment : classVariableAssignments){
+			classVariableAssignment.tags().remove(CLASS_VARIABLE_ASSIGNMENT);
+			classVariableAssignment.tags().remove(CLASS_VARIABLE_ACCESS);
+		}
+		AtlasSet<GraphElement> classVariableValues = interproceduralDataFlowEdges.successors(classVariables).eval().nodes();
+		for(GraphElement classVariableValue : classVariableValues){
+			classVariableValue.tags().remove(CLASS_VARIABLE_VALUE);
+			classVariableValue.tags().remove(CLASS_VARIABLE_ACCESS);
+		}
 	}
 	
 	/**
@@ -261,7 +317,6 @@ public class PurityAnalysis {
 	 * @return
 	 */
 	private static boolean applyInferenceRules(GraphElement workItem){
-		Graph dfGraph = Common.universe().edgesTaggedWithAny(XCSG.DataFlow_Edge).eval();
 		Graph localDFGraph = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow).eval();
 		Graph interproceduralDFGraph = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow).eval();
 		Graph instanceVariableAccessedGraph = Common.universe().edgesTaggedWithAny(XCSG.InstanceVariableAccessed).eval();
@@ -274,7 +329,7 @@ public class PurityAnalysis {
 		// incoming edges represent a read relationship in an assignment
 		// outgoing edges represent a write relationship in an assignment
 		GraphElement to = workItem;
-		AtlasSet<GraphElement> inEdges = dfGraph.edges(to, NodeDirection.IN);
+		AtlasSet<GraphElement> inEdges = localDFGraph.edges(to, NodeDirection.IN);
 		for(GraphElement edge : inEdges){
 			GraphElement from = edge.getNode(EdgeDirection.FROM);
 
@@ -285,15 +340,15 @@ public class PurityAnalysis {
 				// Type Rule 3 - TWRITE
 				// let, x.f = y
 				try {
-					// Reference (y) -LocalDataFlow-> InstanceVariableAssignment (.f)
+					// Reference (y) -LocalDataFlow-> InstanceVariableAssignment (f=)
 					GraphElement y = from;
 					if(y.taggedWith(XCSG.InstanceVariableValue)){
 						GraphElement interproceduralEdgeFromField = interproceduralDFGraph.edges(y, NodeDirection.IN).getFirst();
 						y = interproceduralEdgeFromField.getNode(EdgeDirection.FROM);
 					}
-					GraphElement instanceVariableAssignment = to; // (.f)
+					GraphElement instanceVariableAssignment = to; // (f=)
 					
-					// InstanceVariableAssignment (.f) -InterproceduralDataFlow-> InstanceVariable (f)
+					// InstanceVariableAssignment (f=) -InterproceduralDataFlow-> InstanceVariable (f)
 					GraphElement interproceduralEdgeToField = interproceduralDFGraph.edges(instanceVariableAssignment, NodeDirection.OUT).getFirst();
 					GraphElement f = interproceduralEdgeToField.getNode(EdgeDirection.TO);
 					
@@ -305,7 +360,7 @@ public class PurityAnalysis {
 						typesChanged = true;
 					}
 				} catch (Exception e){
-					if(LOG_ENABLED) Log.error("Error parsing field write for work item: " + workItem.address().toAddressString(), e);
+					if(DEBUG_LOG_L1_ENABLED) Log.error("Error parsing field write for work item: " + workItem.address().toAddressString(), e);
 				}
 				
 				involvesField = true;
@@ -336,7 +391,7 @@ public class PurityAnalysis {
 						typesChanged = true;
 					}
 				} catch (Exception e){
-					if(LOG_ENABLED) Log.error("Error parsing field read for work item: " + workItem.address().toAddressString(), e);
+					if(DEBUG_LOG_L1_ENABLED) Log.error("Error parsing field read for work item: " + workItem.address().toAddressString(), e);
 				}
 				
 				involvesField = true;
@@ -345,9 +400,13 @@ public class PurityAnalysis {
 			// Type Rule 7 - TSREAD
 			// let, x = sf
 			try {
-				if(from.taggedWith(XCSG.ClassVariable)){
+				if(from.taggedWith(CLASS_VARIABLE_VALUE)){
 					GraphElement x = to;
-					GraphElement sf = from;
+
+					// ClassVariable (sf) -InterproceduralDataFlow-> ClassVariableValue (.sf) 
+					GraphElement interproceduralEdgeFromField = interproceduralDFGraph.edges(from, NodeDirection.IN).getFirst();
+					GraphElement sf = interproceduralEdgeFromField.getNode(EdgeDirection.FROM);
+					
 					GraphElement m = getContainingMethod(x);
 					if(handleStaticFieldRead(x, sf, m)){
 						typesChanged = true;
@@ -355,14 +414,17 @@ public class PurityAnalysis {
 					involvesField = true;
 				}	
 			} catch (Exception e){
-				if(LOG_ENABLED) Log.error("Error parsing static field read for work item: " + workItem.address().toAddressString(), e);
+				if(DEBUG_LOG_L1_ENABLED) Log.error("Error parsing static field read for work item: " + workItem.address().toAddressString(), e);
 			}
 			
 			// Type Rule 8 - TSWRITE
 			// let, sf = x
 			try {
-				if(to.taggedWith(XCSG.ClassVariable)){
-					GraphElement sf = to;
+				if(to.taggedWith(CLASS_VARIABLE_ASSIGNMENT)){
+					// ClassVariableAssignment (sf=) -InterproceduralDataFlow-> ClassVariable (sf)
+					GraphElement interproceduralEdgeToField = interproceduralDFGraph.edges(to, NodeDirection.OUT).getFirst();
+					GraphElement sf = interproceduralEdgeToField.getNode(EdgeDirection.TO);
+					
 					GraphElement x = from;
 					GraphElement m = getContainingMethod(x);
 					if(handleStaticFieldWrite(sf, x, m)){
@@ -371,7 +433,7 @@ public class PurityAnalysis {
 					involvesField = true;
 				}	
 			} catch (Exception e){
-				if(LOG_ENABLED) Log.error("Error parsing static field read for work item: " + workItem.address().toAddressString(), e);
+				if(DEBUG_LOG_L1_ENABLED) Log.error("Error parsing static field read for work item: " + workItem.address().toAddressString(), e);
 			}
 			
 			// TCALL
@@ -418,13 +480,14 @@ public class PurityAnalysis {
 						typesChanged = true;
 					}
 				} catch (Exception e){
-					if(LOG_ENABLED) Log.error("Error parsing callsite for work item: " + workItem.address().toAddressString(), e);
+					if(DEBUG_LOG_L1_ENABLED) Log.error("Error parsing callsite for work item: " + workItem.address().toAddressString(), e);
 				}
 				
 				involvesCallsite = true;
 			}
 			
-			// TASSIGN
+			// Type Rule 2 - TASSIGN
+			// let x = y
 			if(!involvesField && !involvesCallsite){
 				GraphElement x = to;
 				GraphElement y = from;
@@ -463,7 +526,7 @@ public class PurityAnalysis {
 			return false;
 		}
 		
-		if(LOG_INFERENCE_RULES_ENABLED) Log.info("TSREAD (x=sf, x=" + x.getAttr(XCSG.name) + ", sf=" + sf.getAttr(XCSG.name) + ")");
+		if(DEBUG_LOG_L2_ENABLED) Log.info("TSREAD (x=sf, x=" + x.getAttr(XCSG.name) + ", sf=" + sf.getAttr(XCSG.name) + ")");
 		
 		boolean typesChanged = false;
 		
@@ -471,7 +534,7 @@ public class PurityAnalysis {
 		Set<ImmutabilityTypes> mStaticTypes = getStaticTypes(m);
 		
 		// process s(x)
-		if(DEBUG_LOG_ENABLED) Log.info("Process s(x) for constraint qm " + getTypes(m).toString() + " <: qx " + getTypes(x).toString());
+		if(DEBUG_LOG_L3_ENABLED) Log.info("Process s(x) for constraint qm " + getTypes(m).toString() + " <: qx " + getTypes(x).toString());
 		Set<ImmutabilityTypes> xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes xType : xTypes){
 			boolean isSatisfied = false;
@@ -491,7 +554,7 @@ public class PurityAnalysis {
 		}
 		
 		// process s(m)
-		if(DEBUG_LOG_ENABLED) Log.info("Process s(m) for constraint qm " + getTypes(m).toString() + " <: qx " + getTypes(x).toString());
+		if(DEBUG_LOG_L3_ENABLED) Log.info("Process s(m) for constraint qm " + getTypes(m).toString() + " <: qx " + getTypes(x).toString());
 		Set<ImmutabilityTypes> mStaticTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes mStaticType : mStaticTypes){
 			boolean isSatisfied = false;
@@ -539,7 +602,7 @@ public class PurityAnalysis {
 			return false;
 		}
 		
-		if(LOG_INFERENCE_RULES_ENABLED) Log.info("TSWRITE (sf=x, sf=" + sf.getAttr(XCSG.name) + ", x=" + x.getAttr(XCSG.name) + ")");
+		if(DEBUG_LOG_L2_ENABLED) Log.info("TSWRITE (sf=x, sf=" + sf.getAttr(XCSG.name) + ", x=" + x.getAttr(XCSG.name) + ")");
 		
 		boolean typesChanged = false;
 		
@@ -570,14 +633,14 @@ public class PurityAnalysis {
 			return false;
 		}
 		
-		if(LOG_INFERENCE_RULES_ENABLED) Log.info("TASSIGN (x=y, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")");
+		if(DEBUG_LOG_L2_ENABLED) Log.info("TASSIGN (x=y, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")");
 		
 		boolean typesChanged = false;
 		Set<ImmutabilityTypes> xTypes = getTypes(x);
 		Set<ImmutabilityTypes> yTypes = getTypes(y);
 		
 		// process s(x)
-		if(DEBUG_LOG_ENABLED) Log.info("Process s(x) for constraint qy " + getTypes(y).toString() + " <: qx " + getTypes(x).toString());
+		if(DEBUG_LOG_L3_ENABLED) Log.info("Process s(x) for constraint qy " + getTypes(y).toString() + " <: qx " + getTypes(x).toString());
 		Set<ImmutabilityTypes> xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes xType : xTypes){
 			boolean isSatisfied = false;
@@ -597,7 +660,7 @@ public class PurityAnalysis {
 		}
 		
 		// process s(y)
-		if(DEBUG_LOG_ENABLED) Log.info("Process s(y) for constraint qy " + getTypes(y).toString() + " <: qx " + getTypes(x).toString());
+		if(DEBUG_LOG_L3_ENABLED) Log.info("Process s(y) for constraint qy " + getTypes(y).toString() + " <: qx " + getTypes(x).toString());
 		Set<ImmutabilityTypes> yTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes yType : yTypes){
 			boolean isSatisfied = false;
@@ -644,7 +707,7 @@ public class PurityAnalysis {
 			return false;
 		}
 		
-		if(LOG_INFERENCE_RULES_ENABLED) Log.info("TWRITE (x.f=y, x=" + x.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")");
+		if(DEBUG_LOG_L2_ENABLED) Log.info("TWRITE (x.f=y, x=" + x.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")");
 		
 		boolean typesChanged = false;
 
@@ -654,7 +717,7 @@ public class PurityAnalysis {
 			typesChanged = true;
 		}
 		
-		if(x.taggedWith(XCSG.InstanceVariableValue)){
+		if(x.taggedWith(XCSG.InstanceVariableValue) || x.taggedWith(CLASS_VARIABLE_VALUE)){
 			// if a field changes in an object then that object and any container 
 			// objects which contain an object where the field is have also changed
 			// for example z.x.f = y, x is being mutated and so is z
@@ -678,7 +741,7 @@ public class PurityAnalysis {
 		}
 		
 		// process s(x)
-		if(DEBUG_LOG_ENABLED) Log.info("Process s(x) for constraint qy " + getTypes(y).toString() + " <: qx " + getTypes(x).toString() + " adapt qf " + getTypes(f).toString());
+		if(DEBUG_LOG_L3_ENABLED) Log.info("Process s(x) for constraint qy " + getTypes(y).toString() + " <: qx " + getTypes(x).toString() + " adapt qf " + getTypes(f).toString());
 		Set<ImmutabilityTypes> xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes xType : xTypes){
 			boolean isSatisfied = false;
@@ -701,7 +764,7 @@ public class PurityAnalysis {
 		}
 		
 		// process s(y)
-		if(DEBUG_LOG_ENABLED) Log.info("Process s(y) for constraint qy " + getTypes(y).toString() + " <: qx " + getTypes(x).toString() + " adapt qf " + getTypes(f).toString());
+		if(DEBUG_LOG_L3_ENABLED) Log.info("Process s(y) for constraint qy " + getTypes(y).toString() + " <: qx " + getTypes(x).toString() + " adapt qf " + getTypes(f).toString());
 		Set<ImmutabilityTypes> yTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes yType : yTypes){
 			boolean isSatisfied = false;
@@ -724,7 +787,7 @@ public class PurityAnalysis {
 		}
 
 		// process s(f)
-		if(DEBUG_LOG_ENABLED) Log.info("Process s(f) for constraint qy " + getTypes(y).toString() + " <: qx " + getTypes(x).toString() + " adapt qf " + getTypes(f).toString());
+		if(DEBUG_LOG_L3_ENABLED) Log.info("Process s(f) for constraint qy " + getTypes(y).toString() + " <: qx " + getTypes(x).toString() + " adapt qf " + getTypes(f).toString());
 		Set<ImmutabilityTypes> fTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes fType : fTypes){
 			boolean isSatisfied = false;
@@ -775,7 +838,7 @@ public class PurityAnalysis {
 			return false;
 		}
 
-		if(LOG_INFERENCE_RULES_ENABLED) Log.info("TREAD (x=y.f, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ")");
+		if(DEBUG_LOG_L2_ENABLED) Log.info("TREAD (x=y.f, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ")");
 		
 		boolean typesChanged = false;
 		Set<ImmutabilityTypes> fTypes = getTypes(f);
@@ -806,7 +869,7 @@ public class PurityAnalysis {
 		}
 
 		// process s(x)
-		if(DEBUG_LOG_ENABLED) Log.info("Process s(x) for constraint qy " + getTypes(y).toString() + " adapt qf " + getTypes(f).toString() + " <: qx " + getTypes(x).toString());
+		if(DEBUG_LOG_L3_ENABLED) Log.info("Process s(x) for constraint qy " + getTypes(y).toString() + " adapt qf " + getTypes(f).toString() + " <: qx " + getTypes(x).toString());
 		Set<ImmutabilityTypes> xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes xType : xTypes){
 			boolean isSatisfied = false;
@@ -829,7 +892,7 @@ public class PurityAnalysis {
 		}
 		
 		// process s(y)
-		if(DEBUG_LOG_ENABLED) Log.info("Process s(y) for constraint qy " + getTypes(y).toString() + " adapt qf " + getTypes(f).toString() + " <: qx " + getTypes(x).toString());
+		if(DEBUG_LOG_L3_ENABLED) Log.info("Process s(y) for constraint qy " + getTypes(y).toString() + " adapt qf " + getTypes(f).toString() + " <: qx " + getTypes(x).toString());
 		Set<ImmutabilityTypes> yTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes yType : yTypes){
 			boolean isSatisfied = false;
@@ -852,7 +915,7 @@ public class PurityAnalysis {
 		}
 		
 		// process s(f)
-		if(DEBUG_LOG_ENABLED) Log.info("Process s(f) for constraint qy " + getTypes(y).toString() + " adapt qf " + getTypes(f).toString() + " <: qx " + getTypes(x).toString());
+		if(DEBUG_LOG_L3_ENABLED) Log.info("Process s(f) for constraint qy " + getTypes(y).toString() + " adapt qf " + getTypes(f).toString() + " <: qx " + getTypes(x).toString());
 		Set<ImmutabilityTypes> fTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes fType : fTypes){
 			boolean isSatisfied = false;
@@ -909,7 +972,7 @@ public class PurityAnalysis {
 			return false;
 		}
 		
-		if(LOG_INFERENCE_RULES_ENABLED) Log.info("TCALL (x=y.m(z), x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", m=" + method.getAttr("##signature") + ")");
+		if(DEBUG_LOG_L2_ENABLED) Log.info("TCALL (x=y.m(z), x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", m=" + method.getAttr("##signature") + ")");
 		
 		boolean typesChanged = false;
 		Set<ImmutabilityTypes> xTypes = getTypes(x);
@@ -946,10 +1009,10 @@ public class PurityAnalysis {
 		
 		/////////////////////// start qx adapt qret <: qx /////////////////////// 
 		
-		if(DEBUG_LOG_ENABLED) Log.info("Process Constraint qx adapt qret <: qx");
+		if(DEBUG_LOG_L3_ENABLED) Log.info("Process Constraint qx adapt qret <: qx");
 		
 		// process s(x)
-		if(DEBUG_LOG_ENABLED) Log.info("Process s(x)");
+		if(DEBUG_LOG_L3_ENABLED) Log.info("Process s(x)");
 		Set<ImmutabilityTypes> xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes xType : xTypes){
 			boolean isSatisfied = false;
@@ -970,7 +1033,7 @@ public class PurityAnalysis {
 		}
 		
 		// process s(ret)
-		if(DEBUG_LOG_ENABLED) Log.info("Process s(ret)");
+		if(DEBUG_LOG_L3_ENABLED) Log.info("Process s(ret)");
 		Set<ImmutabilityTypes> retTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes retType : retTypes){
 			boolean isSatisfied = false;
@@ -993,10 +1056,10 @@ public class PurityAnalysis {
 		
 		/////////////////////// start qy <: qx adapt qthis /////////////////////// 
 		
-		if(DEBUG_LOG_ENABLED) Log.info("Process Constraint qy <: qx adapt qthis");
+		if(DEBUG_LOG_L3_ENABLED) Log.info("Process Constraint qy <: qx adapt qthis");
 		
 		// process s(y)
-		if(DEBUG_LOG_ENABLED) Log.info("Process s(y)");
+		if(DEBUG_LOG_L3_ENABLED) Log.info("Process s(y)");
 		Set<ImmutabilityTypes> yTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes yType : yTypes){
 			boolean isSatisfied = false;
@@ -1019,7 +1082,7 @@ public class PurityAnalysis {
 		}
 		
 		// process s(x)
-		if(DEBUG_LOG_ENABLED) Log.info("Process s(x)");
+		if(DEBUG_LOG_L3_ENABLED) Log.info("Process s(x)");
 		xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes xType : xTypes){
 			boolean isSatisfied = false;
@@ -1042,7 +1105,7 @@ public class PurityAnalysis {
 		}
 		
 		// process s(identity)
-		if(DEBUG_LOG_ENABLED) Log.info("Process s(identity)");
+		if(DEBUG_LOG_L3_ENABLED) Log.info("Process s(identity)");
 		Set<ImmutabilityTypes> identityTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes identityType : identityTypes){
 			boolean isSatisfied = false;
@@ -1068,7 +1131,7 @@ public class PurityAnalysis {
 
 		/////////////////////// start qz <: qx adapt qp ///////////////////////
 				
-		if(DEBUG_LOG_ENABLED) Log.info("Process Constraint qz <: qx adapt qp");
+		if(DEBUG_LOG_L3_ENABLED) Log.info("Process Constraint qz <: qx adapt qp");
 		
 		// for each z,p pair process s(x), s(z), and s(p)
 		for(GraphElement parametersPassedEdge : parametersPassedEdges){
@@ -1078,7 +1141,7 @@ public class PurityAnalysis {
 			Set<ImmutabilityTypes> pTypes = getTypes(p);
 			
 			// process s(x)
-			if(DEBUG_LOG_ENABLED) Log.info("Process s(x)");
+			if(DEBUG_LOG_L3_ENABLED) Log.info("Process s(x)");
 			xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 			for(ImmutabilityTypes xType : xTypes){
 				boolean isSatisfied = false;
@@ -1101,7 +1164,7 @@ public class PurityAnalysis {
 			}
 			
 			// process s(z)
-			if(DEBUG_LOG_ENABLED) Log.info("Process s(z)");
+			if(DEBUG_LOG_L3_ENABLED) Log.info("Process s(z)");
 			Set<ImmutabilityTypes> zTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 			for(ImmutabilityTypes zType : zTypes){
 				boolean isSatisfied = false;
@@ -1124,7 +1187,7 @@ public class PurityAnalysis {
 			}
 			
 			// process s(p)
-			if(DEBUG_LOG_ENABLED) Log.info("Process s(p)");
+			if(DEBUG_LOG_L3_ENABLED) Log.info("Process s(p)");
 			Set<ImmutabilityTypes> pTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 			for(ImmutabilityTypes pType : pTypes){
 				boolean isSatisfied = false;
@@ -1153,17 +1216,17 @@ public class PurityAnalysis {
 		Q overridesEdges = Common.universe().edgesTaggedWithAny(XCSG.Overrides);
 		GraphElement overriddenMethod = overridesEdges.successors(Common.toQ(method)).eval().nodes().getFirst();
 		if(overriddenMethod != null){
-			if(LOG_INFERENCE_RULES_ENABLED) Log.info("TCALL (Overridden Method)");
+			if(DEBUG_LOG_L2_ENABLED) Log.info("TCALL (Overridden Method)");
 			
 			// Method (method) -Contains-> ReturnValue (ret)
 			GraphElement overriddenMethodReturn = Common.toQ(overriddenMethod).children().nodesTaggedWithAny(XCSG.ReturnValue).eval().nodes().getFirst();
 			Set<ImmutabilityTypes> overriddenRetTypes = getTypes(overriddenMethodReturn);
 			
 			// constraint: overriddenReturn <: return
-			if(DEBUG_LOG_ENABLED) Log.info("Process Constraint overriddenReturn <: return");
+			if(DEBUG_LOG_L3_ENABLED) Log.info("Process Constraint overriddenReturn <: return");
 			
 			// process s(ret)
-			if(DEBUG_LOG_ENABLED) Log.info("Process s(ret)");
+			if(DEBUG_LOG_L3_ENABLED) Log.info("Process s(ret)");
 			retTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 			for(ImmutabilityTypes retType : retTypes){
 				boolean isSatisfied = false;
@@ -1183,7 +1246,7 @@ public class PurityAnalysis {
 			}
 			
 			// process s(overriddenRet)
-			if(DEBUG_LOG_ENABLED) Log.info("Process s(overriddenRet)");
+			if(DEBUG_LOG_L3_ENABLED) Log.info("Process s(overriddenRet)");
 			EnumSet<ImmutabilityTypes> overriddenRetTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 			for(ImmutabilityTypes overriddenRetType : overriddenRetTypes){
 				boolean isSatisfied = false;
@@ -1207,10 +1270,10 @@ public class PurityAnalysis {
 			Set<ImmutabilityTypes> overriddenIdentityTypes = getTypes(overriddenMethodIdentity);
 
 			// constraint: this <: overriddenThis 
-			if(DEBUG_LOG_ENABLED) Log.info("Process Constraint this <: overriddenThis");
+			if(DEBUG_LOG_L3_ENABLED) Log.info("Process Constraint this <: overriddenThis");
 			
 			// process s(this)
-			if(DEBUG_LOG_ENABLED) Log.info("Process s(this)");
+			if(DEBUG_LOG_L3_ENABLED) Log.info("Process s(this)");
 			identityTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 			for(ImmutabilityTypes identityType : identityTypes){
 				boolean isSatisfied = false;
@@ -1230,7 +1293,7 @@ public class PurityAnalysis {
 			}
 			
 			// process s(overriddenRet)
-			if(DEBUG_LOG_ENABLED) Log.info("Process s(overriddenRet)");
+			if(DEBUG_LOG_L3_ENABLED) Log.info("Process s(overriddenRet)");
 			EnumSet<ImmutabilityTypes> overriddenIdentityTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 			for(ImmutabilityTypes overriddenIdentityType : overriddenIdentityTypes){
 				boolean isSatisfied = false;
@@ -1261,7 +1324,7 @@ public class PurityAnalysis {
 			
 			// for each parameter and overridden parameter pair
 			// constraint: p <: pOverriden
-			if(DEBUG_LOG_ENABLED) Log.info("Process Constraint p <: pOverriden");
+			if(DEBUG_LOG_L3_ENABLED) Log.info("Process Constraint p <: pOverriden");
 			long numParams = overriddenMethodParameters.size();
 			if(numParams > 0){
 				for(int i=0; i<numParams; i++){
@@ -1272,7 +1335,7 @@ public class PurityAnalysis {
 					Set<ImmutabilityTypes> pOverriddenTypes = getTypes(pOverridden);
 					
 					// process s(p)
-					if(DEBUG_LOG_ENABLED) Log.info("Process s(p)");
+					if(DEBUG_LOG_L3_ENABLED) Log.info("Process s(p)");
 					Set<ImmutabilityTypes> pTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 					for(ImmutabilityTypes pType : pTypes){
 						boolean isSatisfied = false;
@@ -1292,7 +1355,7 @@ public class PurityAnalysis {
 					}
 					
 					// process s(pOverridden)
-					if(DEBUG_LOG_ENABLED) Log.info("Process s(pOverridden)");
+					if(DEBUG_LOG_L3_ENABLED) Log.info("Process s(pOverridden)");
 					Set<ImmutabilityTypes> pOverriddenTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 					for(ImmutabilityTypes pOverriddenType : pOverriddenTypes){
 						boolean isSatisfied = false;
@@ -1328,7 +1391,7 @@ public class PurityAnalysis {
 		String logMessage = "Remove: " + typesToRemove.toString() + " from " + typeSet.toString() + " for " + ge.getAttr(XCSG.name);
 		boolean typesChanged = typeSet.removeAll(typesToRemove);
 		if(typesChanged){
-			if(DEBUG_LOG_ENABLED) Log.info(logMessage);
+			if(DEBUG_LOG_L3_ENABLED) Log.info(logMessage);
 		}
 		return typesChanged;
 	}
@@ -1358,7 +1421,7 @@ public class PurityAnalysis {
 		String logMessage = "Remove: " + typesToRemove.toString() + " from " + typeSet.toString() + " for " + ge.getAttr(XCSG.name);
 		boolean typesChanged = typeSet.removeAll(typesToRemove);
 		if(typesChanged){
-			if(DEBUG_LOG_ENABLED) Log.info(logMessage);
+			if(DEBUG_LOG_L3_ENABLED) Log.info(logMessage);
 		}
 		return typesChanged;
 	}
@@ -1428,11 +1491,16 @@ public class PurityAnalysis {
 				// "Method returns are initialized S(ret) = {readonly, polyread} for each method m"
 				qualifiers.add(ImmutabilityTypes.POLYREAD);
 				qualifiers.add(ImmutabilityTypes.READONLY);
-			} else if(ge.taggedWith(XCSG.Field)){
+			} else if(ge.taggedWith(XCSG.InstanceVariable)){
 				// Section 2.4 of Reference 1
 				// "Fields are initialized to S(f) = {readonly, polyread}"
 				qualifiers.add(ImmutabilityTypes.POLYREAD);
 				qualifiers.add(ImmutabilityTypes.READONLY);
+			} else if(ge.taggedWith(XCSG.ClassVariable)){
+				// Section 3 of Reference 1
+				// Static fields are initialized to S(sf) = {readonly, mutable}
+				qualifiers.add(ImmutabilityTypes.READONLY);
+				qualifiers.add(ImmutabilityTypes.MUTABLE);
 			} else {
 				// Section 2.4 of Reference 1
 				// "All other references are initialized to the maximal
@@ -1448,17 +1516,18 @@ public class PurityAnalysis {
 	}
 	
 	/**
-	 * Returns the fields or local variable accessed for an instance variable access
-	 * @param instanceVariableAccess
+	 * Returns the fields or local variables accessed for an instance variable access
+	 * @param variableAccess
 	 * @return
 	 */
-	public static AtlasSet<GraphElement> getAccessedContainers(GraphElement instanceVariableAccess){
+	public static AtlasSet<GraphElement> getAccessedContainers(GraphElement variableAccess){
 		Q instanceVariableAccessedEdges = Common.universe().edgesTaggedWithAny(XCSG.InstanceVariableAccessed);
-		Q variablesAccessed = instanceVariableAccessedEdges.reverse(Common.toQ(instanceVariableAccess));
-		Q instancesVariablesAccessed = variablesAccessed.nodesTaggedWithAny(XCSG.InstanceVariableAccess);
-		Q localVariables = variablesAccessed.difference(instancesVariablesAccessed);
+		Q variablesAccessed = instanceVariableAccessedEdges.reverse(Common.toQ(variableAccess));
+		Q instanceVariablesAccessed = variablesAccessed.nodesTaggedWithAny(XCSG.InstanceVariableAccess);
+		Q classVariablesAccessed = variablesAccessed.nodesTaggedWithAny(CLASS_VARIABLE_ACCESS);
+		Q localVariables = variablesAccessed.difference(instanceVariablesAccessed, classVariablesAccessed);
 		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
-		Q fieldsAccessed = interproceduralDataFlowEdges.predecessors(instancesVariablesAccessed);
+		Q fieldsAccessed = interproceduralDataFlowEdges.predecessors(instanceVariablesAccessed.union(classVariablesAccessed));
 		return localVariables.union(fieldsAccessed).eval().nodes();
 	}
 	
@@ -1531,7 +1600,7 @@ public class PurityAnalysis {
 			Collections.sort(orderedTypes);
 			ImmutabilityTypes maximalType = orderedTypes.getLast();
 			// leaving the remaining type qualifiers on the graph element is useful for debugging
-			if(!DEBUG_LOG_ENABLED) attributedGraphElement.removeAttr(IMMUTABILITY_QUALIFIERS);
+			if(REMOVE_QUALIFIER_SETS) attributedGraphElement.removeAttr(IMMUTABILITY_QUALIFIERS);
 			attributedGraphElement.tag(maximalType.toString());
 		}
 		
@@ -1643,20 +1712,21 @@ public class PurityAnalysis {
 	 * @param containingTag
 	 * @return the next immediate containing node, or null if none exists; never returns the given node
 	 */
-	private static GraphElement getContainingNode(GraphElement node,
-			String containingTag) {
-		if (node == null)
+	private static GraphElement getContainingNode(GraphElement node, String containingTag) {
+		if(node == null){
 			return null;
+		}
 		
-		while (true) {
+		while(true) {
 			GraphElement containsEdge = Graph.U.edges(node, NodeDirection.IN).taggedWithAll(XCSG.Contains).getFirst();
-			if (containsEdge == null)
+			if(containsEdge == null){
 				return null;
+			}
 			
 			GraphElement parent = containsEdge.getNode(EdgeDirection.FROM);
-			
-			if (parent.taggedWith(containingTag))
+			if(parent.taggedWith(containingTag)){
 				return parent;
+			}
 			
 			node = parent;
 		}
