@@ -14,11 +14,19 @@ public class Test5 {
 		}
 	}
 	
+	// polyread
 	Date a = new Date();
 
 	public void foo(){
+	   // b is readonly
+	   // b was mutated
 	   Date b = new Date();
+	   
+	   // a is now b
+	   // a is mutated when b was mutated
 	   this.a = b;
+	   
+	   // b is mutated
 	   b.hour = 1;
 	}
 }

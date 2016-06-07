@@ -3,19 +3,21 @@ package tests;
 import objects.Date;
 
 /** 
- * Tests TCALL, specifically the immutability of the receiver "this" node on the method
- * @author gsanthan
- *
+ * Tests TCALL, specifically the immutability of the 
+ * receiver "this" node on the method
+ * 
+ * @author Ganesh Santhanam
  */
 public class Test6 {
 
+	// polyread because bar2 passes an alias to a to foo2
+	// where it is mutated
 	Date a = new Date();
 
 	// foo1 mutates first parameter but not second  
 	public int foo1(Date param1, Date param2) {
 		Date b = param1;
 		b.hour = 1;
-
 		return 0;
 	}
 
@@ -23,7 +25,6 @@ public class Test6 {
 	public int foo2(Date param1, Date param2) {
 		Date b = param2;
 		b.hour = 1;
-
 		return 0;
 	}
 
@@ -33,7 +34,7 @@ public class Test6 {
 	public void bar1() {
 		Date temp = new Date();
 		Date alias = this.a;
-		int i = this.foo1(temp, alias);
+		this.foo1(temp, alias);
 	}
 	
 	// bar2 calls foo2 with receiver's field as second parameter
@@ -42,6 +43,6 @@ public class Test6 {
 	public void bar2() {
 		Date temp = new Date();
 		Date alias = this.a;
-		int i = this.foo2(temp, alias);
+		this.foo2(temp, alias);
 	}
 }
