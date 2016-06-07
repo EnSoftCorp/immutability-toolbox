@@ -12,6 +12,7 @@ import com.ensoftcorp.atlas.core.db.graph.GraphElement.EdgeDirection;
 import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.log.Log;
+import com.ensoftcorp.atlas.core.query.Attr.Edge;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
@@ -297,7 +298,7 @@ public class CallChecker {
 		
 		/////////////////////// end qz <: qx adapt qp ///////////////////////
 		
-		// check if method overrides another method
+		// check if method overrides another method (of course this will be empty for static methods)
 		Q overridesEdges = Common.universe().edgesTaggedWithAny(XCSG.Overrides);
 		GraphElement overriddenMethod = overridesEdges.successors(Common.toQ(method)).eval().nodes().getFirst();
 		if(overriddenMethod != null){
@@ -460,6 +461,125 @@ public class CallChecker {
 					}
 				}
 			}
+		}
+		
+		// if types have changed then type constraints need to be checked
+		// for each callsite of this method or the overriden method to satisfy 
+		// constraints on receivers and parameters passed
+		// - note that we technically only need to do this for the callsites
+		// that are not involved in an assignment because callsites of the
+		// form x = y.m(z) are already present in the worklist, but propagating
+		// this information up front won't hurt especially if we already know
+		// it needs to be propagated
+		// - note also this could be refined with a precise call graph instead of 
+		// a CHA, but we'd also have to update the callsite resolution which brought
+		// us to this point in the first place
+		
+		// TODO: should I actually only do this for callsites without assignments??? it might ruin adaptations...
+		
+		if(typesChanged){
+			if(method.taggedWith(XCSG.InstanceMethod)){
+				handleInstanceMethodCallsites(method);
+				if(overriddenMethod != null){
+					handleInstanceMethodCallsites(overriddenMethod);
+				}
+			} else if(method.taggedWith(XCSG.ClassMethod)){
+				handleClassMethodCallsites(method);
+			}
+		}
+		
+		return typesChanged;
+	}
+
+	/**
+	 * Checks and satisfies constraints on callsites to the given target instance method
+	 * Let r.c(z) be a callsite to method this.m(p)
+	 * 
+	 * Constraint 1) this <: r
+	 * Constraint 2) z1 <: p1, z2 <: p2, z3 <: p3 ...
+	 * 
+	 * @param method Method to check the constraints of corresponding callsites
+	 */
+	private static boolean handleInstanceMethodCallsites(GraphElement method) {
+		boolean typesChanged = false;
+		
+		GraphElement identity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
+		Set<ImmutabilityTypes> identityTypes = getTypes(identity);
+		Q localDFEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
+		Q identityPassedToEdges = Common.universe().edgesTaggedWithAny(XCSG.IdentityPassedTo);
+		Q perControlFlowEdges = Common.universe().edgesTaggedWithAny(Edge.PER_CONTROL_FLOW);
+		Q callsiteControlFlowBlocks = perControlFlowEdges.predecessors(Common.toQ(method));
+		Q callsites = callsiteControlFlowBlocks.children().nodesTaggedWithAny(XCSG.CallSite);
+		for(GraphElement callsite : callsites.eval().nodes()){
+			// IdentityPass (.this) -IdentityPassedTo-> CallSite (m)
+			Q identityPass = identityPassedToEdges.predecessors(Common.toQ(callsite));
+			
+			// Receiver (r) -LocalDataFlow-> IdentityPass (.this)
+			GraphElement r = localDFEdges.predecessors(identityPass).eval().nodes().getFirst();
+			Set<ImmutabilityTypes> rTypes = getTypes(r);
+			
+			if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process Callsite Constraint qthis <: qr");
+			
+			// process s(this)
+			if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(this)");
+			Set<ImmutabilityTypes> identityTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
+			for(ImmutabilityTypes identityType : identityTypes){
+				boolean isSatisfied = false;
+				satisfied:
+				for(ImmutabilityTypes rType : rTypes){
+					if(rType.compareTo(identityType) >= 0){
+						isSatisfied = true;
+						break satisfied;
+					}
+				}
+				if(!isSatisfied){
+					identityTypesToRemove.add(identityType);
+				}
+			}
+			if(removeTypes(identity, identityTypesToRemove)){
+				typesChanged = true;
+			}
+			
+			// process s(r)
+			if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(r)");
+			Set<ImmutabilityTypes> rTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
+			for(ImmutabilityTypes rType : rTypes){
+				boolean isSatisfied = false;
+				satisfied:
+				for(ImmutabilityTypes identityType : identityTypes){
+					if(rType.compareTo(identityType) >= 0){
+						isSatisfied = true;
+						break satisfied;
+					}
+				}
+				if(!isSatisfied){
+					rTypesToRemove.add(rType);
+				}
+			}
+			if(removeTypes(r, rTypesToRemove)){
+				typesChanged = true;
+			}
+		}
+		
+		return typesChanged;
+	}
+	
+	/**
+	 * Checks and satisfies constraints on callsites to the given target class (static) method
+	 * Let c(z) be a callsite to method m(p)
+	 * 
+	 * Constraint 1) z1 <: p1, z2 <: p2, z3 <: p3 ...
+	 * 
+	 * @param method Method to check the constraints of corresponding callsites
+	 */
+	private static boolean handleClassMethodCallsites(GraphElement method) {
+		boolean typesChanged = false;
+		
+		Q perControlFlowEdges = Common.universe().edgesTaggedWithAny(Edge.PER_CONTROL_FLOW);
+		Q callsiteControlFlowBlocks = perControlFlowEdges.predecessors(Common.toQ(method));
+		Q callsites = callsiteControlFlowBlocks.children().nodesTaggedWithAny(XCSG.CallSite);
+		for(GraphElement callsite : callsites.eval().nodes()){
+			// TODO: check parameters
 		}
 		
 		return typesChanged;

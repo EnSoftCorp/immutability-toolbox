@@ -288,6 +288,7 @@ public class PurityAnalysis {
 			
 			// TCALL
 			boolean involvesCallsite = false;
+			// TODO: remove DynamicDispatchCallSite filter
 			if(from.taggedWith(XCSG.CallSite) && from.taggedWith(XCSG.DynamicDispatchCallSite)){
 				// Type Rule 5 - TCALL
 				// let, x = y.m(z)
@@ -308,6 +309,9 @@ public class PurityAnalysis {
 					GraphElement ret = interproceduralDataFlowEdge.getNode(EdgeDirection.FROM);
 					
 					// Method (method) -Contains-> ReturnValue (ret)
+					// note that we could also use a control flow call edge to get the method
+					// Control Flow Block (cf) -Contains-> Callsite (m)
+					// Control Flow Block (cf) -Call-> Method (method)
 					GraphElement containsEdge = containsGraph.edges(ret, NodeDirection.IN).getFirst();
 					GraphElement method = containsEdge.getNode(EdgeDirection.FROM);
 					
