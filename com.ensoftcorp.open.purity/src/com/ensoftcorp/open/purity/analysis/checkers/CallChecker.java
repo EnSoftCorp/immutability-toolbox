@@ -7,8 +7,10 @@ import static com.ensoftcorp.open.purity.core.Utilities.removeTypes;
 import java.util.EnumSet;
 import java.util.Set;
 
+import com.ensoftcorp.atlas.core.db.graph.Graph;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.EdgeDirection;
+import com.ensoftcorp.atlas.core.db.graph.GraphElement.NodeDirection;
 import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.log.Log;
@@ -220,8 +222,10 @@ public class CallChecker {
 		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process Constraint qz <: qx adapt qp");
 		
 		// for each z,p pair process s(x), s(z), and s(p)
+		Graph localDFGraph = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow).eval();
 		for(GraphElement parametersPassedEdge : parametersPassedEdges){
-			GraphElement z = parametersPassedEdge.getNode(EdgeDirection.FROM);
+			GraphElement localDataFlowEdge = localDFGraph.edges(parametersPassedEdge.getNode(EdgeDirection.FROM), NodeDirection.IN).getFirst();
+			GraphElement z = localDataFlowEdge.getNode(EdgeDirection.FROM);
 			GraphElement p = parametersPassedEdge.getNode(EdgeDirection.TO);
 			Set<ImmutabilityTypes> zTypes = getTypes(z);
 			Set<ImmutabilityTypes> pTypes = getTypes(p);
@@ -463,36 +467,12 @@ public class CallChecker {
 			}
 		}
 		
-		// if types have changed then type constraints need to be checked
-		// for each callsite of this method or the overriden method to satisfy 
-		// constraints on receivers and parameters passed
-		// - note that we technically only need to do this for the callsites
-		// that are not involved in an assignment because callsites of the
-		// form x = y.m(z) are already present in the worklist, but propagating
-		// this information up front won't hurt especially if we already know
-		// it needs to be propagated
-		// - note also this could be refined with a precise call graph instead of 
-		// a CHA, but we'd also have to update the callsite resolution which brought
-		// us to this point in the first place
-		
-		// TODO: should I actually only do this for callsites without assignments??? it might ruin adaptations...
-		
-		if(typesChanged){
-			if(method.taggedWith(XCSG.InstanceMethod)){
-				handleInstanceMethodCallsites(method);
-				if(overriddenMethod != null){
-					handleInstanceMethodCallsites(overriddenMethod);
-				}
-			} else if(method.taggedWith(XCSG.ClassMethod)){
-				handleClassMethodCallsites(method);
-			}
-		}
-		
 		return typesChanged;
 	}
 
 	/**
-	 * Checks and satisfies constraints on callsites to the given target instance method
+	 * Checks and satisfies constraints on callsites to the given target 
+	 * instance method that are not assigned
 	 * Let r.c(z) be a callsite to method this.m(p)
 	 * 
 	 * Constraint 1) this <: r
@@ -500,63 +480,126 @@ public class CallChecker {
 	 * 
 	 * @param method Method to check the constraints of corresponding callsites
 	 */
-	private static boolean handleInstanceMethodCallsites(GraphElement method) {
+	public static boolean handleUnassignedInstanceMethodCallsites(GraphElement unassignedCallsite) {
 		boolean typesChanged = false;
 		
+		Q controlFlowBlock = Common.toQ(unassignedCallsite).parent();
+		Q perControlFlowEdges = Common.universe().edgesTaggedWithAny(Edge.PER_CONTROL_FLOW);
+		GraphElement method = perControlFlowEdges.successors(controlFlowBlock).eval().nodes().getFirst(); // TODO: what if its more than one! use method signature instead?
 		GraphElement identity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
 		Set<ImmutabilityTypes> identityTypes = getTypes(identity);
 		Q localDFEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
 		Q identityPassedToEdges = Common.universe().edgesTaggedWithAny(XCSG.IdentityPassedTo);
-		Q perControlFlowEdges = Common.universe().edgesTaggedWithAny(Edge.PER_CONTROL_FLOW);
-		Q callsiteControlFlowBlocks = perControlFlowEdges.predecessors(Common.toQ(method));
-		Q callsites = callsiteControlFlowBlocks.children().nodesTaggedWithAny(XCSG.CallSite);
-		for(GraphElement callsite : callsites.eval().nodes()){
-			// IdentityPass (.this) -IdentityPassedTo-> CallSite (m)
-			Q identityPass = identityPassedToEdges.predecessors(Common.toQ(callsite));
-			
-			// Receiver (r) -LocalDataFlow-> IdentityPass (.this)
-			GraphElement r = localDFEdges.predecessors(identityPass).eval().nodes().getFirst();
-			Set<ImmutabilityTypes> rTypes = getTypes(r);
-			
-			if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process Callsite Constraint qthis <: qr");
-			
-			// process s(this)
-			if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(this)");
-			Set<ImmutabilityTypes> identityTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
+
+		// IdentityPass (.this) -IdentityPassedTo-> CallSite (m)
+		Q identityPass = identityPassedToEdges.predecessors(Common.toQ(unassignedCallsite));
+		
+		// Receiver (r) -LocalDataFlow-> IdentityPass (.this)
+		GraphElement r = localDFEdges.predecessors(identityPass).eval().nodes().getFirst();
+		Set<ImmutabilityTypes> rTypes = getTypes(r);
+		
+		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process Callsite Constraint qthis <: qr");
+		
+		// process s(this)
+		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(this)");
+		Set<ImmutabilityTypes> identityTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
+		for(ImmutabilityTypes identityType : identityTypes){
+			boolean isSatisfied = false;
+			satisfied:
+			for(ImmutabilityTypes rType : rTypes){
+				if(rType.compareTo(identityType) >= 0){
+					isSatisfied = true;
+					break satisfied;
+				}
+			}
+			if(!isSatisfied){
+				identityTypesToRemove.add(identityType);
+			}
+		}
+		if(removeTypes(identity, identityTypesToRemove)){
+			typesChanged = true;
+		}
+		
+		// process s(r)
+		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(r)");
+		Set<ImmutabilityTypes> rTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
+		for(ImmutabilityTypes rType : rTypes){
+			boolean isSatisfied = false;
+			satisfied:
 			for(ImmutabilityTypes identityType : identityTypes){
+				if(rType.compareTo(identityType) >= 0){
+					isSatisfied = true;
+					break satisfied;
+				}
+			}
+			if(!isSatisfied){
+				rTypesToRemove.add(rType);
+			}
+		}
+		if(removeTypes(r, rTypesToRemove)){
+			typesChanged = true;
+		}
+		
+		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process Callsite Constraint qz <: qp");
+		
+		// Method (method) -Contains-> Parameter (p1, p2, ...)
+		AtlasSet<GraphElement> parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
+		
+		// ControlFlow -Contains-> CallSite
+		// CallSite -Contains-> ParameterPassed (z1, z2, ...)
+		AtlasSet<GraphElement> parametersPassed = Common.toQ(unassignedCallsite).parent().children().nodesTaggedWithAny(XCSG.ParameterPass).eval().nodes();
+		
+		// ParameterPassed (z1, z2, ...) -InterproceduralDataFlow-> Parameter (p1, p2, ...)
+		// such that z1-InterproceduralDataFlow->p1, z2-InterproceduralDataFlow->p2, ...
+		AtlasSet<GraphElement> parametersPassedEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow)
+				.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
+		
+		// for each z,p pair process s(z), and s(p)
+		Graph localDFGraph = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow).eval();
+		for(GraphElement parametersPassedEdge : parametersPassedEdges){
+			GraphElement localDataFlowEdge = localDFGraph.edges(parametersPassedEdge.getNode(EdgeDirection.FROM), NodeDirection.IN).getFirst();
+			GraphElement z = localDataFlowEdge.getNode(EdgeDirection.FROM);
+			GraphElement p = parametersPassedEdge.getNode(EdgeDirection.TO);
+			Set<ImmutabilityTypes> zTypes = getTypes(z);
+			Set<ImmutabilityTypes> pTypes = getTypes(p);
+			
+			// process s(z)
+			if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(z)");
+			Set<ImmutabilityTypes> zTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
+			for(ImmutabilityTypes zType : zTypes){
 				boolean isSatisfied = false;
 				satisfied:
-				for(ImmutabilityTypes rType : rTypes){
-					if(rType.compareTo(identityType) >= 0){
+				for(ImmutabilityTypes pType : pTypes){
+					if(pType.compareTo(zType) >= 0){
 						isSatisfied = true;
 						break satisfied;
 					}
 				}
 				if(!isSatisfied){
-					identityTypesToRemove.add(identityType);
+					zTypesToRemove.add(zType);
 				}
 			}
-			if(removeTypes(identity, identityTypesToRemove)){
+			if(removeTypes(z, zTypesToRemove)){
 				typesChanged = true;
 			}
 			
-			// process s(r)
-			if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(r)");
-			Set<ImmutabilityTypes> rTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-			for(ImmutabilityTypes rType : rTypes){
+			// process s(p)
+			if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(p)");
+			Set<ImmutabilityTypes> pTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
+			for(ImmutabilityTypes pType : pTypes){
 				boolean isSatisfied = false;
 				satisfied:
-				for(ImmutabilityTypes identityType : identityTypes){
-					if(rType.compareTo(identityType) >= 0){
+				for(ImmutabilityTypes zType : zTypes){
+					if(pType.compareTo(zType) >= 0){
 						isSatisfied = true;
 						break satisfied;
 					}
 				}
 				if(!isSatisfied){
-					rTypesToRemove.add(rType);
+					pTypesToRemove.add(pType);
 				}
 			}
-			if(removeTypes(r, rTypesToRemove)){
+			if(removeTypes(p, pTypesToRemove)){
 				typesChanged = true;
 			}
 		}

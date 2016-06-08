@@ -105,6 +105,21 @@ public class PurityAnalysis {
 			worklist.add(assignment);
 		}
 		
+		Q callsites = Common.universe().nodesTaggedWithAny(XCSG.CallSite);
+		Q localDFEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
+		Q assignedCallsites = localDFEdges.predecessors(Common.universe().nodesTaggedWithAny(XCSG.Assignment)).nodesTaggedWithAny(XCSG.CallSite);
+		Q unassignedCallsites = callsites.difference(assignedCallsites);
+		Q unassignedDynamicDispatchCallsites = Common.resolve(new NullProgressMonitor(), unassignedCallsites.nodesTaggedWithAny(XCSG.DynamicDispatchCallSite));
+		for(GraphElement unassignedDynamicDispatchCallsite : unassignedDynamicDispatchCallsites.eval().nodes()){
+			worklist.add(unassignedDynamicDispatchCallsite);
+		}
+		
+		// TODO: enable
+//		Q unassignedStaticDispatchCallsites = Common.resolve(new NullProgressMonitor(), unassignedCallsites.nodesTaggedWithAny(XCSG.StaticDispatchCallSite));
+//		for(GraphElement unassignedStaticDispatchCallsite : unassignedStaticDispatchCallsites.eval().nodes()){
+//			worklist.add(unassignedStaticDispatchCallsite);
+//		}
+		
 		boolean successful = false;
 		int iteration = 1;
 		while(true){
@@ -167,188 +182,201 @@ public class PurityAnalysis {
 	 * @return
 	 */
 	private static boolean applyInferenceRules(GraphElement workItem){
-		Graph localDFGraph = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow).eval();
-		Graph interproceduralDFGraph = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow).eval();
-		Graph instanceVariableAccessedGraph = Common.universe().edgesTaggedWithAny(XCSG.InstanceVariableAccessed).eval();
-		Graph identityPassedToGraph = Common.universe().edgesTaggedWithAny(XCSG.IdentityPassedTo).eval();
-		Graph containsGraph = Common.universe().edgesTaggedWithAny(XCSG.Contains).eval();
 		
 		boolean typesChanged = false;
 		
-		// consider data flow edges
-		// incoming edges represent a read relationship in an assignment
-		// outgoing edges represent a write relationship in an assignment
-		GraphElement to = workItem;
-		AtlasSet<GraphElement> inEdges = localDFGraph.edges(to, NodeDirection.IN);
-		for(GraphElement edge : inEdges){
-			GraphElement from = edge.getNode(EdgeDirection.FROM);
+		if(workItem.taggedWith(XCSG.Assignment)){
+			Graph localDFGraph = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow).eval();
+			Graph interproceduralDFGraph = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow).eval();
+			Graph instanceVariableAccessedGraph = Common.universe().edgesTaggedWithAny(XCSG.InstanceVariableAccessed).eval();
+			Graph identityPassedToGraph = Common.universe().edgesTaggedWithAny(XCSG.IdentityPassedTo).eval();
+			Graph containsGraph = Common.universe().edgesTaggedWithAny(XCSG.Contains).eval();
 
-			boolean involvesField = false;
-			
-			// TWRITE
-			if(to.taggedWith(XCSG.InstanceVariableAssignment)){
-				// Type Rule 3 - TWRITE
-				// let, x.f = y
+			// consider data flow edges
+			// incoming edges represent a read relationship in an assignment
+			// outgoing edges represent a write relationship in an assignment
+			GraphElement to = workItem;
+			AtlasSet<GraphElement> inEdges = localDFGraph.edges(to, NodeDirection.IN);
+			for(GraphElement edge : inEdges){
+				GraphElement from = edge.getNode(EdgeDirection.FROM);
+
+				boolean involvesField = false;
+				
+				// TWRITE
+				if(to.taggedWith(XCSG.InstanceVariableAssignment)){
+					// Type Rule 3 - TWRITE
+					// let, x.f = y
+					try {
+						// Reference (y) -LocalDataFlow-> InstanceVariableAssignment (f=)
+						GraphElement y = from;
+						if(y.taggedWith(XCSG.InstanceVariableValue)){
+							GraphElement interproceduralEdgeFromField = interproceduralDFGraph.edges(y, NodeDirection.IN).getFirst();
+							y = interproceduralEdgeFromField.getNode(EdgeDirection.FROM);
+						}
+						GraphElement instanceVariableAssignment = to; // (f=)
+						
+						// InstanceVariableAssignment (f=) -InterproceduralDataFlow-> InstanceVariable (f)
+						GraphElement interproceduralEdgeToField = interproceduralDFGraph.edges(instanceVariableAssignment, NodeDirection.OUT).getFirst();
+						GraphElement f = interproceduralEdgeToField.getNode(EdgeDirection.TO);
+						
+						// Reference (x) -InstanceVariableAccessed-> InstanceVariableAssignment (.f)
+						GraphElement instanceVariableAccessedEdge = instanceVariableAccessedGraph.edges(instanceVariableAssignment, NodeDirection.IN).getFirst();
+						GraphElement x = instanceVariableAccessedEdge.getNode(EdgeDirection.FROM);
+						
+						if(FieldAssignmentChecker.handleFieldWrite(x, f, y)){
+							typesChanged = true;
+						}
+					} catch (Exception e){
+						if(PurityPreferences.isGeneralLoggingEnabled()) Log.error("Error parsing field write for work item: " + workItem.address().toAddressString(), e);
+					}
+					
+					involvesField = true;
+				}
+				
+				// TREAD
+				if(from.taggedWith(XCSG.InstanceVariableValue)){
+					// Type Rule 4 - TREAD
+					// let, x = y.f
+					try {
+						GraphElement x = to;
+						if(x.taggedWith(XCSG.InstanceVariableValue)){
+							GraphElement interproceduralEdgeFromField = interproceduralDFGraph.edges(x, NodeDirection.IN).getFirst();
+							x = interproceduralEdgeFromField.getNode(EdgeDirection.FROM);
+						}
+						
+						GraphElement instanceVariableValue = from; // (.f)
+						
+						// InstanceVariable (f) -InterproceduralDataFlow-> InstanceVariableValue (.f) 
+						GraphElement interproceduralEdgeFromField = interproceduralDFGraph.edges(instanceVariableValue, NodeDirection.IN).getFirst();
+						GraphElement f = interproceduralEdgeFromField.getNode(EdgeDirection.FROM);
+						
+						// Reference (y) -InstanceVariableAccessed-> InstanceVariableValue (.f)
+						GraphElement instanceVariableAccessedEdge = instanceVariableAccessedGraph.edges(instanceVariableValue, NodeDirection.IN).getFirst();
+						GraphElement y = instanceVariableAccessedEdge.getNode(EdgeDirection.FROM);
+						
+						if(FieldAssignmentChecker.handleFieldRead(x, y, f)){
+							typesChanged = true;
+						}
+					} catch (Exception e){
+						if(PurityPreferences.isGeneralLoggingEnabled()) Log.error("Error parsing field read for work item: " + workItem.address().toAddressString(), e);
+					}
+					
+					involvesField = true;
+				}
+				
+				// Type Rule 7 - TSREAD
+				// let, x = sf
 				try {
-					// Reference (y) -LocalDataFlow-> InstanceVariableAssignment (f=)
+					if(from.taggedWith(Utilities.CLASS_VARIABLE_VALUE)){
+						GraphElement x = to;
+
+						// ClassVariable (sf) -InterproceduralDataFlow-> ClassVariableValue (.sf) 
+						GraphElement interproceduralEdgeFromField = interproceduralDFGraph.edges(from, NodeDirection.IN).getFirst();
+						GraphElement sf = interproceduralEdgeFromField.getNode(EdgeDirection.FROM);
+						
+						GraphElement m = Utilities.getContainingMethod(x);
+						if(FieldAssignmentChecker.handleStaticFieldRead(x, sf, m)){
+							typesChanged = true;
+						}
+						involvesField = true;
+					}	
+				} catch (Exception e){
+					if(PurityPreferences.isGeneralLoggingEnabled()) Log.error("Error parsing static field read for work item: " + workItem.address().toAddressString(), e);
+				}
+				
+				// Type Rule 8 - TSWRITE
+				// let, sf = x
+				try {
+					if(to.taggedWith(Utilities.CLASS_VARIABLE_ASSIGNMENT)){
+						// ClassVariableAssignment (sf=) -InterproceduralDataFlow-> ClassVariable (sf)
+						GraphElement interproceduralEdgeToField = interproceduralDFGraph.edges(to, NodeDirection.OUT).getFirst();
+						GraphElement sf = interproceduralEdgeToField.getNode(EdgeDirection.TO);
+						
+						GraphElement x = from;
+						GraphElement m = Utilities.getContainingMethod(x);
+						if(FieldAssignmentChecker.handleStaticFieldWrite(sf, x, m)){
+							typesChanged = true;
+						}
+						involvesField = true;
+					}	
+				} catch (Exception e){
+					if(PurityPreferences.isGeneralLoggingEnabled()) Log.error("Error parsing static field read for work item: " + workItem.address().toAddressString(), e);
+				}
+				
+				// TCALL
+				boolean involvesCallsite = false;
+				// TODO: remove DynamicDispatchCallSite filter
+				if(from.taggedWith(XCSG.CallSite) && from.taggedWith(XCSG.DynamicDispatchCallSite)){
+					// Type Rule 5 - TCALL
+					// let, x = y.m(z)
+					try {
+						GraphElement x = to;
+						GraphElement callsite = from;
+						
+						// IdentityPass (.this) -IdentityPassedTo-> CallSite (m)
+						GraphElement identityPassedToEdge = identityPassedToGraph.edges(callsite, NodeDirection.IN).getFirst();
+						GraphElement identityPass = identityPassedToEdge.getNode(EdgeDirection.FROM);
+						
+						// Receiver (y) -LocalDataFlow-> IdentityPass (.this)
+						GraphElement localDataFlowEdge = localDFGraph.edges(identityPass, NodeDirection.IN).getFirst();
+						GraphElement y = localDataFlowEdge.getNode(EdgeDirection.FROM);
+						
+						// ReturnValue (ret) -InterproceduralDataFlow-> CallSite (m)
+						GraphElement interproceduralDataFlowEdge = interproceduralDFGraph.edges(callsite, NodeDirection.IN).getFirst();
+						GraphElement ret = interproceduralDataFlowEdge.getNode(EdgeDirection.FROM);
+						
+						// Method (method) -Contains-> ReturnValue (ret)
+						// note that we could also use a control flow call edge to get the method
+						// Control Flow Block (cf) -Contains-> Callsite (m)
+						// Control Flow Block (cf) -Call-> Method (method)
+						GraphElement containsEdge = containsGraph.edges(ret, NodeDirection.IN).getFirst();
+						GraphElement method = containsEdge.getNode(EdgeDirection.FROM);
+						
+						// Method (method) -Contains-> Identity
+						GraphElement identity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
+						
+						// Method (method) -Contains-> Parameter (p1, p2, ...)
+						AtlasSet<GraphElement> parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
+						
+						// ControlFlow -Contains-> CallSite
+						// CallSite -Contains-> ParameterPassed (z1, z2, ...)
+						AtlasSet<GraphElement> parametersPassed = Common.toQ(callsite).parent().children().nodesTaggedWithAny(XCSG.ParameterPass).eval().nodes();
+						
+						// ParameterPassed (z1, z2, ...) -InterproceduralDataFlow-> Parameter (p1, p2, ...)
+						// such that z1-InterproceduralDataFlow->p1, z2-InterproceduralDataFlow->p2, ...
+						AtlasSet<GraphElement> parametersPassedEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow)
+								.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
+						
+						if(CallChecker.handleCall(x, y, identity, method, ret, parametersPassedEdges)){
+							typesChanged = true;
+						}
+					} catch (Exception e){
+						if(PurityPreferences.isGeneralLoggingEnabled()) Log.error("Error parsing callsite for work item: " + workItem.address().toAddressString(), e);
+					}
+					
+					involvesCallsite = true;
+				}
+				
+				// Type Rule 2 - TASSIGN
+				// let x = y
+				if(!involvesField && !involvesCallsite){
+					GraphElement x = to;
 					GraphElement y = from;
-					if(y.taggedWith(XCSG.InstanceVariableValue)){
-						GraphElement interproceduralEdgeFromField = interproceduralDFGraph.edges(y, NodeDirection.IN).getFirst();
-						y = interproceduralEdgeFromField.getNode(EdgeDirection.FROM);
-					}
-					GraphElement instanceVariableAssignment = to; // (f=)
 					
-					// InstanceVariableAssignment (f=) -InterproceduralDataFlow-> InstanceVariable (f)
-					GraphElement interproceduralEdgeToField = interproceduralDFGraph.edges(instanceVariableAssignment, NodeDirection.OUT).getFirst();
-					GraphElement f = interproceduralEdgeToField.getNode(EdgeDirection.TO);
-					
-					// Reference (x) -InstanceVariableAccessed-> InstanceVariableAssignment (.f)
-					GraphElement instanceVariableAccessedEdge = instanceVariableAccessedGraph.edges(instanceVariableAssignment, NodeDirection.IN).getFirst();
-					GraphElement x = instanceVariableAccessedEdge.getNode(EdgeDirection.FROM);
-					
-					if(FieldAssignmentChecker.handleFieldWrite(x, f, y)){
+					if(BasicAssignmentChecker.handleAssignment(x, y)){
 						typesChanged = true;
 					}
-				} catch (Exception e){
-					if(PurityPreferences.isGeneralLoggingEnabled()) Log.error("Error parsing field write for work item: " + workItem.address().toAddressString(), e);
 				}
-				
-				involvesField = true;
 			}
-			
-			// TREAD
-			if(from.taggedWith(XCSG.InstanceVariableValue)){
-				// Type Rule 4 - TREAD
-				// let, x = y.f
-				try {
-					GraphElement x = to;
-					if(x.taggedWith(XCSG.InstanceVariableValue)){
-						GraphElement interproceduralEdgeFromField = interproceduralDFGraph.edges(x, NodeDirection.IN).getFirst();
-						x = interproceduralEdgeFromField.getNode(EdgeDirection.FROM);
-					}
-					
-					GraphElement instanceVariableValue = from; // (.f)
-					
-					// InstanceVariable (f) -InterproceduralDataFlow-> InstanceVariableValue (.f) 
-					GraphElement interproceduralEdgeFromField = interproceduralDFGraph.edges(instanceVariableValue, NodeDirection.IN).getFirst();
-					GraphElement f = interproceduralEdgeFromField.getNode(EdgeDirection.FROM);
-					
-					// Reference (y) -InstanceVariableAccessed-> InstanceVariableValue (.f)
-					GraphElement instanceVariableAccessedEdge = instanceVariableAccessedGraph.edges(instanceVariableValue, NodeDirection.IN).getFirst();
-					GraphElement y = instanceVariableAccessedEdge.getNode(EdgeDirection.FROM);
-					
-					if(FieldAssignmentChecker.handleFieldRead(x, y, f)){
-						typesChanged = true;
-					}
-				} catch (Exception e){
-					if(PurityPreferences.isGeneralLoggingEnabled()) Log.error("Error parsing field read for work item: " + workItem.address().toAddressString(), e);
-				}
-				
-				involvesField = true;
-			}
-			
-			// Type Rule 7 - TSREAD
-			// let, x = sf
-			try {
-				if(from.taggedWith(Utilities.CLASS_VARIABLE_VALUE)){
-					GraphElement x = to;
-
-					// ClassVariable (sf) -InterproceduralDataFlow-> ClassVariableValue (.sf) 
-					GraphElement interproceduralEdgeFromField = interproceduralDFGraph.edges(from, NodeDirection.IN).getFirst();
-					GraphElement sf = interproceduralEdgeFromField.getNode(EdgeDirection.FROM);
-					
-					GraphElement m = Utilities.getContainingMethod(x);
-					if(FieldAssignmentChecker.handleStaticFieldRead(x, sf, m)){
-						typesChanged = true;
-					}
-					involvesField = true;
-				}	
-			} catch (Exception e){
-				if(PurityPreferences.isGeneralLoggingEnabled()) Log.error("Error parsing static field read for work item: " + workItem.address().toAddressString(), e);
-			}
-			
-			// Type Rule 8 - TSWRITE
-			// let, sf = x
-			try {
-				if(to.taggedWith(Utilities.CLASS_VARIABLE_ASSIGNMENT)){
-					// ClassVariableAssignment (sf=) -InterproceduralDataFlow-> ClassVariable (sf)
-					GraphElement interproceduralEdgeToField = interproceduralDFGraph.edges(to, NodeDirection.OUT).getFirst();
-					GraphElement sf = interproceduralEdgeToField.getNode(EdgeDirection.TO);
-					
-					GraphElement x = from;
-					GraphElement m = Utilities.getContainingMethod(x);
-					if(FieldAssignmentChecker.handleStaticFieldWrite(sf, x, m)){
-						typesChanged = true;
-					}
-					involvesField = true;
-				}	
-			} catch (Exception e){
-				if(PurityPreferences.isGeneralLoggingEnabled()) Log.error("Error parsing static field read for work item: " + workItem.address().toAddressString(), e);
-			}
-			
-			// TCALL
-			boolean involvesCallsite = false;
-			// TODO: remove DynamicDispatchCallSite filter
-			if(from.taggedWith(XCSG.CallSite) && from.taggedWith(XCSG.DynamicDispatchCallSite)){
-				// Type Rule 5 - TCALL
-				// let, x = y.m(z)
-				try {
-					GraphElement x = to;
-					GraphElement callsite = from;
-					
-					// IdentityPass (.this) -IdentityPassedTo-> CallSite (m)
-					GraphElement identityPassedToEdge = identityPassedToGraph.edges(callsite, NodeDirection.IN).getFirst();
-					GraphElement identityPass = identityPassedToEdge.getNode(EdgeDirection.FROM);
-					
-					// Receiver (y) -LocalDataFlow-> IdentityPass (.this)
-					GraphElement localDataFlowEdge = localDFGraph.edges(identityPass, NodeDirection.IN).getFirst();
-					GraphElement y = localDataFlowEdge.getNode(EdgeDirection.FROM);
-					
-					// ReturnValue (ret) -InterproceduralDataFlow-> CallSite (m)
-					GraphElement interproceduralDataFlowEdge = interproceduralDFGraph.edges(callsite, NodeDirection.IN).getFirst();
-					GraphElement ret = interproceduralDataFlowEdge.getNode(EdgeDirection.FROM);
-					
-					// Method (method) -Contains-> ReturnValue (ret)
-					// note that we could also use a control flow call edge to get the method
-					// Control Flow Block (cf) -Contains-> Callsite (m)
-					// Control Flow Block (cf) -Call-> Method (method)
-					GraphElement containsEdge = containsGraph.edges(ret, NodeDirection.IN).getFirst();
-					GraphElement method = containsEdge.getNode(EdgeDirection.FROM);
-					
-					// Method (method) -Contains-> Identity
-					GraphElement identity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
-					
-					// Method (method) -Contains-> Parameter (p1, p2, ...)
-					AtlasSet<GraphElement> parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
-					
-					// ControlFlow -Contains-> CallSite
-					// CallSite -Contains-> ParameterPassed (z1, z2, ...)
-					AtlasSet<GraphElement> parametersPassed = Common.toQ(callsite).parent().children().nodesTaggedWithAny(XCSG.ParameterPass).eval().nodes();
-					
-					// ParameterPassed (z1, z2, ...) -InterproceduralDataFlow-> Parameter (p1, p2, ...)
-					// such that z1-InterproceduralDataFlow->p1, z2-InterproceduralDataFlow->p2, ...
-					AtlasSet<GraphElement> parametersPassedEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow)
-							.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
-					
-					if(CallChecker.handleCall(x, y, identity, method, ret, parametersPassedEdges)){
-						typesChanged = true;
-					}
-				} catch (Exception e){
-					if(PurityPreferences.isGeneralLoggingEnabled()) Log.error("Error parsing callsite for work item: " + workItem.address().toAddressString(), e);
-				}
-				
-				involvesCallsite = true;
-			}
-			
-			// Type Rule 2 - TASSIGN
-			// let x = y
-			if(!involvesField && !involvesCallsite){
-				GraphElement x = to;
-				GraphElement y = from;
-				
-				if(BasicAssignmentChecker.handleAssignment(x, y)){
-					typesChanged = true;
-				}
+		} else if(workItem.taggedWith(XCSG.DynamicDispatchCallSite)){
+			// constraints need to be checked for each callsite without an assignment 
+			// of this instance method to satisfy constraints on receivers and parameters passed
+			// note that this could be refined with a precise call graph instead of 
+			// a CHA, but we'd also have to update the callsite resolution which brought
+			// us to this point in the first place
+			GraphElement unassignedDynamicDispatchCallsite = workItem;
+			if(CallChecker.handleUnassignedInstanceMethodCallsites(unassignedDynamicDispatchCallsite)){
+				typesChanged = true;
 			}
 		}
 		
