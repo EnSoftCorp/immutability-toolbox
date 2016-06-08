@@ -1,6 +1,5 @@
-package com.ensoftcorp.open.purity.core;
+package com.ensoftcorp.open.purity.analysis;
 
-import com.ensoftcorp.open.purity.analysis.PurityAnalysis;
 
 /**
  * Encodes the immutability qualifications as types 

@@ -1,8 +1,8 @@
 package com.ensoftcorp.open.purity.analysis.checkers;
 
-import static com.ensoftcorp.open.purity.core.Utilities.getTypes;
-import static com.ensoftcorp.open.purity.core.Utilities.removeStaticTypes;
-import static com.ensoftcorp.open.purity.core.Utilities.removeTypes;
+import static com.ensoftcorp.open.purity.analysis.Utilities.getTypes;
+import static com.ensoftcorp.open.purity.analysis.Utilities.removeStaticTypes;
+import static com.ensoftcorp.open.purity.analysis.Utilities.removeTypes;
 
 import java.util.EnumSet;
 import java.util.Set;
@@ -13,13 +13,13 @@ import com.ensoftcorp.atlas.core.db.graph.GraphElement.EdgeDirection;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.NodeDirection;
 import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
-import com.ensoftcorp.atlas.core.log.Log;
 import com.ensoftcorp.atlas.core.query.Attr.Edge;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
-import com.ensoftcorp.open.purity.core.ImmutabilityTypes;
-import com.ensoftcorp.open.purity.core.Utilities;
+import com.ensoftcorp.open.purity.analysis.ImmutabilityTypes;
+import com.ensoftcorp.open.purity.analysis.Utilities;
+import com.ensoftcorp.open.purity.log.Log;
 import com.ensoftcorp.open.purity.ui.PurityPreferences;
 
 public class CallChecker {
@@ -478,14 +478,30 @@ public class CallChecker {
 	 * Constraint 1) this <: r
 	 * Constraint 2) z1 <: p1, z2 <: p2, z3 <: p3 ...
 	 * 
-	 * @param method Method to check the constraints of corresponding callsites
+	 * @param unassignedCallsite The dynamic dispatch callsite to check constraints
 	 */
 	public static boolean handleUnassignedInstanceMethodCallsites(GraphElement unassignedCallsite) {
 		boolean typesChanged = false;
 		
 		Q controlFlowBlock = Common.toQ(unassignedCallsite).parent();
 		Q perControlFlowEdges = Common.universe().edgesTaggedWithAll(Edge.CALL, Edge.PER_CONTROL_FLOW);
-		GraphElement method = perControlFlowEdges.successors(controlFlowBlock).eval().nodes().getFirst(); // TODO: what if its more than one! use method signature instead?
+		AtlasSet<GraphElement> methods = perControlFlowEdges.successors(controlFlowBlock).eval().nodes();  // TODO: what if its more than one! use method signature instead?
+		
+		for(GraphElement method : methods){
+			if(processReceiverConstraints(unassignedCallsite, method)){
+				typesChanged = true;
+			}
+			if(processParameterConstraints(unassignedCallsite, method)){
+				typesChanged = true;
+			}
+		}
+		return typesChanged;
+	}
+
+	private static boolean processReceiverConstraints(GraphElement unassignedCallsite, GraphElement method) {
+		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process Callsite Constraint qthis <: qr");
+		boolean typesChanged = false;
+		
 		GraphElement identity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
 		Set<ImmutabilityTypes> identityTypes = getTypes(identity);
 		Q localDFEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
@@ -497,8 +513,6 @@ public class CallChecker {
 		// Receiver (r) -LocalDataFlow-> IdentityPass (.this)
 		GraphElement r = localDFEdges.predecessors(identityPass).eval().nodes().getFirst();
 		Set<ImmutabilityTypes> rTypes = getTypes(r);
-		
-		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process Callsite Constraint qthis <: qr");
 		
 		// process s(this)
 		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(this)");
@@ -539,8 +553,44 @@ public class CallChecker {
 		if(removeTypes(r, rTypesToRemove)){
 			typesChanged = true;
 		}
+		return typesChanged;
+	}
+	
+	/**
+	 * Checks and satisfies constraints on callsites to the given target class (static) method
+	 * Let c(z) be a callsite to method m(p)
+	 * 
+	 * Constraint 1) z1 <: p1, z2 <: p2, z3 <: p3 ...
+	 * 
+	 * @param unassignedCallsite The static callsite to check constraints
+	 */
+	private static boolean handleUnassignedClassMethodCallsites(GraphElement unassignedCallsite) {
+		boolean typesChanged = false;
 		
+		Q controlFlowBlock = Common.toQ(unassignedCallsite).parent();
+		Q perControlFlowEdges = Common.universe().edgesTaggedWithAll(Edge.CALL, Edge.PER_CONTROL_FLOW);
+		AtlasSet<GraphElement> methods = perControlFlowEdges.successors(controlFlowBlock).eval().nodes(); // TODO: what if its more than one! use method signature instead?
+		
+		for(GraphElement method : methods){
+			if(processParameterConstraints(unassignedCallsite, method)){
+				typesChanged = true;
+			}
+		}
+		
+		return typesChanged;
+	}
+	
+
+	/**
+	 * Given an unassigned callsite and the callsite target
+	 * @param unassignedCallsite
+	 * @param method
+	 * @return
+	 */
+	private static boolean processParameterConstraints(GraphElement unassignedCallsite, GraphElement method) {
 		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process Callsite Constraint qz <: qp");
+		boolean typesChanged = false;
+		
 		
 		// Method (method) -Contains-> Parameter (p1, p2, ...)
 		AtlasSet<GraphElement> parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
@@ -603,28 +653,6 @@ public class CallChecker {
 				typesChanged = true;
 			}
 		}
-		
-		return typesChanged;
-	}
-	
-	/**
-	 * Checks and satisfies constraints on callsites to the given target class (static) method
-	 * Let c(z) be a callsite to method m(p)
-	 * 
-	 * Constraint 1) z1 <: p1, z2 <: p2, z3 <: p3 ...
-	 * 
-	 * @param method Method to check the constraints of corresponding callsites
-	 */
-	private static boolean handleClassMethodCallsites(GraphElement method) {
-		boolean typesChanged = false;
-		
-		Q perControlFlowEdges = Common.universe().edgesTaggedWithAll(Edge.CALL, Edge.PER_CONTROL_FLOW);
-		Q callsiteControlFlowBlocks = perControlFlowEdges.predecessors(Common.toQ(method));
-		Q callsites = callsiteControlFlowBlocks.children().nodesTaggedWithAny(XCSG.CallSite);
-		for(GraphElement callsite : callsites.eval().nodes()){
-			// TODO: check parameters
-		}
-		
 		return typesChanged;
 	}
 	

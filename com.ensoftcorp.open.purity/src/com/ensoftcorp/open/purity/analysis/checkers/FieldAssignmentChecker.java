@@ -1,18 +1,18 @@
 package com.ensoftcorp.open.purity.analysis.checkers;
 
-import static com.ensoftcorp.open.purity.core.Utilities.getStaticTypes;
-import static com.ensoftcorp.open.purity.core.Utilities.getTypes;
-import static com.ensoftcorp.open.purity.core.Utilities.removeStaticTypes;
-import static com.ensoftcorp.open.purity.core.Utilities.removeTypes;
+import static com.ensoftcorp.open.purity.analysis.Utilities.getStaticTypes;
+import static com.ensoftcorp.open.purity.analysis.Utilities.getTypes;
+import static com.ensoftcorp.open.purity.analysis.Utilities.removeStaticTypes;
+import static com.ensoftcorp.open.purity.analysis.Utilities.removeTypes;
 
 import java.util.EnumSet;
 import java.util.Set;
 
 import com.ensoftcorp.atlas.core.db.graph.GraphElement;
-import com.ensoftcorp.atlas.core.log.Log;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
-import com.ensoftcorp.open.purity.core.ImmutabilityTypes;
-import com.ensoftcorp.open.purity.core.Utilities;
+import com.ensoftcorp.open.purity.analysis.ImmutabilityTypes;
+import com.ensoftcorp.open.purity.analysis.Utilities;
+import com.ensoftcorp.open.purity.log.Log;
 import com.ensoftcorp.open.purity.ui.PurityPreferences;
 
 public class FieldAssignmentChecker {

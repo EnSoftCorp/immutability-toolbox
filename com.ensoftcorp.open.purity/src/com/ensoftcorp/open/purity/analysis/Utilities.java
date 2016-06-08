@@ -1,4 +1,4 @@
-package com.ensoftcorp.open.purity.core;
+package com.ensoftcorp.open.purity.analysis;
 
 import java.util.EnumSet;
 import java.util.Set;
@@ -8,11 +8,10 @@ import com.ensoftcorp.atlas.core.db.graph.GraphElement;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.EdgeDirection;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.NodeDirection;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
-import com.ensoftcorp.atlas.core.log.Log;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
-import com.ensoftcorp.open.purity.analysis.PurityAnalysis;
+import com.ensoftcorp.open.purity.log.Log;
 import com.ensoftcorp.open.purity.ui.PurityPreferences;
 
 public class Utilities {

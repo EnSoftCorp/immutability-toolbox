@@ -1,6 +1,6 @@
 package com.ensoftcorp.open.purity.analysis;
 
-import static com.ensoftcorp.open.purity.core.Utilities.getTypes;
+import static com.ensoftcorp.open.purity.analysis.Utilities.getTypes;
 
 import java.util.Collections;
 import java.util.EnumSet;
@@ -14,15 +14,13 @@ import com.ensoftcorp.atlas.core.db.graph.GraphElement;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.EdgeDirection;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.NodeDirection;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
-import com.ensoftcorp.atlas.core.log.Log;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.purity.analysis.checkers.BasicAssignmentChecker;
 import com.ensoftcorp.open.purity.analysis.checkers.CallChecker;
 import com.ensoftcorp.open.purity.analysis.checkers.FieldAssignmentChecker;
-import com.ensoftcorp.open.purity.core.ImmutabilityTypes;
-import com.ensoftcorp.open.purity.core.Utilities;
+import com.ensoftcorp.open.purity.log.Log;
 import com.ensoftcorp.open.purity.ui.PurityPreferences;
 
 /**
@@ -306,6 +304,7 @@ public class PurityAnalysis {
 				// TCALL
 				boolean involvesCallsite = false;
 				// TODO: remove DynamicDispatchCallSite filter
+				// TODO: what if callsite has more than one target?! use method signature instead?
 				if(from.taggedWith(XCSG.CallSite) && from.taggedWith(XCSG.DynamicDispatchCallSite)){
 					// Type Rule 5 - TCALL
 					// let, x = y.m(z)

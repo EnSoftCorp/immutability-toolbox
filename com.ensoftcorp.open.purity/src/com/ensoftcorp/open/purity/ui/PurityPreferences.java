@@ -7,6 +7,7 @@ import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
 
 import com.ensoftcorp.open.purity.Activator;
+import com.ensoftcorp.open.purity.log.Log;
 
 /**
  * UI for setting purity analysis preferences
@@ -27,8 +28,7 @@ public class PurityPreferences extends FieldEditorPreferencePage implements IWor
 		try {
 			result = Activator.getDefault().getPreferenceStore().getBoolean(REMOVE_QUALIFIER_SETS);
 		} catch (Exception e){
-			// TODO: re-enable after class loader issue on shell is fixed
-//			Log.error("Error accessing purity analysis preferences.", e);
+			Log.error("Error accessing purity analysis preferences.", e);
 		}
 		return result;
 	}
@@ -45,8 +45,7 @@ public class PurityPreferences extends FieldEditorPreferencePage implements IWor
 		try {
 			result = Activator.getDefault().getPreferenceStore().getBoolean(GENERAL_LOGGING);
 		} catch (Exception e){
-			// TODO: re-enable after class loader issue on shell is fixed
-//			Log.error("Error accessing purity analysis preferences.", e);
+			Log.error("Error accessing purity analysis preferences.", e);
 		}
 		return result;
 	}
@@ -63,8 +62,7 @@ public class PurityPreferences extends FieldEditorPreferencePage implements IWor
 		try {
 			result = Activator.getDefault().getPreferenceStore().getBoolean(INFERENCE_RULE_LOGGING);
 		} catch (Exception e){
-			// TODO: re-enable after class loader issue on shell is fixed
-//			Log.error("Error accessing purity analysis preferences.", e);
+			Log.error("Error accessing purity analysis preferences.", e);
 		}
 		return result;
 	}
@@ -81,8 +79,7 @@ public class PurityPreferences extends FieldEditorPreferencePage implements IWor
 		try {
 			result = Activator.getDefault().getPreferenceStore().getBoolean(DEBUG_LOGGING);
 		} catch (Exception e){
-			// TODO: re-enable after class loader issue on shell is fixed
-//			Log.error("Error accessing purity analysis preferences.", e);
+			Log.error("Error accessing purity analysis preferences.", e);
 		}
 		return result;
 	}

@@ -2,6 +2,57 @@
 <?eclipse version="3.4"?>
 <plugin>
    
+	<extension
+	      point="org.eclipse.ui.commands">
+	   <category
+	         name="Purity Analysis"
+	         id="com.ensoftcorp.open.purity.commands.purityCategory">
+	      <command
+	            categoryId="com.ensoftcorp.open.purity.commands.purityCategory"
+	            id="Run Purity Analysis"
+	            name="Run Purity Analysis">
+	      </command>
+	   </category>
+	</extension>
+	
+	<extension
+	      point="org.eclipse.ui.handlers">
+	   <handler
+	         commandId="Run Purity Analysis"
+	         class="com.ensoftcorp.open.purity.handlers.RunPurityAnalysisHandler">
+	   </handler>
+	</extension>
+	
+	<extension
+	      point="org.eclipse.ui.handlers">
+	   <handler
+	         commandId="Edit Preferences"
+	         class="com.ensoftcorp.open.purity.handlers.PurityPreferencesHandler">
+	   </handler>
+	</extension>
+	
+	<extension
+	      point="org.eclipse.ui.menus">
+	   <menuContribution
+	         locationURI="menu:org.eclipse.ui.main.menu?after=additions">
+	      <menu
+	            label="Purity"
+	            mnemonic="T"
+	            id="com.ensoftcorp.open.purity.menus.purityMenu">
+	         <command
+	               commandId="Run Purity Analysis"
+	               mnemonic="L"
+	               id="com.ensoftcorp.open.purity.menus.runPurityAnalysisCommand">
+	         </command>
+	         <command
+	               commandId="Edit Preferences"
+	               mnemonic="L"
+	               id="com.ensoftcorp.open.purity.menus.editPurityPreferencesCommand">
+	         </command>
+	      </menu>
+	   </menuContribution>
+	</extension>
+   
    <extension
          point="org.eclipse.ui.preferencePages">
       <page
