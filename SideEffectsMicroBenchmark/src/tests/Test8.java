@@ -6,7 +6,7 @@ public class Test8 {
 		this.m1(z);
 		
 		Date z2 = new Date();
-		int x = this.m1(z2);
+//		int x = this.m1(z2);
 	}
 	
 	public int m1(Date p1){

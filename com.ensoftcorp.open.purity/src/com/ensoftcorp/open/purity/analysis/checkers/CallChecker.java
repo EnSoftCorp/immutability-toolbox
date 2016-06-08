@@ -484,7 +484,7 @@ public class CallChecker {
 		boolean typesChanged = false;
 		
 		Q controlFlowBlock = Common.toQ(unassignedCallsite).parent();
-		Q perControlFlowEdges = Common.universe().edgesTaggedWithAny(Edge.PER_CONTROL_FLOW);
+		Q perControlFlowEdges = Common.universe().edgesTaggedWithAll(Edge.CALL, Edge.PER_CONTROL_FLOW);
 		GraphElement method = perControlFlowEdges.successors(controlFlowBlock).eval().nodes().getFirst(); // TODO: what if its more than one! use method signature instead?
 		GraphElement identity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
 		Set<ImmutabilityTypes> identityTypes = getTypes(identity);
@@ -618,7 +618,7 @@ public class CallChecker {
 	private static boolean handleClassMethodCallsites(GraphElement method) {
 		boolean typesChanged = false;
 		
-		Q perControlFlowEdges = Common.universe().edgesTaggedWithAny(Edge.PER_CONTROL_FLOW);
+		Q perControlFlowEdges = Common.universe().edgesTaggedWithAll(Edge.CALL, Edge.PER_CONTROL_FLOW);
 		Q callsiteControlFlowBlocks = perControlFlowEdges.predecessors(Common.toQ(method));
 		Q callsites = callsiteControlFlowBlocks.children().nodesTaggedWithAny(XCSG.CallSite);
 		for(GraphElement callsite : callsites.eval().nodes()){
