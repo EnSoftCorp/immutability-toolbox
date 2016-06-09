@@ -13,7 +13,6 @@ import com.ensoftcorp.atlas.core.db.graph.GraphElement.EdgeDirection;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.NodeDirection;
 import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
-import com.ensoftcorp.atlas.core.query.Attr.Edge;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
@@ -483,18 +482,16 @@ public class CallChecker {
 	public static boolean handleUnassignedInstanceMethodCallsites(GraphElement unassignedCallsite) {
 		boolean typesChanged = false;
 		
-		Q controlFlowBlock = Common.toQ(unassignedCallsite).parent();
-		Q perControlFlowEdges = Common.universe().edgesTaggedWithAll(Edge.CALL, Edge.PER_CONTROL_FLOW);
-		AtlasSet<GraphElement> methods = perControlFlowEdges.successors(controlFlowBlock).eval().nodes();  // TODO: what if its more than one! use method signature instead?
+		GraphElement method = Utilities.getInvokedMethodSignature(unassignedCallsite);
 		
-		for(GraphElement method : methods){
-			if(processReceiverConstraints(unassignedCallsite, method)){
-				typesChanged = true;
-			}
-			if(processParameterConstraints(unassignedCallsite, method)){
-				typesChanged = true;
-			}
+		if(processReceiverConstraints(unassignedCallsite, method)){
+			typesChanged = true;
 		}
+		
+		if(processStrictParameterConstraints(unassignedCallsite, method)){
+			typesChanged = true;
+		}
+			
 		return typesChanged;
 	}
 
@@ -567,19 +564,16 @@ public class CallChecker {
 	private static boolean handleUnassignedClassMethodCallsites(GraphElement unassignedCallsite) {
 		boolean typesChanged = false;
 		
-		Q controlFlowBlock = Common.toQ(unassignedCallsite).parent();
-		Q perControlFlowEdges = Common.universe().edgesTaggedWithAll(Edge.CALL, Edge.PER_CONTROL_FLOW);
-		AtlasSet<GraphElement> methods = perControlFlowEdges.successors(controlFlowBlock).eval().nodes(); // TODO: what if its more than one! use method signature instead?
+		GraphElement method = Utilities.getInvokedMethodSignature(unassignedCallsite);
 		
-		for(GraphElement method : methods){
-			if(processParameterConstraints(unassignedCallsite, method)){
-				typesChanged = true;
-			}
+		if(processStrictParameterConstraints(unassignedCallsite, method)){
+			typesChanged = true;
 		}
+		
+		// TODO: handle static type constraints
 		
 		return typesChanged;
 	}
-	
 
 	/**
 	 * Given an unassigned callsite and the callsite target
@@ -587,7 +581,7 @@ public class CallChecker {
 	 * @param method
 	 * @return
 	 */
-	private static boolean processParameterConstraints(GraphElement unassignedCallsite, GraphElement method) {
+	private static boolean processStrictParameterConstraints(GraphElement unassignedCallsite, GraphElement method) {
 		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process Callsite Constraint qz <: qp");
 		boolean typesChanged = false;
 		

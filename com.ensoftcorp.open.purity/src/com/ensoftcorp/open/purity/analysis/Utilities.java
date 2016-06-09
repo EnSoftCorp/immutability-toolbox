@@ -70,6 +70,17 @@ public class Utilities {
 	}
 	
 	/**
+	 * Given a callsite this method returns the invoked method signature
+	 * @param callsite
+	 * @return
+	 */
+	public static GraphElement getInvokedMethodSignature(GraphElement callsite) {
+		Q invokedSignatureEdges = Common.universe().edgesTaggedWithAny(XCSG.InvokedSignature);
+		GraphElement method = invokedSignatureEdges.successors(Common.toQ(callsite)).eval().nodes().getFirst();
+		return method;
+	}
+	
+	/**
 	 * Sets the type qualifier for a graph element
 	 * @param ge
 	 * @param qualifier

@@ -312,6 +312,10 @@ public class PurityAnalysis {
 						GraphElement x = to;
 						GraphElement callsite = from;
 						
+						// TODO: update this with method signature
+//						GraphElement method = Utilities.getInvokedMethodSignature(callsite);
+//						GraphElement identity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
+						
 						// IdentityPass (.this) -IdentityPassedTo-> CallSite (m)
 						GraphElement identityPassedToEdge = identityPassedToGraph.edges(callsite, NodeDirection.IN).getFirst();
 						GraphElement identityPass = identityPassedToEdge.getNode(EdgeDirection.FROM);
