@@ -26,7 +26,6 @@ public class RunPurityAnalysisHandler extends AbstractHandler {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		PurityJob job = new PurityJob();
 		job.schedule();
-		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Job completed.");
 		return null;
 	}
 	
@@ -38,6 +37,7 @@ public class RunPurityAnalysisHandler extends AbstractHandler {
 		@Override
 		protected IStatus run(IProgressMonitor monitor) {
 			PurityAnalysis.run(monitor);
+			if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Job completed.");
 			return Status.OK_STATUS;
 		}	
 	}
