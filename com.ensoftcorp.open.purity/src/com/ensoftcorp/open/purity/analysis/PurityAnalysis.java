@@ -20,6 +20,7 @@ import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.purity.analysis.checkers.BasicAssignmentChecker;
 import com.ensoftcorp.open.purity.analysis.checkers.CallChecker;
 import com.ensoftcorp.open.purity.analysis.checkers.FieldAssignmentChecker;
+import com.ensoftcorp.open.purity.analysis.checkers.SanityChecks;
 import com.ensoftcorp.open.purity.log.Log;
 import com.ensoftcorp.open.purity.ui.PurityPreferences;
 
@@ -83,7 +84,19 @@ public class PurityAnalysis {
 				Log.warning("Purity analysis completed unsuccessfully in " + runtime + " ms\n" + summary);
 			}
 		}
-		return successful;
+		
+		boolean isSane = true;
+		if(PurityPreferences.isRunSanityChecksEnabled()){
+			Log.info("Running sanity checks...");
+			isSane = SanityChecks.run();
+			if(isSane){
+				Log.info("Sanity checks completed. Everything is sane.");
+			} else {
+				Log.warning("Sanity checks failed!");
+			}
+		}
+		
+		return successful && isSane;
 	}
 	
 	/**
@@ -433,6 +446,33 @@ public class PurityAnalysis {
 		return typesChanged;
 	}
 	
+	public static ImmutabilityTypes getDefaultMaximalType(GraphElement ge) {
+		ImmutabilityTypes maximalType;
+		Q typeOfEdges = Common.universe().edgesTaggedWithAny(XCSG.TypeOf);
+		GraphElement geType = typeOfEdges.successors(Common.toQ(ge)).eval().nodes().getFirst();
+		
+		GraphElement nullType = Common.universe().nodesTaggedWithAny(XCSG.Java.NullType).eval().nodes().getFirst();
+		if(ge.equals(nullType)){
+			maximalType = ImmutabilityTypes.MUTABLE;
+		} else if(ge.taggedWith(XCSG.Instantiation) || ge.taggedWith(XCSG.ArrayInstantiation)){
+			maximalType = ImmutabilityTypes.MUTABLE;
+		} else if(isDefaultReadonlyType(ge) || isDefaultReadonlyType(geType)){
+			// several java objects are readonly for all practical purposes
+			maximalType = ImmutabilityTypes.READONLY;
+		} else if(ge.taggedWith(XCSG.MasterReturn)){
+			maximalType = ImmutabilityTypes.READONLY;
+		} else if(ge.taggedWith(XCSG.InstanceVariable)){
+			maximalType = ImmutabilityTypes.READONLY;
+		} else if(ge.taggedWith(XCSG.ClassVariable)){
+			maximalType = ImmutabilityTypes.READONLY;
+		} else if(ge.taggedWith(XCSG.Method)){
+			maximalType = ImmutabilityTypes.READONLY;
+		} else {
+			maximalType = ImmutabilityTypes.READONLY;
+		}
+		return maximalType;
+	}
+	
 	public static EnumSet<ImmutabilityTypes> getDefaultTypes(GraphElement ge) {
 		EnumSet<ImmutabilityTypes> qualifiers = EnumSet.noneOf(ImmutabilityTypes.class);
 		
@@ -455,13 +495,13 @@ public class PurityAnalysis {
 		} else if(ge.taggedWith(XCSG.MasterReturn)){
 			// Section 2.4 of Reference 1
 			// "Method returns are initialized S(ret) = {readonly, polyread} for each method m"
-			qualifiers.add(ImmutabilityTypes.POLYREAD);
 			qualifiers.add(ImmutabilityTypes.READONLY);
+			qualifiers.add(ImmutabilityTypes.POLYREAD);
 		} else if(ge.taggedWith(XCSG.InstanceVariable)){
 			// Section 2.4 of Reference 1
 			// "Fields are initialized to S(f) = {readonly, polyread}"
-			qualifiers.add(ImmutabilityTypes.POLYREAD);
 			qualifiers.add(ImmutabilityTypes.READONLY);
+			qualifiers.add(ImmutabilityTypes.POLYREAD);
 		} else if(ge.taggedWith(XCSG.ClassVariable)){
 			// Section 3 of Reference 1
 			// static fields are initialized to S(sf) = {readonly, mutable}
@@ -477,8 +517,8 @@ public class PurityAnalysis {
 			// Section 2.4 of Reference 1
 			// "All other references are initialized to the maximal
 			// set of qualifiers, i.e. S(x) = {readonly, polyread, mutable}"
-//			qualifiers.add(ImmutabilityTypes.POLYREAD); // what does it mean for a local reference to be polyread? ~Ben
 			qualifiers.add(ImmutabilityTypes.READONLY);
+//			qualifiers.add(ImmutabilityTypes.POLYREAD); // what does it mean for a local reference to be polyread? ~Ben
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		}
 		return qualifiers;
@@ -560,18 +600,19 @@ public class PurityAnalysis {
 			attributedGraphElement.tag(maximalType.toString());
 		}
 		
-		// tag the graph elements that were never touched as readonly
+		// tag the graph elements that were never touched as the default maximal type (most likely readonly)
 		Q methods = Common.universe().nodesTaggedWithAny(XCSG.Method);
 		Q parameters = Common.universe().nodesTaggedWithAny(XCSG.Parameter);
 		Q masterReturns = Common.universe().nodesTaggedWithAny(XCSG.MasterReturn);
 		Q instanceVariables = Common.universe().nodesTaggedWithAny(XCSG.InstanceVariable);
-		Q classVariables = Common.universe().nodesTaggedWithAny(XCSG.ClassVariable);
 		Q thisNodes = Common.universe().nodesTaggedWithAll(XCSG.InstanceMethod).children().nodesTaggedWithAny(XCSG.Identity);
+		Q classVariables = Common.universe().nodesTaggedWithAny(XCSG.ClassVariable);
 		// note local variables may also get tracked, but only if need be during the analysis
-		Q trackedItems = methods.union(parameters, masterReturns, instanceVariables, classVariables, thisNodes);
-		Q untouchedTrackedItems = trackedItems.difference(trackedItems.nodesTaggedWithAny(READONLY, POLYREAD, MUTABLE));
+		Q trackedItems = methods.union(parameters, masterReturns, instanceVariables, thisNodes, classVariables);
+		Q untouchedTrackedItems = trackedItems.difference(trackedItems.nodesTaggedWithAny(READONLY, POLYREAD, MUTABLE), Common.toQ(attributedGraphElements));
 		for(GraphElement untouchedTrackedItem : untouchedTrackedItems.eval().nodes()){
-			untouchedTrackedItem.tag(READONLY);
+			ImmutabilityTypes maximalType = getDefaultMaximalType(untouchedTrackedItem);
+			untouchedTrackedItem.tag(maximalType.toString());
 		}
 	}
 	
@@ -613,7 +654,7 @@ public class PurityAnalysis {
 			}
 			
 			// 2) it does not mutate prestates reachable through static fields
-			if(method.tag(MUTABLE)){
+			if(method.taggedWith(MUTABLE)){
 				return false;
 			}
 			
