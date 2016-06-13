@@ -46,7 +46,7 @@ public class Log {
 	public static void log(int severity, String string, Throwable e) {
 		if(log == null){
 			System.err.println(string + "\n" + e);
-		}else{
+		} else {
 			IStatus status = new Status(severity, Activator.PLUGIN_ID, string, e);
 			log.log(status);
 		}
