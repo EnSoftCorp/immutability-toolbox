@@ -1,7 +1,6 @@
 package com.ensoftcorp.open.purity.analysis;
 
 import static com.ensoftcorp.open.purity.analysis.Utilities.getTypes;
-import static com.ensoftcorp.open.purity.analysis.Utilities.getStaticTypes;
 
 import java.util.Collections;
 import java.util.EnumSet;
@@ -92,7 +91,6 @@ public class PurityAnalysis {
 	 */
 	private static boolean runAnalysis(){
 		
-		// initialize tags I wish were there
 		// TODO: remove when there are appropriate alternatives
 		Utilities.addClassVariableAccessTags();
 		
@@ -155,8 +153,6 @@ public class PurityAnalysis {
 		}
 		
 		// flattens the type hierarchy to the maximal types
-		// and sets the final attribute values for the
-		// IMMUTABILITY_QUALIFIER attribute
 		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Extracting maximal types...");
 		extractMaximalTypes();
 		
@@ -436,23 +432,6 @@ public class PurityAnalysis {
 		
 		return typesChanged;
 	}
-
-	public static EnumSet<ImmutabilityTypes> getDefaultStaticTypes(GraphElement ge) {
-		EnumSet<ImmutabilityTypes> qualifiers = EnumSet.noneOf(ImmutabilityTypes.class);
-		if(ge.taggedWith(XCSG.Field)){
-			// Section 3 of Reference 1
-			// static fields can only be readonly or mutable
-			qualifiers.add(ImmutabilityTypes.READONLY);
-			qualifiers.add(ImmutabilityTypes.MUTABLE);
-		} else if(ge.taggedWith(XCSG.Method)){
-			qualifiers.add(ImmutabilityTypes.READONLY);
-			qualifiers.add(ImmutabilityTypes.POLYREAD);
-			qualifiers.add(ImmutabilityTypes.MUTABLE);
-		} else {
-			throw new IllegalArgumentException("Static types are only valid for fields and methods");
-		}
-		return qualifiers;
-	}
 	
 	public static EnumSet<ImmutabilityTypes> getDefaultTypes(GraphElement ge) {
 		EnumSet<ImmutabilityTypes> qualifiers = EnumSet.noneOf(ImmutabilityTypes.class);
@@ -485,14 +464,20 @@ public class PurityAnalysis {
 			qualifiers.add(ImmutabilityTypes.READONLY);
 		} else if(ge.taggedWith(XCSG.ClassVariable)){
 			// Section 3 of Reference 1
-			// Static fields are initialized to S(sf) = {readonly, mutable}
+			// static fields are initialized to S(sf) = {readonly, mutable}
 			qualifiers.add(ImmutabilityTypes.READONLY);
+			qualifiers.add(ImmutabilityTypes.MUTABLE);
+		} else if(ge.taggedWith(XCSG.Method)){
+			// Section 3 of Reference 1
+			// methods can have a static type of {readonly, polyread, mutable}
+			qualifiers.add(ImmutabilityTypes.READONLY);
+			qualifiers.add(ImmutabilityTypes.POLYREAD);
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		} else {
 			// Section 2.4 of Reference 1
 			// "All other references are initialized to the maximal
 			// set of qualifiers, i.e. S(x) = {readonly, polyread, mutable}"
-//				qualifiers.add(ImmutabilityTypes.POLYREAD); // what does it mean for a local reference to be polyread? ~Ben
+//			qualifiers.add(ImmutabilityTypes.POLYREAD); // what does it mean for a local reference to be polyread? ~Ben
 			qualifiers.add(ImmutabilityTypes.READONLY);
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		}
@@ -571,24 +556,6 @@ public class PurityAnalysis {
 			// it could also be used for partial program analysis
 			if(PurityPreferences.isRemoveQualifierSetsEnabled()) {
 				attributedGraphElement.removeAttr(Utilities.IMMUTABILITY_QUALIFIERS);
-			}
-			attributedGraphElement.tag(maximalType.toString());
-		}
-		
-		attributedGraphElements = Common.universe().selectNode(Utilities.STATIC_IMMUTABILITY_QUALIFIERS).eval().nodes();
-		for(GraphElement attributedGraphElement : attributedGraphElements){
-			LinkedList<ImmutabilityTypes> orderedTypes = new LinkedList<ImmutabilityTypes>();
-			orderedTypes.addAll(getStaticTypes(attributedGraphElement));
-			if(orderedTypes.isEmpty()){
-				Log.warning(attributedGraphElement.address().toAddressString() + " has no static types!");
-				continue;
-			}
-			Collections.sort(orderedTypes);
-			ImmutabilityTypes maximalType = orderedTypes.getLast();
-			// leaving the remaining type qualifiers on the graph element is useful for debugging
-			// it could also be used for partial program analysis
-			if(PurityPreferences.isRemoveQualifierSetsEnabled()) {
-				attributedGraphElement.removeAttr(Utilities.STATIC_IMMUTABILITY_QUALIFIERS);
 			}
 			attributedGraphElement.tag(maximalType.toString());
 		}

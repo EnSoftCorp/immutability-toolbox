@@ -1,8 +1,6 @@
 package com.ensoftcorp.open.purity.analysis.checkers;
 
-import static com.ensoftcorp.open.purity.analysis.Utilities.getStaticTypes;
 import static com.ensoftcorp.open.purity.analysis.Utilities.getTypes;
-import static com.ensoftcorp.open.purity.analysis.Utilities.removeStaticTypes;
 import static com.ensoftcorp.open.purity.analysis.Utilities.removeTypes;
 
 import java.util.EnumSet;
@@ -62,7 +60,7 @@ public class FieldAssignmentChecker {
 					typesChanged = true;
 				}
 				if(container.taggedWith(XCSG.ClassVariable)){
-					if(removeStaticTypes(Utilities.getContainingMethod(x), ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)){
+					if(removeTypes(Utilities.getContainingMethod(x), ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)){
 						typesChanged = true;
 					}
 				}
@@ -201,7 +199,7 @@ public class FieldAssignmentChecker {
 					typesChanged = true;
 				}
 				if(container.taggedWith(XCSG.ClassVariable)){
-					if(removeStaticTypes(Utilities.getContainingMethod(x), ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)){
+					if(removeTypes(Utilities.getContainingMethod(x), ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)){
 						typesChanged = true;
 					}
 				}
@@ -316,7 +314,7 @@ public class FieldAssignmentChecker {
 		
 		boolean typesChanged = false;
 		
-		if(removeStaticTypes(m, ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)){
+		if(removeTypes(m, ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)){
 			typesChanged = true;
 		}
 
@@ -353,7 +351,7 @@ public class FieldAssignmentChecker {
 		boolean typesChanged = false;
 		
 		Set<ImmutabilityTypes> xTypes = getTypes(x);
-		Set<ImmutabilityTypes> mStaticTypes = getStaticTypes(m);
+		Set<ImmutabilityTypes> mStaticTypes = getTypes(m);
 		
 		// process s(x)
 		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(x) for constraint qm " + getTypes(m).toString() + " <: qx " + getTypes(x).toString());
@@ -391,7 +389,7 @@ public class FieldAssignmentChecker {
 				mStaticTypesToRemove.add(mStaticType);
 			}
 		}
-		if(removeStaticTypes(m, mStaticTypesToRemove)){
+		if(removeTypes(m, mStaticTypesToRemove)){
 			typesChanged = true;
 		}
 		

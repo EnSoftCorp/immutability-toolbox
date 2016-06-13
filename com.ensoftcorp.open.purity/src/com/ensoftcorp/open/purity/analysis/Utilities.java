@@ -21,11 +21,6 @@ public class Utilities {
 	 */
 	public static final String IMMUTABILITY_QUALIFIERS = "IMMUTABILITY_QUALIFIERS";
 	
-	/**
-	 * Used as an attribute key to temporarily compute the potential static immutability qualifiers
-	 */
-	public static final String STATIC_IMMUTABILITY_QUALIFIERS = "STATIC_IMMUTABILITY_QUALIFIERS";
-	
 	// TODO: bug EnSoft to make tags like this...
 	public static final String CLASS_VARIABLE_ASSIGNMENT = "CLASS_VARIABLE_ASSIGNMENT";
 	public static final String CLASS_VARIABLE_VALUE = "CLASS_VARIABLE_VALUE";
@@ -110,47 +105,6 @@ public class Utilities {
 			typesToRemove.add(type);
 		}
 		return removeTypes(ge, typesToRemove);
-	}
-	
-	/**
-	 * Sets the type qualifier for a graph element
-	 * @param ge
-	 * @param qualifier
-	 * @return Returns true if the type qualifier changed
-	 */
-	public static boolean removeStaticTypes(GraphElement ge, Set<ImmutabilityTypes> typesToRemove){
-		Set<ImmutabilityTypes> typeSet = getStaticTypes(ge);
-		String logMessage = "Remove: " + typesToRemove.toString() + " from " + typeSet.toString() + " for " + ge.getAttr(XCSG.name);
-		boolean typesChanged = typeSet.removeAll(typesToRemove);
-		if(typesChanged){
-			if(PurityPreferences.isDebugLoggingEnabled()) Log.info(logMessage);
-		}
-		return typesChanged;
-	}
-	
-	/**
-	 * Sets the type qualifier for a graph element
-	 * @param ge
-	 * @param qualifier
-	 * @return Returns true if the type qualifier changed
-	 */
-	public static boolean removeStaticTypes(GraphElement ge, ImmutabilityTypes... types){
-		EnumSet<ImmutabilityTypes> typesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-		for(ImmutabilityTypes type : types){
-			typesToRemove.add(type);
-		}
-		return removeStaticTypes(ge, typesToRemove);
-	}
-	
-	@SuppressWarnings("unchecked")
-	public static Set<ImmutabilityTypes> getStaticTypes(GraphElement ge){
-		if(ge.hasAttr(STATIC_IMMUTABILITY_QUALIFIERS)){
-			return (Set<ImmutabilityTypes>) ge.getAttr(STATIC_IMMUTABILITY_QUALIFIERS);
-		} else {
-			EnumSet<ImmutabilityTypes> qualifiers = PurityAnalysis.getDefaultStaticTypes(ge);
-			ge.putAttr(STATIC_IMMUTABILITY_QUALIFIERS, qualifiers);
-			return qualifiers;
-		}
 	}
 	
 	@SuppressWarnings("unchecked")

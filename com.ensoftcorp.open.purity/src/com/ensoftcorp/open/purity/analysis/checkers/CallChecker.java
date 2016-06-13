@@ -1,8 +1,6 @@
 package com.ensoftcorp.open.purity.analysis.checkers;
 
 import static com.ensoftcorp.open.purity.analysis.Utilities.getTypes;
-import static com.ensoftcorp.open.purity.analysis.Utilities.getStaticTypes;
-import static com.ensoftcorp.open.purity.analysis.Utilities.removeStaticTypes;
 import static com.ensoftcorp.open.purity.analysis.Utilities.removeTypes;
 
 import java.util.EnumSet;
@@ -92,7 +90,7 @@ public class CallChecker {
 						typesChanged = true;
 					}
 					if(container.taggedWith(XCSG.ClassVariable)){
-						if(removeStaticTypes(Utilities.getContainingMethod(x), ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)){
+						if(removeTypes(Utilities.getContainingMethod(x), ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)){
 							typesChanged = true;
 						}
 					}
@@ -414,7 +412,7 @@ public class CallChecker {
 						typesChanged = true;
 					}
 					if(container.taggedWith(XCSG.ClassVariable)){
-						if(removeStaticTypes(Utilities.getContainingMethod(x), ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)){
+						if(removeTypes(Utilities.getContainingMethod(x), ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)){
 							typesChanged = true;
 						}
 					}
@@ -449,8 +447,8 @@ public class CallChecker {
 		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process Static Dispatch Constraint qm' <: qm");
 		boolean typesChanged = false;
 		
-		Set<ImmutabilityTypes> mTypes = getStaticTypes(method);
-		Set<ImmutabilityTypes> mContainerTypes = getStaticTypes(containingMethod);
+		Set<ImmutabilityTypes> mTypes = getTypes(method);
+		Set<ImmutabilityTypes> mContainerTypes = getTypes(containingMethod);
 		
 		// process s(m)
 		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(m)");
@@ -500,8 +498,8 @@ public class CallChecker {
 		boolean typesChanged = false;
 		
 		Set<ImmutabilityTypes> xTypes = getTypes(x);
-		Set<ImmutabilityTypes> mTypes = getStaticTypes(method);
-		Set<ImmutabilityTypes> mContainerTypes = getStaticTypes(containingMethod);
+		Set<ImmutabilityTypes> mTypes = getTypes(method);
+		Set<ImmutabilityTypes> mContainerTypes = getTypes(containingMethod);
 		
 		// process s(x)
 		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(x)");
