@@ -304,9 +304,8 @@ public class PurityAnalysis {
 				
 				// TCALL
 				boolean involvesCallsite = false;
-				// TODO: remove DynamicDispatchCallSite filter
 				// TODO: what if callsite has more than one target?! use method signature instead?
-				if(from.taggedWith(XCSG.CallSite) && from.taggedWith(XCSG.DynamicDispatchCallSite)){
+				if(from.taggedWith(XCSG.DynamicDispatchCallSite)){
 					// Type Rule 5 - TCALL
 					// let, x = y.m(z)
 					try {
@@ -361,6 +360,50 @@ public class PurityAnalysis {
 					involvesCallsite = true;
 				}
 				
+				if(from.taggedWith(XCSG.StaticDispatchCallSite)){
+					// Type Rule 8 - TSCALL
+					// let, x = m(z)
+					try {
+						GraphElement x = to;
+						GraphElement callsite = from;
+						
+						// TODO: update this with method signature
+//						GraphElement method = Utilities.getInvokedMethodSignature(callsite);
+//						GraphElement identity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
+						
+						// ReturnValue (ret) -InterproceduralDataFlow-> CallSite (m)
+						GraphElement interproceduralDataFlowEdge = interproceduralDFGraph.edges(callsite, NodeDirection.IN).getFirst();
+						GraphElement ret = interproceduralDataFlowEdge.getNode(EdgeDirection.FROM);
+						
+						// Method (method) -Contains-> ReturnValue (ret)
+						// note that we could also use a control flow call edge to get the method
+						// Control Flow Block (cf) -Contains-> Callsite (m)
+						// Control Flow Block (cf) -Call-> Method (method)
+						GraphElement containsEdge = containsGraph.edges(ret, NodeDirection.IN).getFirst();
+						GraphElement method = containsEdge.getNode(EdgeDirection.FROM);
+						
+						// Method (method) -Contains-> Parameter (p1, p2, ...)
+						AtlasSet<GraphElement> parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
+						
+						// ControlFlow -Contains-> CallSite
+						// CallSite -Contains-> ParameterPassed (z1, z2, ...)
+						AtlasSet<GraphElement> parametersPassed = Common.toQ(callsite).parent().children().nodesTaggedWithAny(XCSG.ParameterPass).eval().nodes();
+						
+						// ParameterPassed (z1, z2, ...) -InterproceduralDataFlow-> Parameter (p1, p2, ...)
+						// such that z1-InterproceduralDataFlow->p1, z2-InterproceduralDataFlow->p2, ...
+						AtlasSet<GraphElement> parametersPassedEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow)
+								.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
+						
+						if(CallChecker.handleStaticCall(x, method, ret, parametersPassedEdges)){
+							typesChanged = true;
+						}
+					} catch (Exception e){
+						if(PurityPreferences.isGeneralLoggingEnabled()) Log.error("Error parsing callsite for work item: " + workItem.address().toAddressString(), e);
+					}
+					
+					involvesCallsite = true;
+				}
+				
 				// Type Rule 2 - TASSIGN
 				// let x = y
 				if(!involvesField && !involvesCallsite){
@@ -379,14 +422,14 @@ public class PurityAnalysis {
 			// a CHA, but we'd also have to update the callsite resolution which brought
 			// us to this point in the first place
 			GraphElement unassignedDynamicDispatchCallsite = workItem;
-			if(CallChecker.handleUnassignedInstanceMethodCallsites(unassignedDynamicDispatchCallsite)){
+			if(CallChecker.handleUnassignedDynamicDispatchCallsites(unassignedDynamicDispatchCallsite)){
 				typesChanged = true;
 			}
 		} else if(workItem.taggedWith(XCSG.StaticDispatchCallSite)){
 			// constraints need to be checked for each callsite without an assignment 
 			// of this class method to satisfy constraints on parameters passed
 			GraphElement unassignedStaticDispatchCallsite = workItem;
-			if(CallChecker.handleUnassignedClassMethodCallsites(unassignedStaticDispatchCallsite)){
+			if(CallChecker.handleUnassignedStaticDispatchCallsites(unassignedStaticDispatchCallsite)){
 				typesChanged = true;
 			}
 		}

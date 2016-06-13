@@ -479,12 +479,12 @@ public class CallChecker {
 	 * 
 	 * @param unassignedCallsite The dynamic dispatch callsite to check constraints
 	 */
-	public static boolean handleUnassignedInstanceMethodCallsites(GraphElement unassignedCallsite) {
+	public static boolean handleUnassignedDynamicDispatchCallsites(GraphElement unassignedCallsite) {
 		boolean typesChanged = false;
 		
 		GraphElement method = Utilities.getInvokedMethodSignature(unassignedCallsite);
 		
-		if(processReceiverConstraints(unassignedCallsite, method)){
+		if(processStrictReceiverConstraints(unassignedCallsite, method)){
 			typesChanged = true;
 		}
 		
@@ -494,10 +494,55 @@ public class CallChecker {
 			
 		return typesChanged;
 	}
-
-	private static boolean processReceiverConstraints(GraphElement unassignedCallsite, GraphElement method) {
+	
+	/**
+	 * Type Rule 8 - TSCALL
+	 * let, x = m(z)
+	 * 
+	 * @param x
+	 * @param method
+	 * @param ret
+	 * @param parametersPassedEdges
+	 * @return
+	 */
+	public static boolean handleStaticCall(GraphElement x, GraphElement method, GraphElement ret, AtlasSet<GraphElement> parametersPassedEdges) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+	
+	/**
+	 * Checks and satisfies constraints on callsites to the given target class (static) method
+	 * Let c(z) be a callsite to method m(p)
+	 * 
+	 * Constraint 1) z1 <: p1, z2 <: p2, z3 <: p3 ...
+	 * 
+	 * @param unassignedCallsite The static callsite to check constraints
+	 */
+	public static boolean handleUnassignedStaticDispatchCallsites(GraphElement unassignedCallsite) {
+		boolean typesChanged = false;
+		
+		GraphElement method = Utilities.getInvokedMethodSignature(unassignedCallsite);
+		
+		if(processStrictParameterConstraints(unassignedCallsite, method)){
+			typesChanged = true;
+		}
+		
+		// TODO: handle static type constraints
+		
+		return typesChanged;
+	}
+	
+	/**
+	 * 
+	 * @param unassignedCallsite
+	 * @param method
+	 * @return
+	 */
+	private static boolean processStrictReceiverConstraints(GraphElement unassignedCallsite, GraphElement method) {
 		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process Callsite Constraint qthis <: qr");
 		boolean typesChanged = false;
+		
+		// TODO: use method signature?
 		
 		GraphElement identity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
 		Set<ImmutabilityTypes> identityTypes = getTypes(identity);
@@ -552,31 +597,10 @@ public class CallChecker {
 		}
 		return typesChanged;
 	}
-	
-	/**
-	 * Checks and satisfies constraints on callsites to the given target class (static) method
-	 * Let c(z) be a callsite to method m(p)
-	 * 
-	 * Constraint 1) z1 <: p1, z2 <: p2, z3 <: p3 ...
-	 * 
-	 * @param unassignedCallsite The static callsite to check constraints
-	 */
-	public static boolean handleUnassignedClassMethodCallsites(GraphElement unassignedCallsite) {
-		boolean typesChanged = false;
-		
-		GraphElement method = Utilities.getInvokedMethodSignature(unassignedCallsite);
-		
-		if(processStrictParameterConstraints(unassignedCallsite, method)){
-			typesChanged = true;
-		}
-		
-		// TODO: handle static type constraints
-		
-		return typesChanged;
-	}
 
 	/**
-	 * Given an unassigned callsite and the callsite target
+	 * Given an unassigned callsite and the callsite target, this method checks and satisfies the constraints
+	 * that qz <: qp, where p is the formal parameter and z is the actual parameter passed for each callsite.
 	 * @param unassignedCallsite
 	 * @param method
 	 * @return
@@ -585,6 +609,7 @@ public class CallChecker {
 		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process Callsite Constraint qz <: qp");
 		boolean typesChanged = false;
 		
+		// TODO: use method signature?
 		
 		// Method (method) -Contains-> Parameter (p1, p2, ...)
 		AtlasSet<GraphElement> parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
