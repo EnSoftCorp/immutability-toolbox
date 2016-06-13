@@ -75,8 +75,10 @@ public class Utilities {
 	 * @return
 	 */
 	public static GraphElement getInvokedMethodSignature(GraphElement callsite) {
-		Q invokedSignatureEdges = Common.universe().edgesTaggedWithAny(XCSG.InvokedSignature);
-		GraphElement method = invokedSignatureEdges.successors(Common.toQ(callsite)).eval().nodes().getFirst();
+		// XCSG.InvokedSignature connects a dynamic dispatch to its signature method
+		// XCSG.InvokedFunction connects a static dispatch to it actual target method
+		Q invokedEdges = Common.universe().edgesTaggedWithAny(XCSG.InvokedSignature, XCSG.InvokedFunction);
+		GraphElement method = invokedEdges.successors(Common.toQ(callsite)).eval().nodes().getFirst();
 		return method;
 	}
 	

@@ -50,6 +50,11 @@ public class CallChecker {
 			return false;
 		}
 		
+		if(method==null){
+			Log.warning("method is null!");
+			return false;
+		}
+		
 		if(ret==null){
 			Log.warning("return is null!");
 			return false;
@@ -95,51 +100,10 @@ public class CallChecker {
 		}	
 		
 		/////////////////////// start qx adapt qret <: qx /////////////////////// 
-		
-		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process Constraint qx adapt qret <: qx");
-		
-		// process s(x)
-		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(x)");
-		Set<ImmutabilityTypes> xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-		for(ImmutabilityTypes xType : xTypes){
-			boolean isSatisfied = false;
-			satisfied:
-			for(ImmutabilityTypes retType : retTypes){
-				ImmutabilityTypes xAdaptedRet = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, retType);
-				if(xType.compareTo(xAdaptedRet) >= 0){
-					isSatisfied = true;
-					break satisfied;
-				}
-			}
-			if(!isSatisfied){
-				xTypesToRemove.add(xType);
-			}
-		}
-		if(removeTypes(x, xTypesToRemove)){
+		if(processReturnAssignmentConstraints(x, ret)){
 			typesChanged = true;
 		}
-		
-		// process s(ret)
-		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(ret)");
-		Set<ImmutabilityTypes> retTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-		for(ImmutabilityTypes retType : retTypes){
-			boolean isSatisfied = false;
-			satisfied:
-			for(ImmutabilityTypes xType : xTypes){
-				ImmutabilityTypes xAdaptedRet = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, retType);
-				if(xType.compareTo(xAdaptedRet) >= 0){
-					isSatisfied = true;
-					break satisfied;
-				}
-			}
-			if(!isSatisfied){
-				retTypesToRemove.add(retType);
-			}
-		}
-		if(removeTypes(ret, retTypesToRemove)){
-			typesChanged = true;
-		}
-		/////////////////////// end qx adapt qret <: qx /////////////////////// 
+		/////////////////////// end qx adapt qret <: qx ///////////////////////  
 		
 		/////////////////////// start qy <: qx adapt qthis /////////////////////// 
 		
@@ -170,7 +134,7 @@ public class CallChecker {
 		
 		// process s(x)
 		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(x)");
-		xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
+		Set<ImmutabilityTypes> xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes xType : xTypes){
 			boolean isSatisfied = false;
 			satisfied:
@@ -217,89 +181,10 @@ public class CallChecker {
 		/////////////////////// end qy <: qx adapt qthis ///////////////////////
 
 		/////////////////////// start qz <: qx adapt qp ///////////////////////
-				
-		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process Constraint qz <: qx adapt qp");
-		
-		// for each z,p pair process s(x), s(z), and s(p)
-		Graph localDFGraph = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow).eval();
-		for(GraphElement parametersPassedEdge : parametersPassedEdges){
-			GraphElement localDataFlowEdge = localDFGraph.edges(parametersPassedEdge.getNode(EdgeDirection.FROM), NodeDirection.IN).getFirst();
-			GraphElement z = localDataFlowEdge.getNode(EdgeDirection.FROM);
-			GraphElement p = parametersPassedEdge.getNode(EdgeDirection.TO);
-			Set<ImmutabilityTypes> zTypes = getTypes(z);
-			Set<ImmutabilityTypes> pTypes = getTypes(p);
-			
-			// process s(x)
-			if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(x)");
-			xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-			for(ImmutabilityTypes xType : xTypes){
-				boolean isSatisfied = false;
-				satisfied:
-				for(ImmutabilityTypes zType : zTypes){
-					for(ImmutabilityTypes pType : pTypes){
-						ImmutabilityTypes xAdaptedP = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, pType);
-						if(xAdaptedP.compareTo(zType) >= 0){
-							isSatisfied = true;
-							break satisfied;
-						}
-					}
-				}
-				if(!isSatisfied){
-					xTypesToRemove.add(xType);
-				}
-			}
-			if(removeTypes(x, xTypesToRemove)){
-				typesChanged = true;
-			}
-			
-			// process s(z)
-			if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(z)");
-			Set<ImmutabilityTypes> zTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-			for(ImmutabilityTypes zType : zTypes){
-				boolean isSatisfied = false;
-				satisfied:
-				for(ImmutabilityTypes xType : xTypes){
-					for(ImmutabilityTypes pType : pTypes){
-						ImmutabilityTypes xAdaptedP = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, pType);
-						if(xAdaptedP.compareTo(zType) >= 0){
-							isSatisfied = true;
-							break satisfied;
-						}
-					}
-				}
-				if(!isSatisfied){
-					zTypesToRemove.add(zType);
-				}
-			}
-			if(removeTypes(z, zTypesToRemove)){
-				typesChanged = true;
-			}
-			
-			// process s(p)
-			if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(p)");
-			Set<ImmutabilityTypes> pTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-			for(ImmutabilityTypes pType : pTypes){
-				boolean isSatisfied = false;
-				satisfied:
-				for(ImmutabilityTypes xType : xTypes){
-					for(ImmutabilityTypes zType : zTypes){
-						ImmutabilityTypes xAdaptedP = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, pType);
-						if(xAdaptedP.compareTo(zType) >= 0){
-							isSatisfied = true;
-							break satisfied;
-						}
-					}
-				}
-				if(!isSatisfied){
-					pTypesToRemove.add(pType);
-				}
-			}
-			if(removeTypes(p, pTypesToRemove)){
-				typesChanged = true;
-			}
+		if(processParameterConstraints(x, parametersPassedEdges)){
+			typesChanged = true;
 		}
-		
-		/////////////////////// end qz <: qx adapt qp ///////////////////////
+		/////////////////////// end qz <: qx adapt qp /////////////////////////
 		
 		// check if method overrides another method (of course this will be empty for static methods)
 		Q overridesEdges = Common.universe().edgesTaggedWithAny(XCSG.Overrides);
@@ -316,7 +201,7 @@ public class CallChecker {
 			
 			// process s(ret)
 			if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(ret)");
-			retTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
+			Set<ImmutabilityTypes> retTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 			for(ImmutabilityTypes retType : retTypes){
 				boolean isSatisfied = false;
 				satisfied:
@@ -468,6 +353,85 @@ public class CallChecker {
 		
 		return typesChanged;
 	}
+	
+	/**
+	 * Type Rule 8 - TSCALL
+	 * let, x = m(z)
+	 * 
+	 * @param x
+	 * @param method
+	 * @param ret
+	 * @param parametersPassedEdges
+	 * @return
+	 */
+	public static boolean handleStaticCall(GraphElement x, GraphElement method, GraphElement ret, AtlasSet<GraphElement> parametersPassedEdges) {
+		if(x==null){
+			Log.warning("x is null!");
+			return false;
+		}
+		
+		if(method==null){
+			Log.warning("method is null!");
+			return false;
+		}
+		
+		if(ret==null){
+			Log.warning("return is null!");
+			return false;
+		}
+		
+		if(PurityPreferences.isInferenceRuleLoggingEnabled()) Log.info("TSCALL (x=y.m(z), x=" + x.getAttr(XCSG.name) + ", m=" + method.getAttr("##signature") + ")");
+		
+		boolean typesChanged = false;
+		Set<ImmutabilityTypes> xTypes = getTypes(x);
+		
+		boolean isPolyreadField = x.taggedWith(XCSG.Field) && (xTypes.contains(ImmutabilityTypes.POLYREAD) && xTypes.size() == 1);
+		boolean isMutableReference = !x.taggedWith(XCSG.Field) && (xTypes.contains(ImmutabilityTypes.MUTABLE) && xTypes.size() == 1);
+		
+		// if x is a field and polyread then the return value must be polyread
+		// if x is a reference and mutable then the return value must be polyread
+		// whether the field or reference is polyread or mutable we know know that it
+		// is at least not readonly
+		if(isPolyreadField || isMutableReference){
+			if(removeTypes(ret, ImmutabilityTypes.READONLY)){
+				typesChanged = true;
+			}
+			// if the return value is a field then the field and its container fields must be mutable as well
+			Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
+			Q returnValues = localDataFlowEdges.predecessors(Common.toQ(ret));
+			Q fieldValues = localDataFlowEdges.predecessors(returnValues).nodesTaggedWithAny(XCSG.InstanceVariableValue, Utilities.CLASS_VARIABLE_VALUE);
+			Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
+			Q fields = interproceduralDataFlowEdges.predecessors(fieldValues);
+			for(GraphElement field : fields.eval().nodes()){
+				for(GraphElement container : Utilities.getAccessedContainers(field)){
+					if(removeTypes(container, ImmutabilityTypes.READONLY)){
+						typesChanged = true;
+					}
+					if(container.taggedWith(XCSG.ClassVariable)){
+						if(removeStaticTypes(Utilities.getContainingMethod(x), ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)){
+							typesChanged = true;
+						}
+					}
+				}
+			}
+		}	
+		
+		/////////////////////// start qx adapt qret <: qx /////////////////////// 
+		if(processReturnAssignmentConstraints(x, ret)){
+			typesChanged = true;
+		}
+		/////////////////////// end qx adapt qret <: qx /////////////////////// 
+
+		/////////////////////// start qz <: qx adapt qp ///////////////////////
+		if(processParameterConstraints(x, parametersPassedEdges)){
+			typesChanged = true;
+		}
+		/////////////////////// end qz <: qx adapt qp ///////////////////////
+		
+		// TODO: handle static type constraints
+		
+		return typesChanged;
+	}
 
 	/**
 	 * Checks and satisfies constraints on callsites to the given target 
@@ -481,6 +445,11 @@ public class CallChecker {
 	 */
 	public static boolean handleUnassignedDynamicDispatchCallsites(GraphElement unassignedCallsite) {
 		boolean typesChanged = false;
+		
+		if(unassignedCallsite==null){
+			Log.warning("unassignedCallsite is null!");
+			return false;
+		}
 		
 		GraphElement method = Utilities.getInvokedMethodSignature(unassignedCallsite);
 		
@@ -496,21 +465,6 @@ public class CallChecker {
 	}
 	
 	/**
-	 * Type Rule 8 - TSCALL
-	 * let, x = m(z)
-	 * 
-	 * @param x
-	 * @param method
-	 * @param ret
-	 * @param parametersPassedEdges
-	 * @return
-	 */
-	public static boolean handleStaticCall(GraphElement x, GraphElement method, GraphElement ret, AtlasSet<GraphElement> parametersPassedEdges) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-	
-	/**
 	 * Checks and satisfies constraints on callsites to the given target class (static) method
 	 * Let c(z) be a callsite to method m(p)
 	 * 
@@ -520,6 +474,11 @@ public class CallChecker {
 	 */
 	public static boolean handleUnassignedStaticDispatchCallsites(GraphElement unassignedCallsite) {
 		boolean typesChanged = false;
+		
+		if(unassignedCallsite==null){
+			Log.warning("unassignedCallsite is null!");
+			return false;
+		}
 		
 		GraphElement method = Utilities.getInvokedMethodSignature(unassignedCallsite);
 		
@@ -533,6 +492,172 @@ public class CallChecker {
 	}
 	
 	/**
+	 * qz <: qx adapt qp
+	 * @param x
+	 * @param parametersPassedEdges
+	 * @return
+	 */
+	private static boolean processParameterConstraints(GraphElement x, AtlasSet<GraphElement> parametersPassedEdges) {
+		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process Constraint qz <: qx adapt qp");
+		
+		if(x==null){
+			Log.warning("x is null!");
+			return false;
+		}
+		
+		boolean typesChanged = false;
+		Set<ImmutabilityTypes> xTypes = getTypes(x);
+		
+		// for each z,p pair process s(x), s(z), and s(p)
+		Graph localDFGraph = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow).eval();
+		for(GraphElement parametersPassedEdge : parametersPassedEdges){
+			GraphElement localDataFlowEdge = localDFGraph.edges(parametersPassedEdge.getNode(EdgeDirection.FROM), NodeDirection.IN).getFirst();
+			GraphElement z = localDataFlowEdge.getNode(EdgeDirection.FROM);
+			GraphElement p = parametersPassedEdge.getNode(EdgeDirection.TO);
+			Set<ImmutabilityTypes> zTypes = getTypes(z);
+			Set<ImmutabilityTypes> pTypes = getTypes(p);
+			
+			// process s(x)
+			if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(x)");
+			Set<ImmutabilityTypes> xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
+			for(ImmutabilityTypes xType : xTypes){
+				boolean isSatisfied = false;
+				satisfied:
+				for(ImmutabilityTypes zType : zTypes){
+					for(ImmutabilityTypes pType : pTypes){
+						ImmutabilityTypes xAdaptedP = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, pType);
+						if(xAdaptedP.compareTo(zType) >= 0){
+							isSatisfied = true;
+							break satisfied;
+						}
+					}
+				}
+				if(!isSatisfied){
+					xTypesToRemove.add(xType);
+				}
+			}
+			if(removeTypes(x, xTypesToRemove)){
+				typesChanged = true;
+			}
+			
+			// process s(z)
+			if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(z)");
+			Set<ImmutabilityTypes> zTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
+			for(ImmutabilityTypes zType : zTypes){
+				boolean isSatisfied = false;
+				satisfied:
+				for(ImmutabilityTypes xType : xTypes){
+					for(ImmutabilityTypes pType : pTypes){
+						ImmutabilityTypes xAdaptedP = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, pType);
+						if(xAdaptedP.compareTo(zType) >= 0){
+							isSatisfied = true;
+							break satisfied;
+						}
+					}
+				}
+				if(!isSatisfied){
+					zTypesToRemove.add(zType);
+				}
+			}
+			if(removeTypes(z, zTypesToRemove)){
+				typesChanged = true;
+			}
+			
+			// process s(p)
+			if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(p)");
+			Set<ImmutabilityTypes> pTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
+			for(ImmutabilityTypes pType : pTypes){
+				boolean isSatisfied = false;
+				satisfied:
+				for(ImmutabilityTypes xType : xTypes){
+					for(ImmutabilityTypes zType : zTypes){
+						ImmutabilityTypes xAdaptedP = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, pType);
+						if(xAdaptedP.compareTo(zType) >= 0){
+							isSatisfied = true;
+							break satisfied;
+						}
+					}
+				}
+				if(!isSatisfied){
+					pTypesToRemove.add(pType);
+				}
+			}
+			if(removeTypes(p, pTypesToRemove)){
+				typesChanged = true;
+			}
+		}
+		return typesChanged;
+	}
+	
+	/**
+	 * qx adapt qret <: qx
+	 * @param x
+	 * @param ret
+	 * @return
+	 */
+	private static boolean processReturnAssignmentConstraints(GraphElement x, GraphElement ret) {
+		
+		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process Constraint qx adapt qret <: qx");
+		
+		if(x==null){
+			Log.warning("x is null!");
+			return false;
+		}
+		
+		if(ret==null){
+			Log.warning("ret is null!");
+			return false;
+		}
+		
+		boolean typesChanged = false;
+		Set<ImmutabilityTypes> xTypes = getTypes(x);
+		Set<ImmutabilityTypes> retTypes = getTypes(ret);
+		
+		// process s(x)
+		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(x)");
+		Set<ImmutabilityTypes> xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
+		for(ImmutabilityTypes xType : xTypes){
+			boolean isSatisfied = false;
+			satisfied:
+			for(ImmutabilityTypes retType : retTypes){
+				ImmutabilityTypes xAdaptedRet = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, retType);
+				if(xType.compareTo(xAdaptedRet) >= 0){
+					isSatisfied = true;
+					break satisfied;
+				}
+			}
+			if(!isSatisfied){
+				xTypesToRemove.add(xType);
+			}
+		}
+		if(removeTypes(x, xTypesToRemove)){
+			typesChanged = true;
+		}
+		
+		// process s(ret)
+		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(ret)");
+		Set<ImmutabilityTypes> retTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
+		for(ImmutabilityTypes retType : retTypes){
+			boolean isSatisfied = false;
+			satisfied:
+			for(ImmutabilityTypes xType : xTypes){
+				ImmutabilityTypes xAdaptedRet = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, retType);
+				if(xType.compareTo(xAdaptedRet) >= 0){
+					isSatisfied = true;
+					break satisfied;
+				}
+			}
+			if(!isSatisfied){
+				retTypesToRemove.add(retType);
+			}
+		}
+		if(removeTypes(ret, retTypesToRemove)){
+			typesChanged = true;
+		}
+		return typesChanged;
+	}
+	
+	/**
 	 * 
 	 * @param unassignedCallsite
 	 * @param method
@@ -541,6 +666,16 @@ public class CallChecker {
 	private static boolean processStrictReceiverConstraints(GraphElement unassignedCallsite, GraphElement method) {
 		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process Callsite Constraint qthis <: qr");
 		boolean typesChanged = false;
+		
+		if(unassignedCallsite==null){
+			Log.warning("unassignedCallsite is null!");
+			return false;
+		}
+		
+		if(method==null){
+			Log.warning("method is null!");
+			return false;
+		}
 		
 		// TODO: use method signature?
 		
@@ -609,10 +744,25 @@ public class CallChecker {
 		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process Callsite Constraint qz <: qp");
 		boolean typesChanged = false;
 		
+		if(unassignedCallsite==null){
+			Log.warning("unassignedCallsite is null!");
+			return false;
+		}
+		
+		if(method==null){
+			Log.warning("method is null!");
+			return false;
+		}
+		
 		// TODO: use method signature?
 		
 		// Method (method) -Contains-> Parameter (p1, p2, ...)
 		AtlasSet<GraphElement> parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
+		
+		if(parameters.isEmpty()){
+			// no constraints to check
+			return false;
+		}
 		
 		// ControlFlow -Contains-> CallSite
 		// CallSite -Contains-> ParameterPassed (z1, z2, ...)

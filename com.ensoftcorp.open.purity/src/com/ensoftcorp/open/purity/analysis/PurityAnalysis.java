@@ -113,11 +113,10 @@ public class PurityAnalysis {
 			worklist.add(unassignedDynamicDispatchCallsite);
 		}
 		
-		// TODO: enable
-//		Q unassignedStaticDispatchCallsites = Common.resolve(new NullProgressMonitor(), unassignedCallsites.nodesTaggedWithAny(XCSG.StaticDispatchCallSite));
-//		for(GraphElement unassignedStaticDispatchCallsite : unassignedStaticDispatchCallsites.eval().nodes()){
-//			worklist.add(unassignedStaticDispatchCallsite);
-//		}
+		Q unassignedStaticDispatchCallsites = Common.resolve(new NullProgressMonitor(), unassignedCallsites.nodesTaggedWithAny(XCSG.StaticDispatchCallSite));
+		for(GraphElement unassignedStaticDispatchCallsite : unassignedStaticDispatchCallsites.eval().nodes()){
+			worklist.add(unassignedStaticDispatchCallsite);
+		}
 		
 		boolean successful = false;
 		int iteration = 1;
@@ -304,7 +303,6 @@ public class PurityAnalysis {
 				
 				// TCALL
 				boolean involvesCallsite = false;
-				// TODO: what if callsite has more than one target?! use method signature instead?
 				if(from.taggedWith(XCSG.DynamicDispatchCallSite)){
 					// Type Rule 5 - TCALL
 					// let, x = y.m(z)
@@ -360,7 +358,9 @@ public class PurityAnalysis {
 					involvesCallsite = true;
 				}
 				
+				// TSCALL
 				if(from.taggedWith(XCSG.StaticDispatchCallSite)){
+					
 					// Type Rule 8 - TSCALL
 					// let, x = m(z)
 					try {
