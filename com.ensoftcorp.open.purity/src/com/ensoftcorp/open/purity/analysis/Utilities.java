@@ -35,7 +35,7 @@ public class Utilities {
 	 * Adds CLASS_VARIABLE_ASSIGNMENT, CLASS_VARIABLE_VALUE, and CLASS_VARIABLE_ACCESS
 	 * tags to reads/writes on static variables
 	 */
-	public static void graphSetup() {
+	public static void addClassVariableAccessTags() {
 		Q classVariables = Common.universe().nodesTaggedWithAny(XCSG.ClassVariable);
 		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
 		AtlasSet<GraphElement> classVariableAssignments = interproceduralDataFlowEdges.predecessors(classVariables).eval().nodes();
@@ -54,7 +54,7 @@ public class Utilities {
 	 * Removes CLASS_VARIABLE_ASSIGNMENT, CLASS_VARIABLE_VALUE, and CLASS_VARIABLE_ACCESS
 	 * tags to reads/writes on static variables
 	 */
-	public static void graphTeardown() {
+	public static void removeClassVariableAccessTags() {
 		Q classVariables = Common.universe().nodesTaggedWithAny(XCSG.ClassVariable);
 		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
 		AtlasSet<GraphElement> classVariableAssignments = interproceduralDataFlowEdges.predecessors(classVariables).eval().nodes();

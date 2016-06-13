@@ -1,6 +1,7 @@
 package com.ensoftcorp.open.purity.analysis;
 
 import static com.ensoftcorp.open.purity.analysis.Utilities.getTypes;
+import static com.ensoftcorp.open.purity.analysis.Utilities.getStaticTypes;
 
 import java.util.Collections;
 import java.util.EnumSet;
@@ -93,7 +94,7 @@ public class PurityAnalysis {
 		
 		// initialize tags I wish were there
 		// TODO: remove when there are appropriate alternatives
-		Utilities.graphSetup();
+		Utilities.addClassVariableAccessTags();
 		
 		TreeSet<GraphElement> worklist = new TreeSet<GraphElement>();
 
@@ -166,7 +167,7 @@ public class PurityAnalysis {
 		tagPureMethods();
 		
 		// TODO: remove when there are appropriate alternatives
-		Utilities.graphTeardown();
+		Utilities.removeClassVariableAccessTags();
 		
 		return successful;
 	}
@@ -381,6 +382,13 @@ public class PurityAnalysis {
 			if(CallChecker.handleUnassignedInstanceMethodCallsites(unassignedDynamicDispatchCallsite)){
 				typesChanged = true;
 			}
+		} else if(workItem.taggedWith(XCSG.StaticDispatchCallSite)){
+			// constraints need to be checked for each callsite without an assignment 
+			// of this class method to satisfy constraints on parameters passed
+			GraphElement unassignedStaticDispatchCallsite = workItem;
+			if(CallChecker.handleUnassignedClassMethodCallsites(unassignedStaticDispatchCallsite)){
+				typesChanged = true;
+			}
 		}
 		
 		return typesChanged;
@@ -524,13 +532,33 @@ public class PurityAnalysis {
 			attributedGraphElement.tag(maximalType.toString());
 		}
 		
+		attributedGraphElements = Common.universe().selectNode(Utilities.STATIC_IMMUTABILITY_QUALIFIERS).eval().nodes();
+		for(GraphElement attributedGraphElement : attributedGraphElements){
+			LinkedList<ImmutabilityTypes> orderedTypes = new LinkedList<ImmutabilityTypes>();
+			orderedTypes.addAll(getStaticTypes(attributedGraphElement));
+			if(orderedTypes.isEmpty()){
+				Log.warning(attributedGraphElement.address().toAddressString() + " has no static types!");
+				continue;
+			}
+			Collections.sort(orderedTypes);
+			ImmutabilityTypes maximalType = orderedTypes.getLast();
+			// leaving the remaining type qualifiers on the graph element is useful for debugging
+			// it could also be used for partial program analysis
+			if(PurityPreferences.isRemoveQualifierSetsEnabled()) {
+				attributedGraphElement.removeAttr(Utilities.STATIC_IMMUTABILITY_QUALIFIERS);
+			}
+			attributedGraphElement.tag(maximalType.toString());
+		}
+		
 		// tag the graph elements that were never touched as readonly
+		Q methods = Common.universe().nodesTaggedWithAny(XCSG.Method);
 		Q parameters = Common.universe().nodesTaggedWithAny(XCSG.Parameter);
 		Q masterReturns = Common.universe().nodesTaggedWithAny(XCSG.MasterReturn);
 		Q instanceVariables = Common.universe().nodesTaggedWithAny(XCSG.InstanceVariable);
+		Q classVariables = Common.universe().nodesTaggedWithAny(XCSG.ClassVariable);
 		Q thisNodes = Common.universe().nodesTaggedWithAll(XCSG.InstanceMethod).children().nodesTaggedWithAny(XCSG.Identity);
 		// note local variables may also get tracked, but only if need be during the analysis
-		Q trackedItems = parameters.union(masterReturns, instanceVariables, thisNodes);
+		Q trackedItems = methods.union(parameters, masterReturns, instanceVariables, classVariables, thisNodes);
 		Q untouchedTrackedItems = trackedItems.difference(trackedItems.nodesTaggedWithAny(READONLY, POLYREAD, MUTABLE));
 		for(GraphElement untouchedTrackedItem : untouchedTrackedItems.eval().nodes()){
 			untouchedTrackedItem.tag(READONLY);
@@ -575,7 +603,9 @@ public class PurityAnalysis {
 			}
 			
 			// 2) it does not mutate prestates reachable through static fields
-			// TODO: implement static immutability type check
+			if(method.tag(MUTABLE)){
+				return false;
+			}
 			
 			return true;
 		}

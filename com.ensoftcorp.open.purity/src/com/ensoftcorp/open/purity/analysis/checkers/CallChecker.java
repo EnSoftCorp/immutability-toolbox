@@ -561,7 +561,7 @@ public class CallChecker {
 	 * 
 	 * @param unassignedCallsite The static callsite to check constraints
 	 */
-	private static boolean handleUnassignedClassMethodCallsites(GraphElement unassignedCallsite) {
+	public static boolean handleUnassignedClassMethodCallsites(GraphElement unassignedCallsite) {
 		boolean typesChanged = false;
 		
 		GraphElement method = Utilities.getInvokedMethodSignature(unassignedCallsite);
