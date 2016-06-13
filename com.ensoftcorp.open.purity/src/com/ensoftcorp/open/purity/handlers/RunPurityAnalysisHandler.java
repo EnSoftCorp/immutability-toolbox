@@ -9,6 +9,8 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 
 import com.ensoftcorp.open.purity.analysis.PurityAnalysis;
+import com.ensoftcorp.open.purity.log.Log;
+import com.ensoftcorp.open.purity.ui.PurityPreferences;
 
 /**
  * A menu selection handler for running the purity analysis
@@ -24,6 +26,7 @@ public class RunPurityAnalysisHandler extends AbstractHandler {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		PurityJob job = new PurityJob();
 		job.schedule();
+		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Job completed.");
 		return null;
 	}
 	
@@ -34,7 +37,7 @@ public class RunPurityAnalysisHandler extends AbstractHandler {
 
 		@Override
 		protected IStatus run(IProgressMonitor monitor) {
-			PurityAnalysis.run();
+			PurityAnalysis.run(monitor);
 			return Status.OK_STATUS;
 		}	
 	}

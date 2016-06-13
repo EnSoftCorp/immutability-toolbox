@@ -7,6 +7,7 @@ import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.TreeSet;
 
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 
 import com.ensoftcorp.atlas.core.db.graph.Graph;
@@ -65,9 +66,10 @@ public class PurityAnalysis {
 	
 	/**
 	 * Runs the side effect (purity) analysis
+	 * @param monitor 
 	 * @return Returns the time in milliseconds taken to complete the analysis
 	 */
-	public static boolean run(){
+	public static boolean run(IProgressMonitor monitor){
 		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Purity analysis started");
 		long start = System.nanoTime();
 		boolean successful = runAnalysis();
@@ -167,12 +169,18 @@ public class PurityAnalysis {
 		
 		// flattens the type hierarchy to the maximal types
 		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Extracting maximal types...");
+		long startExtraction = System.nanoTime();
 		extractMaximalTypes();
+		long stopExtraction = System.nanoTime();
+		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Extracting maximal types in " + (stopExtraction-startExtraction)/1000.0/1000.0 + "ms");
 		
 		// tags pure methods
 		// must be run after extractMaximalTypes()
 		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Applying method purity tags...");
+		long startPurityTagging = System.nanoTime();
 		tagPureMethods();
+		long stopPurityTagging = System.nanoTime();
+		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Applied method purity tags in " + (stopPurityTagging-startPurityTagging)/1000.0/1000.0 + "ms");
 		
 		// TODO: remove when there are appropriate alternatives
 		Utilities.removeClassVariableAccessTags();

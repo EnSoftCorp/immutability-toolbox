@@ -31,6 +31,7 @@ public class Utilities {
 	 * tags to reads/writes on static variables
 	 */
 	public static void addClassVariableAccessTags() {
+		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Adding class variable access tags...");
 		Q classVariables = Common.universe().nodesTaggedWithAny(XCSG.ClassVariable);
 		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
 		AtlasSet<GraphElement> classVariableAssignments = interproceduralDataFlowEdges.predecessors(classVariables).eval().nodes();
@@ -43,6 +44,7 @@ public class Utilities {
 			classVariableValue.tag(CLASS_VARIABLE_VALUE);
 			classVariableValue.tag(CLASS_VARIABLE_ACCESS);
 		}
+		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Added class variable access tags.");
 	}
 	
 	/**
@@ -50,6 +52,7 @@ public class Utilities {
 	 * tags to reads/writes on static variables
 	 */
 	public static void removeClassVariableAccessTags() {
+		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Removing class variable access tags...");
 		Q classVariables = Common.universe().nodesTaggedWithAny(XCSG.ClassVariable);
 		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
 		AtlasSet<GraphElement> classVariableAssignments = interproceduralDataFlowEdges.predecessors(classVariables).eval().nodes();
@@ -62,6 +65,7 @@ public class Utilities {
 			classVariableValue.tags().remove(CLASS_VARIABLE_VALUE);
 			classVariableValue.tags().remove(CLASS_VARIABLE_ACCESS);
 		}
+		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Removed class variable access tags.");
 	}
 	
 	/**
