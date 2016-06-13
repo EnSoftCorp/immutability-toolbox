@@ -14,6 +14,7 @@ import com.ensoftcorp.atlas.core.db.graph.Graph;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.EdgeDirection;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.NodeDirection;
+import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
@@ -64,6 +65,11 @@ public class PurityAnalysis {
 	 */
 	private static final int MAX_ITERATIONS = 4;
 	
+	// caching some common graph types
+	private static Graph typeOfGraph;
+	private static GraphElement nullType;
+	private static AtlasSet<GraphElement> defaultReadonlyTypes;
+	
 	/**
 	 * Runs the side effect (purity) analysis
 	 * @param monitor 
@@ -71,6 +77,10 @@ public class PurityAnalysis {
 	 */
 	public static boolean run(IProgressMonitor monitor){
 		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Purity analysis started");
+		
+		// cache
+		initializeCache(monitor);
+		
 		long start = System.nanoTime();
 		boolean successful = runAnalysis();
 		long stop = System.nanoTime();
@@ -100,7 +110,36 @@ public class PurityAnalysis {
 		
 		return successful && isSane;
 	}
+
+	private static void initializeCache(IProgressMonitor monitor) {
+		typeOfGraph = Common.resolve(monitor, Common.universe().edgesTaggedWithAny(XCSG.TypeOf).eval());
+		nullType = Common.universe().nodesTaggedWithAny(XCSG.Java.NullType).eval().nodes().getFirst();
+		
+		initializeDefaultReadonlyTypes();
+	}
 	
+	private static void initializeDefaultReadonlyTypes() {
+		defaultReadonlyTypes = new AtlasHashSet<GraphElement>();
+		
+		// autoboxing
+		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Integer").eval().nodes().getFirst());
+		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Long").eval().nodes().getFirst());
+		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Short").eval().nodes().getFirst());
+		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Boolean").eval().nodes().getFirst());
+		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Byte").eval().nodes().getFirst());
+		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Double").eval().nodes().getFirst());
+		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Float").eval().nodes().getFirst());
+		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Character").eval().nodes().getFirst());
+		
+		// a few other objects are special cases for all practical purposes
+		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "String").eval().nodes().getFirst());
+		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Number").eval().nodes().getFirst());
+		defaultReadonlyTypes.add(Common.typeSelect("java.util.concurrent.atomic", "AtomicInteger").eval().nodes().getFirst());
+		defaultReadonlyTypes.add(Common.typeSelect("java.util.concurrent.atomic", "AtomicLong").eval().nodes().getFirst());
+		defaultReadonlyTypes.add(Common.typeSelect("java.math", "BigDecimal").eval().nodes().getFirst());
+		defaultReadonlyTypes.add(Common.typeSelect("java.math", "BigInteger").eval().nodes().getFirst());
+	}
+
 	/**
 	 * Runs the side effect (purity) analysis
 	 */
@@ -455,11 +494,14 @@ public class PurityAnalysis {
 	}
 	
 	public static ImmutabilityTypes getDefaultMaximalType(GraphElement ge) {
-		ImmutabilityTypes maximalType;
-		Q typeOfEdges = Common.universe().edgesTaggedWithAny(XCSG.TypeOf);
-		GraphElement geType = typeOfEdges.successors(Common.toQ(ge)).eval().nodes().getFirst();
+		// ge -TypeOf-> getType
+		GraphElement typeOfEdge = typeOfGraph.edges(ge, NodeDirection.OUT).getFirst();
+		GraphElement geType = null;
+		if(typeOfEdge != null){
+			geType = typeOfEdge.getNode(EdgeDirection.TO);
+		}
 		
-		GraphElement nullType = Common.universe().nodesTaggedWithAny(XCSG.Java.NullType).eval().nodes().getFirst();
+		ImmutabilityTypes maximalType;
 		if(ge.equals(nullType)){
 			maximalType = ImmutabilityTypes.MUTABLE;
 		} else if(ge.taggedWith(XCSG.Instantiation) || ge.taggedWith(XCSG.ArrayInstantiation)){
@@ -484,10 +526,13 @@ public class PurityAnalysis {
 	public static EnumSet<ImmutabilityTypes> getDefaultTypes(GraphElement ge) {
 		EnumSet<ImmutabilityTypes> qualifiers = EnumSet.noneOf(ImmutabilityTypes.class);
 		
-		Q typeOfEdges = Common.universe().edgesTaggedWithAny(XCSG.TypeOf);
-		GraphElement geType = typeOfEdges.successors(Common.toQ(ge)).eval().nodes().getFirst();
+		// ge -TypeOf-> getType
+		GraphElement typeOfEdge = typeOfGraph.edges(ge, NodeDirection.OUT).getFirst();
+		GraphElement geType = null;
+		if(typeOfEdge != null){
+			geType = typeOfEdge.getNode(EdgeDirection.TO);
+		}
 		
-		GraphElement nullType = Common.universe().nodesTaggedWithAny(XCSG.Java.NullType).eval().nodes().getFirst();
 		if(ge.equals(nullType)){
 			// assignments of null mutate objects
 			// see https://github.com/proganalysis/type-inference/blob/master/inference-framework/checker-framework/checkers/src/checkers/inference2/reim/ReimChecker.java#L181
@@ -546,43 +591,8 @@ public class PurityAnalysis {
 		if(type.taggedWith(XCSG.Primitive)){
 			return true;
 		}
-		
-		// autoboxing
-		GraphElement integerType = Common.typeSelect("java.lang", "Integer").eval().nodes().getFirst();
-		GraphElement longType = Common.typeSelect("java.lang", "Long").eval().nodes().getFirst();
-		GraphElement shortType = Common.typeSelect("java.lang", "Short").eval().nodes().getFirst();
-		GraphElement booleanType = Common.typeSelect("java.lang", "Boolean").eval().nodes().getFirst();
-		GraphElement byteType = Common.typeSelect("java.lang", "Byte").eval().nodes().getFirst();
-		GraphElement doubleType = Common.typeSelect("java.lang", "Double").eval().nodes().getFirst();
-		GraphElement floatType = Common.typeSelect("java.lang", "Float").eval().nodes().getFirst();
-		GraphElement characterType = Common.typeSelect("java.lang", "Character").eval().nodes().getFirst();
-		if (type.equals(integerType) 
-				|| type.equals(longType) 
-				|| type.equals(shortType) 
-				|| type.equals(booleanType) 
-				|| type.equals(byteType)
-				|| type.equals(doubleType) 
-				|| type.equals(floatType) 
-				|| type.equals(characterType)) {
-			return true;
-		}
-		
-		// a few other objects are special cases for all practical purposes
-		if(type.equals(Common.typeSelect("java.lang", "String").eval().nodes().getFirst())){
-			return true;
-		} else if(type.equals(Common.typeSelect("java.lang", "Number").eval().nodes().getFirst())){
-			return true;
-		} else if(type.equals(Common.typeSelect("java.util.concurrent.atomic", "AtomicInteger").eval().nodes().getFirst())){
-			return true;
-		} else if(type.equals(Common.typeSelect("java.util.concurrent.atomic", "AtomicLong").eval().nodes().getFirst())){
-			return true;
-		} else if(type.equals(Common.typeSelect("java.math", "BigDecimal").eval().nodes().getFirst())){
-			return true;
-		} else if(type.equals(Common.typeSelect("java.math", "BigInteger").eval().nodes().getFirst())){
-			return true;
-		}
-		
-		return false;
+
+		return defaultReadonlyTypes.contains(type);
 	}
 	
 	/**
