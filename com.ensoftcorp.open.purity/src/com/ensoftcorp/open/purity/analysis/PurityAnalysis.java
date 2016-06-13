@@ -394,7 +394,7 @@ public class PurityAnalysis {
 						AtlasSet<GraphElement> parametersPassedEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow)
 								.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
 						
-						if(CallChecker.handleStaticCall(x, method, ret, parametersPassedEdges)){
+						if(CallChecker.handleStaticCall(x, callsite, method, ret, parametersPassedEdges)){
 							typesChanged = true;
 						}
 					} catch (Exception e){
