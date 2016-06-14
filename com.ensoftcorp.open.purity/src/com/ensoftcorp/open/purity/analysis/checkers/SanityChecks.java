@@ -18,6 +18,10 @@ public class SanityChecks {
 			}
 		}
 		
+		if(hasUnexpectedTypes()){
+			resultsAreSane = false;
+		}
+			
 		if(hasUntypedReferences()){
 			resultsAreSane = false;
 		}
@@ -26,7 +30,16 @@ public class SanityChecks {
 	}
 
 	/**
-	 * No nodes should be tagged with two or more of the following (READONLY, POLYREAD, MUTABLE)
+	 * Returns true if there are types on an unexpected node type
+	 * @return
+	 */
+	private static boolean hasUnexpectedTypes() {
+		// TODO: implement
+		return false;
+	}
+
+	/**
+	 * Returns true if tagged with two or more of the following (READONLY, POLYREAD, MUTABLE)
 	 * @return
 	 */
 	private static boolean isDoubleTagged() {
@@ -53,6 +66,10 @@ public class SanityChecks {
 		return isDoubleTagged;
 	}
 	
+	/**
+	 * Returns true if there are nodes with the UNTYPED tag
+	 * @return
+	 */
 	private static boolean hasUntypedReferences(){
 		boolean hasUntypedReferences = false;
 		AtlasSet<GraphElement> untypedReferences = Common.universe().nodesTaggedWithAny(PurityAnalysis.UNTYPED).eval().nodes();

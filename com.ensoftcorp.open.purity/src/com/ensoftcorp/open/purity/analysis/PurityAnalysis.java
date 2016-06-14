@@ -279,6 +279,17 @@ public class PurityAnalysis {
 			for(GraphElement edge : inEdges){
 				GraphElement from = edge.getNode(EdgeDirection.FROM);
 				
+				// if the from node is a cast we need to step back along data flow edges
+				// until we have found what it was casted from
+				if(from.taggedWith(XCSG.Cast)){
+					GraphElement current = from;
+					while(current.taggedWith(XCSG.Cast)){
+						Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
+						current = localDataFlowEdges.predecessors(Common.toQ(current)).eval().nodes().getFirst();
+					}
+					from = current;
+				}
+				
 				boolean involvesField = false;
 				
 				// TWRITE

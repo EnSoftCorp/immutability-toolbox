@@ -591,13 +591,14 @@ public class CallChecker {
 		
 		GraphElement method = Utilities.getInvokedMethodSignature(unassignedCallsite);
 		
-		if(processStrictReceiverConstraints(unassignedCallsite, method)){
-			typesChanged = true;
-		}
-		
-		if(processStrictParameterConstraints(unassignedCallsite, method)){
-			typesChanged = true;
-		}
+		// TODO: fix and enable
+//		if(processStrictReceiverConstraints(unassignedCallsite, method)){
+//			typesChanged = true;
+//		}
+//		
+//		if(processStrictParameterConstraints(unassignedCallsite, method)){
+//			typesChanged = true;
+//		}
 			
 		return typesChanged;
 	}
@@ -620,15 +621,18 @@ public class CallChecker {
 		
 		GraphElement method = Utilities.getInvokedMethodSignature(unassignedCallsite);
 		
-		if(processStrictParameterConstraints(unassignedCallsite, method)){
-			typesChanged = true;
-		}
+		// TODO: fix and enable
+//		if(processStrictParameterConstraints(unassignedCallsite, method)){
+//			typesChanged = true;
+//		}
 		
 		// m' is the method that contains the callsite m()
 		GraphElement containingMethod = Utilities.getContainingMethod(unassignedCallsite);
-		if(processStrictStaticDispatchConstraints(method, containingMethod)){
-			typesChanged = true;
-		}
+		
+		// TODO: fix and enable
+//		if(processStrictStaticDispatchConstraints(method, containingMethod)){
+//			typesChanged = true;
+//		}
 		
 		return typesChanged;
 	}
