@@ -24,7 +24,7 @@ import com.ensoftcorp.open.purity.analysis.checkers.CallChecker;
 import com.ensoftcorp.open.purity.analysis.checkers.FieldAssignmentChecker;
 import com.ensoftcorp.open.purity.analysis.checkers.SanityChecks;
 import com.ensoftcorp.open.purity.log.Log;
-import com.ensoftcorp.open.purity.ui.PurityPreferences;
+import com.ensoftcorp.open.purity.preferences.PurityPreferences;
 
 /**
  * Implements an Atlas native implementation of the context-sensitive method 

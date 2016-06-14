@@ -10,7 +10,7 @@ import org.eclipse.core.runtime.jobs.Job;
 
 import com.ensoftcorp.open.purity.analysis.PurityAnalysis;
 import com.ensoftcorp.open.purity.log.Log;
-import com.ensoftcorp.open.purity.ui.PurityPreferences;
+import com.ensoftcorp.open.purity.preferences.PurityPreferences;
 
 /**
  * A menu selection handler for running the purity analysis

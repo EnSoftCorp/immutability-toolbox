@@ -12,7 +12,7 @@ import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.purity.log.Log;
-import com.ensoftcorp.open.purity.ui.PurityPreferences;
+import com.ensoftcorp.open.purity.preferences.PurityPreferences;
 
 public class Utilities {
 	

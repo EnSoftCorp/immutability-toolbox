@@ -54,9 +54,16 @@
 	</extension>
    
    <extension
+      point="org.eclipse.equinox.preferences.preferences">
+	   <initializer
+	         class="com.ensoftcorp.open.purity.preferences.PurityPreferences">
+	   </initializer>
+	</extension>
+   
+   <extension
          point="org.eclipse.ui.preferencePages">
       <page
-            class="com.ensoftcorp.open.purity.ui.PurityPreferences"
+            class="com.ensoftcorp.open.purity.ui.PurityPreferencesPage"
             id="com.ensoftcorp.open.purity.ui.preferences"
             name="Purity Analysis">
       </page>

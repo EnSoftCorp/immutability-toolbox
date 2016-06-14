@@ -16,7 +16,7 @@ import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.purity.analysis.ImmutabilityTypes;
 import com.ensoftcorp.open.purity.analysis.Utilities;
 import com.ensoftcorp.open.purity.log.Log;
-import com.ensoftcorp.open.purity.ui.PurityPreferences;
+import com.ensoftcorp.open.purity.preferences.PurityPreferences;
 
 public class CallChecker {
 
