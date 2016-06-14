@@ -15,6 +15,10 @@ public class SanityChecks {
 			resultsAreSane = false;
 		}
 		
+		if(hasUntypedReferences()){
+			resultsAreSane = false;
+		}
+		
 		return resultsAreSane;
 	}
 
@@ -44,6 +48,16 @@ public class SanityChecks {
 		}
 		
 		return isDoubleTagged;
+	}
+	
+	private static boolean hasUntypedReferences(){
+		boolean hasUntypedReferences = false;
+		AtlasSet<GraphElement> untypedReferences = Common.universe().nodesTaggedWithAny(PurityAnalysis.UNTYPED).eval().nodes();
+		if(untypedReferences.size() > 0){
+			hasUntypedReferences = true;
+			Log.warning("There are " + untypedReferences.size() + " references with no immutability types!");
+		}
+		return hasUntypedReferences;
 	}
 	
 }

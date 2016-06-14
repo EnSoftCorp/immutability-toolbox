@@ -60,14 +60,14 @@ public class PurityAnalysis {
 	public static final String MUTABLE = "MUTABLE";
 	
 	/**
-	 * Theoretically each item should only ever be visited at most 3 times
-	 * So after 4 iterations the fixed point should have been reached
+	 * Tag applied to references that resulted in no immutability types
+	 * This tag should ideally never be applied and represents and error in the 
+	 * type system or implementation
 	 */
-	private static final int MAX_ITERATIONS = 4;
+	public static final String UNTYPED = "UNTYPED";
 	
 	// caching some common graph types
 	private static Graph typeOfGraph;
-	private static GraphElement nullType;
 	private static AtlasSet<GraphElement> defaultReadonlyTypes;
 	
 	/**
@@ -82,7 +82,7 @@ public class PurityAnalysis {
 		initializeCache(monitor);
 		
 		long start = System.nanoTime();
-		boolean successful = runAnalysis();
+		runAnalysis();
 		long stop = System.nanoTime();
 		double runtime = (stop-start)/1000.0/1000.0;
 		if(PurityPreferences.isGeneralLoggingEnabled()) {
@@ -90,11 +90,7 @@ public class PurityAnalysis {
 			long numPolyRead = Common.universe().nodesTaggedWithAny(POLYREAD).eval().nodes().size();
 			long numMutable = Common.universe().nodesTaggedWithAny(MUTABLE).eval().nodes().size();
 			String summary = "READONLY: " + numReadOnly + ", POLYREAD: " + numPolyRead + ", MUTABLE: " + numMutable;
-			if(successful){
-				Log.info("Purity analysis completed successfully in " + runtime + " ms\n" + summary);
-			} else {
-				Log.warning("Purity analysis completed unsuccessfully in " + runtime + " ms\n" + summary);
-			}
+			Log.info("Purity analysis completed in " + runtime + " ms\n" + summary);
 		}
 		
 		boolean isSane = true;
@@ -108,18 +104,19 @@ public class PurityAnalysis {
 			}
 		}
 		
-		return successful && isSane;
+		return isSane;
 	}
 
 	private static void initializeCache(IProgressMonitor monitor) {
 		typeOfGraph = Common.resolve(monitor, Common.universe().edgesTaggedWithAny(XCSG.TypeOf).eval());
-		nullType = Common.universe().nodesTaggedWithAny(XCSG.Java.NullType).eval().nodes().getFirst();
-		
 		initializeDefaultReadonlyTypes();
 	}
 	
 	private static void initializeDefaultReadonlyTypes() {
 		defaultReadonlyTypes = new AtlasHashSet<GraphElement>();
+		
+		// null type
+		defaultReadonlyTypes.add(Common.universe().nodesTaggedWithAny(XCSG.Java.NullType).eval().nodes().getFirst());
 		
 		// autoboxing
 		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Integer").eval().nodes().getFirst());
@@ -143,8 +140,7 @@ public class PurityAnalysis {
 	/**
 	 * Runs the side effect (purity) analysis
 	 */
-	private static boolean runAnalysis(){
-		
+	private static void runAnalysis(){
 		// TODO: remove when there are appropriate alternatives
 		Utilities.addClassVariableAccessTags();
 		
@@ -153,6 +149,13 @@ public class PurityAnalysis {
 		// add all assignments to worklist
 		Q assignments = Common.resolve(new NullProgressMonitor(), Common.universe().nodesTaggedWithAny(XCSG.Assignment));
 		for(GraphElement assignment : assignments.eval().nodes()){
+			worklist.add(assignment);
+		}
+		
+		// add all assignments to worklist
+		// treating parameter passes as assignments (for all purposes they are...)
+		Q parameterPass = Common.resolve(new NullProgressMonitor(), Common.universe().nodesTaggedWithAny(XCSG.ParameterPass));
+		for(GraphElement assignment : parameterPass.eval().nodes()){
 			worklist.add(assignment);
 		}
 		
@@ -170,7 +173,6 @@ public class PurityAnalysis {
 			worklist.add(unassignedStaticDispatchCallsite);
 		}
 		
-		boolean successful = false;
 		int iteration = 1;
 		while(true){
 			if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Purity analysis iteration: " + iteration);
@@ -192,12 +194,18 @@ public class PurityAnalysis {
 			long stopIteration = System.nanoTime();
 			if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Purity analysis iteration: " + iteration + " completed in " + (stopIteration-startIteration)/1000.0/1000.0 + "ms");
 			
+			// If every reference was in the worklist then theoretically each item
+			// should only ever be visited at most 3 times (because in the worst
+			// case the first two visits remove 1 immutability type and fixed point is
+			// reached on the 3rd visit when there is nothing left to remove since
+			// there must be at least one immutability type left, mutable for the case
+			// of one type left, for each reference).
+			// So for some implementations after 3 iterations the fixed point should have 
+			// been reached (and perhaps a 4th iteration to realize it), but...
+			// not every reference is placed in our worklist (some references are processed
+			// on-demand) so we must run until fixed point.
 			if(fixedPoint){
 				if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Purity analysis reached fixed point in " + iteration + " iterations");
-				successful = true;
-				break;
-			} else if(iteration == MAX_ITERATIONS){
-				Log.warning("Purity analysis terminated. The maximum number of iterations was exceeded and the result may not be correct for all case!");
 				break;
 			} else {
 				// fixed point has not been reached
@@ -211,7 +219,7 @@ public class PurityAnalysis {
 		long startExtraction = System.nanoTime();
 		extractMaximalTypes();
 		long stopExtraction = System.nanoTime();
-		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Extracting maximal types in " + (stopExtraction-startExtraction)/1000.0/1000.0 + "ms");
+		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Extracted maximal types in " + (stopExtraction-startExtraction)/1000.0/1000.0 + "ms");
 		
 		// tags pure methods
 		// must be run after extractMaximalTypes()
@@ -223,8 +231,6 @@ public class PurityAnalysis {
 		
 		// TODO: remove when there are appropriate alternatives
 		Utilities.removeClassVariableAccessTags();
-		
-		return successful;
 	}
 	
 	/**
@@ -239,7 +245,7 @@ public class PurityAnalysis {
 		
 		boolean typesChanged = false;
 		
-		if(workItem.taggedWith(XCSG.Assignment)){
+		if(workItem.taggedWith(XCSG.Assignment) || workItem.taggedWith(XCSG.ParameterPass)){
 			Graph localDFGraph = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow).eval();
 			Graph interproceduralDFGraph = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow).eval();
 			Graph instanceVariableAccessedGraph = Common.universe().edgesTaggedWithAny(XCSG.InstanceVariableAccessed).eval();
@@ -249,7 +255,6 @@ public class PurityAnalysis {
 			// consider data flow edges
 			// incoming edges represent a read relationship in an assignment
 			// outgoing edges represent a write relationship in an assignment
-			GraphElement assignment = workItem;
 			GraphElement to = workItem;
 			AtlasSet<GraphElement> inEdges = localDFGraph.edges(to, NodeDirection.IN);
 			for(GraphElement edge : inEdges){
@@ -472,18 +477,6 @@ public class PurityAnalysis {
 					}
 				}
 			}
-			
-			// treat stack variables as implicit assignments
-			Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
-			Q parametersPassed = localDataFlowEdges.successors(Common.toQ(assignment)).nodesTaggedWithAny(XCSG.ParameterPass);
-			for(GraphElement parameterPassed : parametersPassed.eval().nodes()){
-				GraphElement x = parameterPassed;
-				GraphElement y = assignment;
-				
-				if(BasicAssignmentChecker.handleAssignment(x, y)){
-					typesChanged = true;
-				}
-			}
 		} else if(workItem.taggedWith(XCSG.DynamicDispatchCallSite)){
 			// constraints need to be checked for each callsite without an assignment 
 			// of this instance method to satisfy constraints on receivers and parameters passed
@@ -507,19 +500,10 @@ public class PurityAnalysis {
 	}
 	
 	public static ImmutabilityTypes getDefaultMaximalType(GraphElement ge) {
-		// ge -TypeOf-> getType
-		GraphElement typeOfEdge = typeOfGraph.edges(ge, NodeDirection.OUT).getFirst();
-		GraphElement geType = null;
-		if(typeOfEdge != null){
-			geType = typeOfEdge.getNode(EdgeDirection.TO);
-		}
-		
 		ImmutabilityTypes maximalType;
-		if(ge.equals(nullType)){
+		if(ge.taggedWith(XCSG.Instantiation) || ge.taggedWith(XCSG.ArrayInstantiation)){
 			maximalType = ImmutabilityTypes.MUTABLE;
-		} else if(ge.taggedWith(XCSG.Instantiation) || ge.taggedWith(XCSG.ArrayInstantiation)){
-			maximalType = ImmutabilityTypes.MUTABLE;
-		} else if(isDefaultReadonlyType(ge) || isDefaultReadonlyType(geType)){
+		} else if(isDefaultReadonlyType(ge) || isDefaultReadonlyType(getObjectType(ge))){
 			// several java objects are readonly for all practical purposes
 			maximalType = ImmutabilityTypes.READONLY;
 		} else if(ge.taggedWith(XCSG.MasterReturn)){
@@ -538,6 +522,16 @@ public class PurityAnalysis {
 		return maximalType;
 	}
 	
+	private static GraphElement getObjectType(GraphElement ge) {
+		// ge -TypeOf-> getType
+		GraphElement typeOfEdge = typeOfGraph.edges(ge, NodeDirection.OUT).getFirst();
+		GraphElement geType = null;
+		if(typeOfEdge != null){
+			geType = typeOfEdge.getNode(EdgeDirection.TO);
+		}
+		return geType;
+	}
+
 	public static EnumSet<ImmutabilityTypes> getDefaultTypes(GraphElement ge) {
 		EnumSet<ImmutabilityTypes> qualifiers = EnumSet.noneOf(ImmutabilityTypes.class);
 		
@@ -548,11 +542,7 @@ public class PurityAnalysis {
 			geType = typeOfEdge.getNode(EdgeDirection.TO);
 		}
 		
-		if(ge.equals(nullType)){
-			// assignments of null mutate objects
-			// see https://github.com/proganalysis/type-inference/blob/master/inference-framework/checker-framework/checkers/src/checkers/inference2/reim/ReimChecker.java#L181
-			qualifiers.add(ImmutabilityTypes.MUTABLE);
-		} else if(ge.taggedWith(XCSG.Instantiation) || ge.taggedWith(XCSG.ArrayInstantiation)){
+		if(ge.taggedWith(XCSG.Instantiation) || ge.taggedWith(XCSG.ArrayInstantiation)){
 			// Type Rule 1 - TNEW
 			// return type of a constructor is only mutable
 			// x = new C(); // no effect on qualifier to x
@@ -614,6 +604,16 @@ public class PurityAnalysis {
 		if(type.taggedWith(XCSG.Primitive)){
 			return true;
 		}
+		
+		// literals
+		if(type.taggedWith(XCSG.Literal)){
+			return true;
+		}
+		
+		// operations on primitives or references to primitives
+		if(type.taggedWith(XCSG.Operator)){
+			return true;
+		}
 
 		return defaultReadonlyTypes.contains(type);
 	}
@@ -628,17 +628,16 @@ public class PurityAnalysis {
 			LinkedList<ImmutabilityTypes> orderedTypes = new LinkedList<ImmutabilityTypes>();
 			orderedTypes.addAll(getTypes(attributedGraphElement));
 			if(orderedTypes.isEmpty()){
-				Log.warning(attributedGraphElement.address().toAddressString() + " has no types!");
-				continue;
+				attributedGraphElement.tag(UNTYPED);
+			} else {
+				Collections.sort(orderedTypes);
+				ImmutabilityTypes maximalType = orderedTypes.getLast();
+				attributedGraphElement.tag(maximalType.toString());
 			}
-			Collections.sort(orderedTypes);
-			ImmutabilityTypes maximalType = orderedTypes.getLast();
 			// leaving the remaining type qualifiers on the graph element is useful for debugging
-			// it could also be used for partial program analysis
 			if(PurityPreferences.isRemoveQualifierSetsEnabled()) {
 				attributedGraphElement.removeAttr(Utilities.IMMUTABILITY_QUALIFIERS);
 			}
-			attributedGraphElement.tag(maximalType.toString());
 		}
 		
 		// tag the graph elements that were never touched as the default maximal type (most likely readonly)

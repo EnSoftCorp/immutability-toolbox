@@ -68,11 +68,10 @@ public class FieldAssignmentChecker {
 		}
 		
 		Set<ImmutabilityTypes> xTypes = getTypes(x);
-		Set<ImmutabilityTypes> yTypes = getTypes(y);
 		Set<ImmutabilityTypes> fTypes = getTypes(f);
-		
-		// if y is only mutable then x cannot be readonly
-		// if y is polyread then x could still be readonly
+		Set<ImmutabilityTypes> yTypes = getTypes(y);
+
+		// if y is only mutable then f cannot be readonly
 		if((yTypes.contains(ImmutabilityTypes.MUTABLE)) && yTypes.size()==1){
 			if(removeTypes(f, ImmutabilityTypes.READONLY)){
 				typesChanged = true;
