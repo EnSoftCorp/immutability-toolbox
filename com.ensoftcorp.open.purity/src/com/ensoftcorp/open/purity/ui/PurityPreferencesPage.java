@@ -17,8 +17,8 @@ import com.ensoftcorp.open.purity.preferences.PurityPreferences;
  */
 public class PurityPreferencesPage extends FieldEditorPreferencePage implements IWorkbenchPreferencePage {
 
+	private static final String PARTIAL_PROGRAM_ANALYSIS_DESCRIPTION = "Perform Partial Program Analysis (summary generation)";
 	private static final String RUN_SANITY_CHECKS_DESCRIPTION = "Run sanity checks";
-	private static final String REMOVE_QUALIFIER_SETS_DESCRIPTION = "Remove Qualifier Sets";
 	private static final String GENERAL_LOGGING_DESCRIPTION = "Enable General Logging";
 	private static final String INFERENCE_RULE_LOGGING_DESCRIPTION = "Enable Inference Rule Logging";
 	private static final String DEBUG_LOGGING_DESCRIPTION = "Enable Debug Logging";
@@ -49,8 +49,8 @@ public class PurityPreferencesPage extends FieldEditorPreferencePage implements 
 
 	@Override
 	protected void createFieldEditors() {
+		addField(new BooleanFieldEditor(PurityPreferences.PARTIAL_PROGRAM_ANALYSIS, "&" + PARTIAL_PROGRAM_ANALYSIS_DESCRIPTION, getFieldEditorParent()));
 		addField(new BooleanFieldEditor(PurityPreferences.RUN_SANITY_CHECKS, "&" + RUN_SANITY_CHECKS_DESCRIPTION, getFieldEditorParent()));
-		addField(new BooleanFieldEditor(PurityPreferences.REMOVE_QUALIFIER_SETS, "&" + REMOVE_QUALIFIER_SETS_DESCRIPTION, getFieldEditorParent()));
 		addField(new BooleanFieldEditor(PurityPreferences.GENERAL_LOGGING, "&" + GENERAL_LOGGING_DESCRIPTION, getFieldEditorParent()));
 		addField(new BooleanFieldEditor(PurityPreferences.INFERENCE_RULE_LOGGING, "&" + INFERENCE_RULE_LOGGING_DESCRIPTION, getFieldEditorParent()));
 		addField(new BooleanFieldEditor(PurityPreferences.DEBUG_LOGGING, "&" + DEBUG_LOGGING_DESCRIPTION, getFieldEditorParent()));

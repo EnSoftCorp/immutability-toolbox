@@ -5,14 +5,17 @@ import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.open.purity.analysis.PurityAnalysis;
 import com.ensoftcorp.open.purity.log.Log;
+import com.ensoftcorp.open.purity.preferences.PurityPreferences;
 
 public class SanityChecks {
 
 	public static boolean run(){
 		boolean resultsAreSane = true;
 		
-		if(isDoubleTagged()){
-			resultsAreSane = false;
+		if(!PurityPreferences.isPartialProgramAnalysisEnabled()){
+			if(isDoubleTagged()){
+				resultsAreSane = false;
+			}
 		}
 		
 		if(hasUntypedReferences()){

@@ -5,6 +5,7 @@ import static com.ensoftcorp.open.purity.analysis.Utilities.getTypes;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.LinkedList;
+import java.util.Set;
 import java.util.TreeSet;
 
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -214,20 +215,38 @@ public class PurityAnalysis {
 			}
 		}
 		
-		// flattens the type hierarchy to the maximal types
-		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Extracting maximal types...");
-		long startExtraction = System.nanoTime();
-		extractMaximalTypes();
-		long stopExtraction = System.nanoTime();
-		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Extracted maximal types in " + (stopExtraction-startExtraction)/1000.0/1000.0 + "ms");
-		
-		// tags pure methods
-		// must be run after extractMaximalTypes()
-		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Applying method purity tags...");
-		long startPurityTagging = System.nanoTime();
-		tagPureMethods();
-		long stopPurityTagging = System.nanoTime();
-		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Applied method purity tags in " + (stopPurityTagging-startPurityTagging)/1000.0/1000.0 + "ms");
+		if(PurityPreferences.isPartialProgramAnalysisEnabled()){
+			// serialize immutability sets to in Atlas tags
+			if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Converting immutability sets into tags...");
+			AtlasSet<GraphElement> attributedGraphElements = Common.universe().selectNode(Utilities.IMMUTABILITY_QUALIFIERS).eval().nodes();
+			for(GraphElement attributedGraphElement : attributedGraphElements){
+				Set<ImmutabilityTypes> types = getTypes(attributedGraphElement);
+				if(types.isEmpty()){
+					attributedGraphElement.tag(UNTYPED);
+				} else {
+					for(ImmutabilityTypes type : types){
+						attributedGraphElement.tag(type.toString());
+					}
+				}
+				attributedGraphElement.removeAttr(Utilities.IMMUTABILITY_QUALIFIERS);
+			}
+			if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Converted immutability sets into tags.");
+		} else {
+			// flattens the type hierarchy to the maximal types
+			if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Extracting maximal types...");
+			long startExtraction = System.nanoTime();
+			extractMaximalTypes();
+			long stopExtraction = System.nanoTime();
+			if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Extracted maximal types in " + (stopExtraction-startExtraction)/1000.0/1000.0 + "ms");
+			
+			// tags pure methods
+			// must be run after extractMaximalTypes()
+			if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Applying method purity tags...");
+			long startPurityTagging = System.nanoTime();
+			tagPureMethods();
+			long stopPurityTagging = System.nanoTime();
+			if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Applied method purity tags in " + (stopPurityTagging-startPurityTagging)/1000.0/1000.0 + "ms");
+		}
 		
 		// TODO: remove when there are appropriate alternatives
 		Utilities.removeClassVariableAccessTags();
@@ -633,10 +652,6 @@ public class PurityAnalysis {
 				Collections.sort(orderedTypes);
 				ImmutabilityTypes maximalType = orderedTypes.getLast();
 				attributedGraphElement.tag(maximalType.toString());
-			}
-			// leaving the remaining type qualifiers on the graph element is useful for debugging
-			if(PurityPreferences.isRemoveQualifierSetsEnabled()) {
-				attributedGraphElement.removeAttr(Utilities.IMMUTABILITY_QUALIFIERS);
 			}
 		}
 		

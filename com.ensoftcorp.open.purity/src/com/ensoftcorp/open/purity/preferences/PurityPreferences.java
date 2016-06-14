@@ -11,25 +11,27 @@ public class PurityPreferences extends AbstractPreferenceInitializer {
 	private static boolean initialized = false;
 	
 	/**
+	 * Enable/disable partial program analysis
+	 * If enabled the maximal type is extracted from the type set and the qualifier sets are removed
+	 * If disabled the type sets are converted to tags and the resulting index can be used to resume analysis later
+	 */
+	public static final String PARTIAL_PROGRAM_ANALYSIS = "PARTIAL_PROGRAM_ANALYSIS";
+	public static final Boolean PARTIAL_PROGRAM_ANALYSIS_DEFAULT = false;
+	public static boolean partialProgramAnalysisValue = PARTIAL_PROGRAM_ANALYSIS_DEFAULT;
+	
+	public static boolean isPartialProgramAnalysisEnabled(){
+		if(!initialized){
+			loadPreferences();
+		}
+		return partialProgramAnalysisValue;
+	}
+	
+	/**
 	 * Enable/disable running sanity checks
 	 */
 	public static final String RUN_SANITY_CHECKS = "RUN_SANITY_CHECKS";
 	public static final Boolean RUN_SANITY_CHECKS_DEFAULT = true;
 	public static boolean runSanityChecksValue = RUN_SANITY_CHECKS_DEFAULT;
-
-	/**
-	 * Enable/disable removing the qualifier sets after the maximal type has been extracted
-	 */
-	public static final String REMOVE_QUALIFIER_SETS = "REMOVE_QUALIFIER_SETS";
-	public static final Boolean REMOVE_QUALIFIER_SETS_DEFAULT = true;
-	public static boolean removeQualifierSetsValue = REMOVE_QUALIFIER_SETS_DEFAULT;
-	
-	public static boolean isRemoveQualifierSetsEnabled(){
-		if(!initialized){
-			loadPreferences();
-		}
-		return removeQualifierSetsValue;
-	}
 	
 	/**
 	 * Enable/disable general logging to the Atlas log
@@ -76,8 +78,8 @@ public class PurityPreferences extends AbstractPreferenceInitializer {
 	@Override
 	public void initializeDefaultPreferences() {
 		IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
+		preferences.setDefault(PARTIAL_PROGRAM_ANALYSIS, PARTIAL_PROGRAM_ANALYSIS_DEFAULT);
 		preferences.setDefault(RUN_SANITY_CHECKS, RUN_SANITY_CHECKS_DEFAULT);
-		preferences.setDefault(REMOVE_QUALIFIER_SETS, REMOVE_QUALIFIER_SETS_DEFAULT);
 		preferences.setDefault(GENERAL_LOGGING, GENERAL_LOGGING_DEFAULT);
 		preferences.setDefault(INFERENCE_RULE_LOGGING, INFERENCE_RULE_LOGGING_DEFAULT);
 		preferences.setDefault(DEBUG_LOGGING, DEBUG_LOGGING_DEFAULT);
@@ -97,7 +99,7 @@ public class PurityPreferences extends AbstractPreferenceInitializer {
 		try {
 			IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
 			runSanityChecksValue = preferences.getBoolean(RUN_SANITY_CHECKS);
-			removeQualifierSetsValue = preferences.getBoolean(REMOVE_QUALIFIER_SETS);
+			partialProgramAnalysisValue = preferences.getBoolean(PARTIAL_PROGRAM_ANALYSIS);
 			generalLoggingValue = preferences.getBoolean(GENERAL_LOGGING);
 			inferenceRuleLoggingValue = preferences.getBoolean(INFERENCE_RULE_LOGGING);
 			debugLoggingValue = preferences.getBoolean(DEBUG_LOGGING);
