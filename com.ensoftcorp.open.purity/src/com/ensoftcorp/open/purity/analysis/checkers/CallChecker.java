@@ -6,10 +6,8 @@ import static com.ensoftcorp.open.purity.analysis.Utilities.removeTypes;
 import java.util.EnumSet;
 import java.util.Set;
 
-import com.ensoftcorp.atlas.core.db.graph.Graph;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.EdgeDirection;
-import com.ensoftcorp.atlas.core.db.graph.GraphElement.NodeDirection;
 import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
@@ -653,10 +651,8 @@ public class CallChecker {
 		Set<ImmutabilityTypes> xTypes = getTypes(x);
 		
 		// for each z,p pair process s(x), s(z), and s(p)
-		Graph localDFGraph = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow).eval();
 		for(GraphElement parametersPassedEdge : parametersPassedEdges){
-			GraphElement localDataFlowEdge = localDFGraph.edges(parametersPassedEdge.getNode(EdgeDirection.FROM), NodeDirection.IN).getFirst();
-			GraphElement z = localDataFlowEdge.getNode(EdgeDirection.FROM);
+			GraphElement z = parametersPassedEdge.getNode(EdgeDirection.FROM);
 			GraphElement p = parametersPassedEdge.getNode(EdgeDirection.TO);
 			Set<ImmutabilityTypes> zTypes = getTypes(z);
 			Set<ImmutabilityTypes> pTypes = getTypes(p);
@@ -914,10 +910,8 @@ public class CallChecker {
 				.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
 		
 		// for each z,p pair process s(z), and s(p)
-		Graph localDFGraph = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow).eval();
 		for(GraphElement parametersPassedEdge : parametersPassedEdges){
-			GraphElement localDataFlowEdge = localDFGraph.edges(parametersPassedEdge.getNode(EdgeDirection.FROM), NodeDirection.IN).getFirst();
-			GraphElement z = localDataFlowEdge.getNode(EdgeDirection.FROM);
+			GraphElement z = parametersPassedEdge.getNode(EdgeDirection.FROM);
 			GraphElement p = parametersPassedEdge.getNode(EdgeDirection.TO);
 			Set<ImmutabilityTypes> zTypes = getTypes(z);
 			Set<ImmutabilityTypes> pTypes = getTypes(p);

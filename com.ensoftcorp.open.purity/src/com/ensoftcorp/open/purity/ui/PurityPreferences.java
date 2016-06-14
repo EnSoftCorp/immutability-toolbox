@@ -1,11 +1,13 @@
 package com.ensoftcorp.open.purity.ui;
 
+import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
+import org.eclipse.ui.preferences.ScopedPreferenceStore;
 
 import com.ensoftcorp.open.purity.Activator;
 import com.ensoftcorp.open.purity.log.Log;
@@ -18,6 +20,7 @@ import com.ensoftcorp.open.purity.log.Log;
 public class PurityPreferences extends FieldEditorPreferencePage implements IWorkbenchPreferencePage {
 
 	private static boolean initialized = false;
+	private static boolean changeListenerAdded = false;
 	
 	/**
 	 * Enable/disable running sanity checks
@@ -28,6 +31,9 @@ public class PurityPreferences extends FieldEditorPreferencePage implements IWor
 	private static boolean runSanityChecksValue = RUN_SANITY_CHECKS_DEFAULT;
 	
 	public static boolean isRunSanityChecksEnabled(){
+		if(!initialized){
+			loadPreferences();
+		}
 		return runSanityChecksValue;
 	}
 	
@@ -40,6 +46,9 @@ public class PurityPreferences extends FieldEditorPreferencePage implements IWor
 	private static boolean removeQualifierSetsValue = REMOVE_QUALIFIER_SETS_DEFAULT;
 	
 	public static boolean isRemoveQualifierSetsEnabled(){
+		if(!initialized){
+			loadPreferences();
+		}
 		return removeQualifierSetsValue;
 	}
 	
@@ -52,6 +61,9 @@ public class PurityPreferences extends FieldEditorPreferencePage implements IWor
 	private static Boolean generalLoggingValue = GENERAL_LOGGING_DEFAULT;
 	
 	public static boolean isGeneralLoggingEnabled(){
+		if(!initialized){
+			loadPreferences();
+		}
 		return generalLoggingValue;
 	}
 
@@ -64,6 +76,9 @@ public class PurityPreferences extends FieldEditorPreferencePage implements IWor
 	private static Boolean inferenceRuleLoggingValue = INFERENCE_RULE_LOGGING_DEFAULT;
 	
 	public static boolean isInferenceRuleLoggingEnabled(){
+		if(!initialized){
+			loadPreferences();
+		}
 		return inferenceRuleLoggingValue;
 	}
 	
@@ -76,6 +91,9 @@ public class PurityPreferences extends FieldEditorPreferencePage implements IWor
 	private static Boolean debugLoggingValue = DEBUG_LOGGING_DEFAULT;
 	
 	public static boolean isDebugLoggingEnabled(){
+		if(!initialized){
+			loadPreferences();
+		}
 		return debugLoggingValue;
 	}
 	
@@ -94,22 +112,14 @@ public class PurityPreferences extends FieldEditorPreferencePage implements IWor
 		setPreferenceStore(preferences);
 		setDescription("Configure preferences for the Purity Analysis Toolbox plugin.");
 		
-		if(!initialized){
+		if(!changeListenerAdded){
 			getPreferenceStore().addPropertyChangeListener(new IPropertyChangeListener() {
 				@Override
 				public void propertyChange(org.eclipse.jface.util.PropertyChangeEvent event) {
-					try {
-						runSanityChecksValue = Activator.getDefault().getPreferenceStore().getBoolean(RUN_SANITY_CHECKS);
-						removeQualifierSetsValue = Activator.getDefault().getPreferenceStore().getBoolean(REMOVE_QUALIFIER_SETS);
-						generalLoggingValue = Activator.getDefault().getPreferenceStore().getBoolean(GENERAL_LOGGING);
-						inferenceRuleLoggingValue = Activator.getDefault().getPreferenceStore().getBoolean(INFERENCE_RULE_LOGGING);
-						debugLoggingValue = Activator.getDefault().getPreferenceStore().getBoolean(DEBUG_LOGGING);
-					} catch (Exception e){
-						Log.warning("Error accessing purity analysis preferences, using defaults...", e);
-					}
+					loadPreferences();
 				}
 			});
-			initialized = true;
+			changeListenerAdded = true;
 		}
 	}
 
@@ -120,6 +130,24 @@ public class PurityPreferences extends FieldEditorPreferencePage implements IWor
 		addField(new BooleanFieldEditor(GENERAL_LOGGING, "&" + GENERAL_LOGGING_DESCRIPTION, getFieldEditorParent()));
 		addField(new BooleanFieldEditor(INFERENCE_RULE_LOGGING, "&" + INFERENCE_RULE_LOGGING_DESCRIPTION, getFieldEditorParent()));
 		addField(new BooleanFieldEditor(DEBUG_LOGGING, "&" + DEBUG_LOGGING_DESCRIPTION, getFieldEditorParent()));
+	}
+	
+	/**
+	 * Loads or refreshes current preference values
+	 */
+	private static void loadPreferences() {
+		try {
+//			IPreferenceStore preferences = new ScopedPreferenceStore(InstanceScope.INSTANCE, Activator.PLUGIN_ID);
+			IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
+			runSanityChecksValue = preferences.getBoolean(RUN_SANITY_CHECKS);
+			removeQualifierSetsValue = preferences.getBoolean(REMOVE_QUALIFIER_SETS);
+			generalLoggingValue = preferences.getBoolean(GENERAL_LOGGING);
+			inferenceRuleLoggingValue = preferences.getBoolean(INFERENCE_RULE_LOGGING);
+			debugLoggingValue = preferences.getBoolean(DEBUG_LOGGING);
+		} catch (Exception e){
+			Log.warning("Error accessing purity analysis preferences, using defaults...", e);
+		}
+		initialized = true;
 	}
 
 }

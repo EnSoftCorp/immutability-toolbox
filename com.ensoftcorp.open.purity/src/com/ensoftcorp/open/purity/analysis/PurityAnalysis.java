@@ -249,11 +249,12 @@ public class PurityAnalysis {
 			// consider data flow edges
 			// incoming edges represent a read relationship in an assignment
 			// outgoing edges represent a write relationship in an assignment
+			GraphElement assignment = workItem;
 			GraphElement to = workItem;
 			AtlasSet<GraphElement> inEdges = localDFGraph.edges(to, NodeDirection.IN);
 			for(GraphElement edge : inEdges){
 				GraphElement from = edge.getNode(EdgeDirection.FROM);
-
+				
 				boolean involvesField = false;
 				
 				// TWRITE
@@ -471,6 +472,18 @@ public class PurityAnalysis {
 					}
 				}
 			}
+			
+			// treat stack variables as implicit assignments
+			Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
+			Q parametersPassed = localDataFlowEdges.successors(Common.toQ(assignment)).nodesTaggedWithAny(XCSG.ParameterPass);
+			for(GraphElement parameterPassed : parametersPassed.eval().nodes()){
+				GraphElement x = parameterPassed;
+				GraphElement y = assignment;
+				
+				if(BasicAssignmentChecker.handleAssignment(x, y)){
+					typesChanged = true;
+				}
+			}
 		} else if(workItem.taggedWith(XCSG.DynamicDispatchCallSite)){
 			// constraints need to be checked for each callsite without an assignment 
 			// of this instance method to satisfy constraints on receivers and parameters passed
@@ -516,6 +529,8 @@ public class PurityAnalysis {
 		} else if(ge.taggedWith(XCSG.ClassVariable)){
 			maximalType = ImmutabilityTypes.READONLY;
 		} else if(ge.taggedWith(XCSG.Method)){
+			maximalType = ImmutabilityTypes.READONLY;
+		} else if(ge.taggedWith(XCSG.ParameterPass)){
 			maximalType = ImmutabilityTypes.READONLY;
 		} else {
 			maximalType = ImmutabilityTypes.READONLY;
@@ -566,12 +581,20 @@ public class PurityAnalysis {
 			qualifiers.add(ImmutabilityTypes.READONLY);
 			qualifiers.add(ImmutabilityTypes.POLYREAD);
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
+		} else if(ge.taggedWith(XCSG.ParameterPass)){
+			// Section 2.4 of Reference 1
+			// "All other references are initialized to the maximal
+			// set of qualifiers, i.e. S(x) = {readonly, polyread, mutable}"
+			// treating parameters passed as an implicit assignment that can be polyread
+			qualifiers.add(ImmutabilityTypes.READONLY);
+			qualifiers.add(ImmutabilityTypes.POLYREAD);
+			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		} else {
 			// Section 2.4 of Reference 1
 			// "All other references are initialized to the maximal
 			// set of qualifiers, i.e. S(x) = {readonly, polyread, mutable}"
+			// But, what does it mean for a local reference to be polyread? ~Ben
 			qualifiers.add(ImmutabilityTypes.READONLY);
-//			qualifiers.add(ImmutabilityTypes.POLYREAD); // what does it mean for a local reference to be polyread? ~Ben
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		}
 		return qualifiers;
