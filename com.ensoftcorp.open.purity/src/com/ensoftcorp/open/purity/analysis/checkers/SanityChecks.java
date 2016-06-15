@@ -104,7 +104,8 @@ public class SanityChecks {
 		AtlasHashSet<GraphElement> defaultReadonlyTypes = new AtlasHashSet<GraphElement>();
 		Q readonlyReferences = typeOfEdges.predecessors(readOnlyTypes);
 		Q identities = readonlyReferences.nodesTaggedWithAny(XCSG.Identity);
-		defaultReadonlyTypes.addAll(readonlyReferences.difference(identities).eval().nodes());
+		Q arrayComponents = readonlyReferences.nodesTaggedWithAny(XCSG.ArrayComponents);
+		defaultReadonlyTypes.addAll(readonlyReferences.difference(identities, arrayComponents).eval().nodes());
 		defaultReadonlyTypes.addAll(Common.universe().nodesTaggedWithAny(XCSG.Null, XCSG.Literal, XCSG.Operator).eval().nodes());
 		
 		int unexpectedTypes = 0; 
@@ -112,6 +113,15 @@ public class SanityChecks {
 			if(ge.taggedWith(XCSG.Null)){
 				// null is a special case, mutations can happen to nulls but its a runtime exception
 				// one might argue this does not change the program state but it does if a runtime exception is thrown!
+				continue;
+			}
+			if(ge.taggedWith(XCSG.Operator)){
+				// we only need to consider operators on-demand so not all operators will actually be typed
+				// but if they are they'd better not be typed as anything but readonly
+				if(ge.taggedWith(PurityAnalysis.POLYREAD) || ge.taggedWith(PurityAnalysis.MUTABLE) || ge.taggedWith(PurityAnalysis.UNTYPED)){
+					if(PurityPreferences.isDebugLoggingEnabled()) Log.warning("Readonly type " + ge.address().toAddressString() + " is not readonly.");
+					unexpectedTypes++;
+				}
 				continue;
 			}
 			if(!ge.taggedWith(PurityAnalysis.READONLY)){
