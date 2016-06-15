@@ -4,7 +4,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 import com.ensoftcorp.atlas.core.db.graph.GraphElement;
+import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
+import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.purity.analysis.ImmutabilityTypes;
@@ -34,7 +36,7 @@ public class SanityChecks {
 		
 		return resultsAreSane;
 	}
-
+	
 	/**
 	 * Returns true if there are types on an unexpected node type
 	 * @return
@@ -54,6 +56,52 @@ public class SanityChecks {
 			hasUnexpectedTypes = true;
 		}
 		
+//		if(defaultReadonlyTypesAreReadonly()){
+//			hasUnexpectedTypes = true;
+//		}
+		
+		return hasUnexpectedTypes;
+	}
+	
+	/**
+	 * Checks that readonly types are actually readonly
+	 * @return
+	 */
+	private static boolean defaultReadonlyTypesAreReadonly(){
+
+		Q readOnlyTypes = Common.typeSelect("java.lang", "Integer")
+				.union(Common.typeSelect("java.lang", "Long"), 
+					   Common.typeSelect("java.lang", "Short"), 
+					   Common.typeSelect("java.lang", "Boolean"),
+					   Common.typeSelect("java.lang", "Byte"),
+					   Common.typeSelect("java.lang", "Double"),
+					   Common.typeSelect("java.lang", "Float"),
+					   Common.typeSelect("java.lang", "Character"),
+					   Common.typeSelect("java.lang", "String"),
+					   Common.typeSelect("java.lang", "Number"),
+					   Common.typeSelect("java.util.concurrent.atomic", "AtomicInteger"),
+					   Common.typeSelect("java.util.concurrent.atomic", "AtomicLong"),
+					   Common.typeSelect("java.math", "BigDecimal"),
+					   Common.typeSelect("java.math", "BigInteger"),
+					   Common.universe().nodesTaggedWithAny(XCSG.Java.NullType));
+
+		Q typeOfEdges = Common.universe().edgesTaggedWithAny(XCSG.TypeOf);
+		
+		AtlasHashSet<GraphElement> defaultReadonlyTypes = new AtlasHashSet<GraphElement>();
+		Q readonlyReferences = typeOfEdges.predecessors(readOnlyTypes);
+		Q identities = readonlyReferences.nodesTaggedWithAny(XCSG.Identity);
+		defaultReadonlyTypes.addAll(readonlyReferences.difference(identities).eval().nodes());
+		defaultReadonlyTypes.addAll(Common.universe().nodesTaggedWithAny(XCSG.Null, XCSG.Primitive, XCSG.Literal).eval().nodes());
+		
+		int unexpectedTypes = 0; 
+		for(GraphElement ge : defaultReadonlyTypes){
+			if(!ge.taggedWith(XCSG.Null) || !ge.taggedWith(PurityAnalysis.READONLY)){
+				Log.warning("Readonly type " + ge.address().toAddressString() + " is not readonly.");
+				unexpectedTypes++;
+			}
+		}
+		boolean hasUnexpectedTypes = unexpectedTypes > 0;
+		if(hasUnexpectedTypes) Log.warning("There are " + unexpectedTypes + " nodes that were expected to be readonly types that are not.");
 		return hasUnexpectedTypes;
 	}
 	

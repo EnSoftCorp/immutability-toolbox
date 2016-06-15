@@ -292,6 +292,11 @@ public class PurityAnalysis {
 					continue;
 				}
 				
+//				if(isDefaultReadonlyType(from)){
+//					// TODO: i don't even know anymore...
+//					continue;
+//				}
+				
 				boolean involvesField = false;
 				
 				// TWRITE
@@ -561,14 +566,20 @@ public class PurityAnalysis {
 			// assignments of null mutate objects
 			// see https://github.com/proganalysis/type-inference/blob/master/inference-framework/checker-framework/checkers/src/checkers/inference2/reim/ReimChecker.java#L181
 			qualifiers.add(ImmutabilityTypes.READONLY);
+			// however in order to satisfy constraints the other types should be initialized
+			qualifiers.add(ImmutabilityTypes.POLYREAD);
+			qualifiers.add(ImmutabilityTypes.MUTABLE);
+		} else if(ge.taggedWith(XCSG.Literal) || ge.taggedWith(XCSG.Primitive) || isDefaultReadonlyType(getObjectType(ge))){
+			// several java objects are readonly for all practical purposes
+			// however in order to satisfy constraints the other types should be initialized
+			qualifiers.add(ImmutabilityTypes.READONLY);
+			qualifiers.add(ImmutabilityTypes.POLYREAD);
+			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		} else if(ge.taggedWith(XCSG.Instantiation) || ge.taggedWith(XCSG.ArrayInstantiation)){
 			// Type Rule 1 - TNEW
 			// return type of a constructor is only mutable
 			// x = new C(); // no effect on qualifier to x
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
-		} else if(ge.taggedWith(XCSG.Literal) || ge.taggedWith(XCSG.Primitive) || isDefaultReadonlyType(getObjectType(ge))){
-			// several java objects are readonly for all practical purposes
-			qualifiers.add(ImmutabilityTypes.READONLY);
 		} else if(ge.taggedWith(XCSG.MasterReturn)){
 			// Section 2.4 of Reference 1
 			// "Method returns are initialized S(ret) = {readonly, polyread} for each method m"
@@ -580,7 +591,7 @@ public class PurityAnalysis {
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		} else if(ge.taggedWith(XCSG.Identity)){
 			qualifiers.add(ImmutabilityTypes.READONLY);
-			qualifiers.add(ImmutabilityTypes.POLYREAD);
+//			qualifiers.add(ImmutabilityTypes.POLYREAD); // TODO: this is causing problems, but...the paper specifically says its an valid type...
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		} else if(ge.taggedWith(XCSG.InstanceVariable)){
 			// Section 2.4 of Reference 1
@@ -648,14 +659,14 @@ public class PurityAnalysis {
 		}
 		
 		// tag the graph elements that were never touched as the default maximal type (most likely readonly)
-		Q methods = Common.universe().nodesTaggedWithAny(XCSG.Method);
+		Q primitives = Common.universe().nodesTaggedWithAll(XCSG.Primitive);
 		Q parameters = Common.universe().nodesTaggedWithAny(XCSG.Parameter);
 		Q masterReturns = Common.universe().nodesTaggedWithAny(XCSG.MasterReturn);
 		Q instanceVariables = Common.universe().nodesTaggedWithAny(XCSG.InstanceVariable);
-		Q thisNodes = Common.universe().nodesTaggedWithAll(XCSG.InstanceMethod).children().nodesTaggedWithAny(XCSG.Identity);
+		Q thisNodes = Common.universe().nodesTaggedWithAll(XCSG.InstanceMethod, XCSG.Constructor).children().nodesTaggedWithAny(XCSG.Identity);
 		Q classVariables = Common.universe().nodesTaggedWithAny(XCSG.ClassVariable);
 		// note local variables may also get tracked, but only if need be during the analysis
-		Q trackedItems = methods.union(parameters, masterReturns, instanceVariables, thisNodes, classVariables);
+		Q trackedItems = primitives.union(parameters, masterReturns, instanceVariables, thisNodes, classVariables);
 		Q untouchedTrackedItems = trackedItems.difference(trackedItems.nodesTaggedWithAny(READONLY, POLYREAD, MUTABLE), Common.toQ(attributedGraphElements));
 		for(GraphElement untouchedTrackedItem : untouchedTrackedItems.eval().nodes()){
 			ImmutabilityTypes maximalType = getDefaultMaximalType(untouchedTrackedItem);
@@ -691,11 +702,11 @@ public class PurityAnalysis {
 			// 1) it does not mutate prestates reachable through parameters
 			// this includes the formal parameters and implicit "this" parameter
 			Q parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter);
-			Q mutableParameters = parameters.nodesTaggedWithAny(MUTABLE);
+			Q mutableParameters = parameters.nodesTaggedWithAny(MUTABLE, POLYREAD);
 			if(mutableParameters.eval().nodes().size() > 0){
 				return false;
 			}
-			Q mutableIdentity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).nodesTaggedWithAny(MUTABLE);
+			Q mutableIdentity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).nodesTaggedWithAny(MUTABLE, POLYREAD);
 			if(mutableIdentity.eval().nodes().size() > 0){
 				return false;
 			}

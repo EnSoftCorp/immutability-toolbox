@@ -7,6 +7,8 @@ import java.util.EnumSet;
 import java.util.Set;
 
 import com.ensoftcorp.atlas.core.db.graph.GraphElement;
+import com.ensoftcorp.atlas.core.query.Q;
+import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.purity.analysis.ImmutabilityTypes;
 import com.ensoftcorp.open.purity.analysis.Utilities;
@@ -45,12 +47,6 @@ public class FieldAssignmentChecker {
 		
 		boolean typesChanged = false;
 
-		// if x is a reference it must be mutable
-		// if x is a field it must be polyread
-		if(removeTypes(x, ImmutabilityTypes.READONLY)){
-			typesChanged = true;
-		}
-		
 		if(x.taggedWith(XCSG.InstanceVariableValue) || x.taggedWith(Utilities.CLASS_VARIABLE_VALUE)){
 			// if a field changes in an object then that object and any container 
 			// objects which contain an object where the field is have also changed
@@ -65,6 +61,15 @@ public class FieldAssignmentChecker {
 					}
 				}
 			}
+			
+			Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
+			x = interproceduralDataFlowEdges.predecessors(Common.toQ(x)).eval().nodes().getFirst();
+		}
+		
+		// if x is a reference it must be mutable
+		// if x is a field it must be polyread
+		if(removeTypes(x, ImmutabilityTypes.READONLY)){
+			typesChanged = true;
 		}
 		
 		Set<ImmutabilityTypes> xTypes = getTypes(x);
@@ -204,11 +209,12 @@ public class FieldAssignmentChecker {
 			}
 		}
 		
-		// TODO: update y to be the field
 		if(y.taggedWith(XCSG.InstanceVariableValue) || y.taggedWith(Utilities.CLASS_VARIABLE_VALUE)){
-			// these constraints are too strong if y is a field...
-			// TODO: is this correct?
 			return typesChanged;
+			
+			//TODO: debug
+//			Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
+//			y = interproceduralDataFlowEdges.predecessors(Common.toQ(y)).eval().nodes().getFirst();
 		}
 		
 		Set<ImmutabilityTypes> fTypes = getTypes(f);
