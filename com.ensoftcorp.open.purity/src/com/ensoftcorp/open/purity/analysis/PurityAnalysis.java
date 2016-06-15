@@ -79,6 +79,9 @@ public class PurityAnalysis {
 	public static boolean run(IProgressMonitor monitor){
 		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Purity analysis started");
 		
+		// TODO: remove when there are appropriate alternatives
+		Utilities.addClassVariableAccessTags();
+		
 		// cache
 		initializeCache(monitor);
 		
@@ -105,19 +108,17 @@ public class PurityAnalysis {
 			}
 		}
 		
+		// TODO: remove when there are appropriate alternatives
+		Utilities.removeClassVariableAccessTags();
+		
 		return isSane;
 	}
 
 	private static void initializeCache(IProgressMonitor monitor) {
 		typeOfGraph = Common.resolve(monitor, Common.universe().edgesTaggedWithAny(XCSG.TypeOf).eval());
-		initializeDefaultReadonlyTypes();
-	}
-	
-	private static void initializeDefaultReadonlyTypes() {
-		defaultReadonlyTypes = new AtlasHashSet<GraphElement>();
 		
-		// null type
-		defaultReadonlyTypes.add(Common.universe().nodesTaggedWithAny(XCSG.Java.NullType).eval().nodes().getFirst());
+		// initialize the cache of default readonly types
+		defaultReadonlyTypes = new AtlasHashSet<GraphElement>();
 		
 		// autoboxing
 		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Integer").eval().nodes().getFirst());
@@ -142,9 +143,6 @@ public class PurityAnalysis {
 	 * Runs the side effect (purity) analysis
 	 */
 	private static void runAnalysis(){
-		// TODO: remove when there are appropriate alternatives
-		Utilities.addClassVariableAccessTags();
-		
 		TreeSet<GraphElement> worklist = new TreeSet<GraphElement>();
 
 		// add all assignments to worklist
@@ -247,9 +245,6 @@ public class PurityAnalysis {
 			long stopPurityTagging = System.nanoTime();
 			if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Applied method purity tags in " + (stopPurityTagging-startPurityTagging)/1000.0/1000.0 + "ms");
 		}
-		
-		// TODO: remove when there are appropriate alternatives
-		Utilities.removeClassVariableAccessTags();
 	}
 	
 	/**
@@ -288,6 +283,13 @@ public class PurityAnalysis {
 						current = localDataFlowEdges.predecessors(Common.toQ(current)).eval().nodes().getFirst();
 					}
 					from = current;
+				}
+				
+				if(from.taggedWith(XCSG.Operator)){
+					// the result of a primitive operation on primitive values is readonly
+					// but is a special sort of constraint value because its result would
+					// be stored in an accumulator and should not be treated as a data node
+					continue;
 				}
 				
 				boolean involvesField = false;
@@ -364,7 +366,7 @@ public class PurityAnalysis {
 						GraphElement interproceduralEdgeFromField = interproceduralDFGraph.edges(from, NodeDirection.IN).getFirst();
 						GraphElement sf = interproceduralEdgeFromField.getNode(EdgeDirection.FROM);
 						
-						GraphElement m = Utilities.getContainingMethod(x);
+						GraphElement m = Utilities.getContainingMethod(to);
 						if(FieldAssignmentChecker.handleStaticFieldRead(x, sf, m)){
 							typesChanged = true;
 						}
@@ -383,7 +385,7 @@ public class PurityAnalysis {
 						GraphElement sf = interproceduralEdgeToField.getNode(EdgeDirection.TO);
 						
 						GraphElement x = from;
-						GraphElement m = Utilities.getContainingMethod(x);
+						GraphElement m = Utilities.getContainingMethod(to);
 						if(FieldAssignmentChecker.handleStaticFieldWrite(sf, x, m)){
 							typesChanged = true;
 						}
@@ -531,22 +533,11 @@ public class PurityAnalysis {
 	
 	public static ImmutabilityTypes getDefaultMaximalType(GraphElement ge) {
 		ImmutabilityTypes maximalType;
-		if(ge.taggedWith(XCSG.Instantiation) || ge.taggedWith(XCSG.ArrayInstantiation)){
+//		GraphElement nullType = Common.universe().nodesTaggedWithAny(XCSG.Java.NullType).eval().nodes().getFirst();
+		if(/*ge.equals(nullType) || ge.taggedWith(XCSG.Null) ||*/ ge.taggedWith(XCSG.Instantiation) || ge.taggedWith(XCSG.ArrayInstantiation)){
 			maximalType = ImmutabilityTypes.MUTABLE;
-		} else if(isDefaultReadonlyType(ge) || isDefaultReadonlyType(getObjectType(ge))){
-			// several java objects are readonly for all practical purposes
-			maximalType = ImmutabilityTypes.READONLY;
-		} else if(ge.taggedWith(XCSG.MasterReturn)){
-			maximalType = ImmutabilityTypes.READONLY;
-		} else if(ge.taggedWith(XCSG.InstanceVariable)){
-			maximalType = ImmutabilityTypes.READONLY;
-		} else if(ge.taggedWith(XCSG.ClassVariable)){
-			maximalType = ImmutabilityTypes.READONLY;
-		} else if(ge.taggedWith(XCSG.Method)){
-			maximalType = ImmutabilityTypes.READONLY;
-		} else if(ge.taggedWith(XCSG.ParameterPass)){
-			maximalType = ImmutabilityTypes.READONLY;
 		} else {
+			// all other cases default to readonly
 			maximalType = ImmutabilityTypes.READONLY;
 		}
 		return maximalType;
@@ -565,19 +556,17 @@ public class PurityAnalysis {
 	public static EnumSet<ImmutabilityTypes> getDefaultTypes(GraphElement ge) {
 		EnumSet<ImmutabilityTypes> qualifiers = EnumSet.noneOf(ImmutabilityTypes.class);
 		
-		// ge -TypeOf-> getType
-		GraphElement typeOfEdge = typeOfGraph.edges(ge, NodeDirection.OUT).getFirst();
-		GraphElement geType = null;
-		if(typeOfEdge != null){
-			geType = typeOfEdge.getNode(EdgeDirection.TO);
-		}
-		
-		if(ge.taggedWith(XCSG.Instantiation) || ge.taggedWith(XCSG.ArrayInstantiation)){
+		GraphElement nullType = Common.universe().nodesTaggedWithAny(XCSG.Java.NullType).eval().nodes().getFirst();
+		if(ge.equals(nullType) || ge.taggedWith(XCSG.Null)){
+			// assignments of null mutate objects
+			// see https://github.com/proganalysis/type-inference/blob/master/inference-framework/checker-framework/checkers/src/checkers/inference2/reim/ReimChecker.java#L181
+			qualifiers.add(ImmutabilityTypes.READONLY);
+		} else if(ge.taggedWith(XCSG.Instantiation) || ge.taggedWith(XCSG.ArrayInstantiation)){
 			// Type Rule 1 - TNEW
 			// return type of a constructor is only mutable
 			// x = new C(); // no effect on qualifier to x
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
-		} else if(isDefaultReadonlyType(ge) || isDefaultReadonlyType(geType)){
+		} else if(ge.taggedWith(XCSG.Literal) || ge.taggedWith(XCSG.Primitive) || isDefaultReadonlyType(getObjectType(ge))){
 			// several java objects are readonly for all practical purposes
 			qualifiers.add(ImmutabilityTypes.READONLY);
 		} else if(ge.taggedWith(XCSG.MasterReturn)){
@@ -585,6 +574,14 @@ public class PurityAnalysis {
 			// "Method returns are initialized S(ret) = {readonly, polyread} for each method m"
 			qualifiers.add(ImmutabilityTypes.READONLY);
 			qualifiers.add(ImmutabilityTypes.POLYREAD);
+		} else if (ge.taggedWith(XCSG.Parameter)){
+			qualifiers.add(ImmutabilityTypes.READONLY);
+			qualifiers.add(ImmutabilityTypes.POLYREAD);
+			qualifiers.add(ImmutabilityTypes.MUTABLE);
+		} else if(ge.taggedWith(XCSG.Identity)){
+			qualifiers.add(ImmutabilityTypes.READONLY);
+			qualifiers.add(ImmutabilityTypes.POLYREAD);
+			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		} else if(ge.taggedWith(XCSG.InstanceVariable)){
 			// Section 2.4 of Reference 1
 			// "Fields are initialized to S(f) = {readonly, polyread}"
@@ -601,21 +598,19 @@ public class PurityAnalysis {
 			qualifiers.add(ImmutabilityTypes.READONLY);
 			qualifiers.add(ImmutabilityTypes.POLYREAD);
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
-		} else if(ge.taggedWith(XCSG.ParameterPass)){
-			// Section 2.4 of Reference 1
-			// "All other references are initialized to the maximal
-			// set of qualifiers, i.e. S(x) = {readonly, polyread, mutable}"
-			// treating parameters passed as an implicit assignment that can be polyread
-			qualifiers.add(ImmutabilityTypes.READONLY);
-			qualifiers.add(ImmutabilityTypes.POLYREAD);
-			qualifiers.add(ImmutabilityTypes.MUTABLE);
-		} else {
+		}  else if(ge.taggedWith(XCSG.Assignment) || ge.taggedWith(XCSG.ParameterPass)){
+			// could be a ParameterPass or local reference
 			// Section 2.4 of Reference 1
 			// "All other references are initialized to the maximal
 			// set of qualifiers, i.e. S(x) = {readonly, polyread, mutable}"
 			// But, what does it mean for a local reference to be polyread? ~Ben
 			qualifiers.add(ImmutabilityTypes.READONLY);
+//			qualifiers.add(ImmutabilityTypes.POLYREAD);
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
+		} else {
+			RuntimeException e = new RuntimeException("Unexpected graph element: " + ge.address());
+			Log.error("Unexpected graph element: " + ge.address(), e);
+			throw e;
 		}
 		return qualifiers;
 	}
@@ -629,22 +624,6 @@ public class PurityAnalysis {
 		if(type == null){
 			return false;
 		}
-		
-		// primitive types
-		if(type.taggedWith(XCSG.Primitive)){
-			return true;
-		}
-		
-		// literals
-		if(type.taggedWith(XCSG.Literal)){
-			return true;
-		}
-		
-		// operations on primitives or references to primitives
-		if(type.taggedWith(XCSG.Operator)){
-			return true;
-		}
-
 		return defaultReadonlyTypes.contains(type);
 	}
 	
@@ -664,6 +643,8 @@ public class PurityAnalysis {
 				ImmutabilityTypes maximalType = orderedTypes.getLast();
 				attributedGraphElement.tag(maximalType.toString());
 			}
+			// TODO: enable
+//			attributedGraphElement.removeAttr(Utilities.IMMUTABILITY_QUALIFIERS);
 		}
 		
 		// tag the graph elements that were never touched as the default maximal type (most likely readonly)

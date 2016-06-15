@@ -93,6 +93,7 @@ public class Utilities {
 		boolean typesChanged = typeSet.removeAll(typesToRemove);
 		if(typesChanged){
 			if(PurityPreferences.isDebugLoggingEnabled()) Log.info(logMessage);
+			if(PurityPreferences.isDebugLoggingEnabled() && typeSet.isEmpty()) Log.warning("Remove result in an empty type set.");
 		}
 		return typesChanged;
 	}
@@ -123,6 +124,8 @@ public class Utilities {
 	}
 	
 	/**
+	 * TODO: fix InstanceVariableAccessed edges for class variables...
+	 * 
 	 * Returns the fields or local variables accessed for an instance variable access
 	 * @param variableAccess
 	 * @return

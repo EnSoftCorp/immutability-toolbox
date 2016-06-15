@@ -1,9 +1,15 @@
 package com.ensoftcorp.open.purity.analysis.checkers;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import com.ensoftcorp.atlas.core.db.graph.GraphElement;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.script.Common;
+import com.ensoftcorp.atlas.core.xcsg.XCSG;
+import com.ensoftcorp.open.purity.analysis.ImmutabilityTypes;
 import com.ensoftcorp.open.purity.analysis.PurityAnalysis;
+import com.ensoftcorp.open.purity.analysis.Utilities;
 import com.ensoftcorp.open.purity.log.Log;
 import com.ensoftcorp.open.purity.preferences.PurityPreferences;
 
@@ -34,8 +40,52 @@ public class SanityChecks {
 	 * @return
 	 */
 	private static boolean hasUnexpectedTypes() {
-		// TODO: implement
-		return false;
+		boolean hasUnexpectedTypes = false;
+		
+		if(gainedTypes(XCSG.Null, XCSG.Literal, XCSG.Primitive, 
+								   XCSG.Instantiation, XCSG.ArrayInstantiation, 
+								   XCSG.MasterReturn, XCSG.Identity, XCSG.Parameter,
+								   XCSG.InstanceVariable, XCSG.ClassVariable,
+								   XCSG.Method)){
+			hasUnexpectedTypes = true;
+		}
+		
+		if(shouldNotBeTyped(XCSG.InstanceVariableAccess, Utilities.CLASS_VARIABLE_ACCESS, XCSG.Operator)){
+			hasUnexpectedTypes = true;
+		}
+		
+		return hasUnexpectedTypes;
+	}
+	
+	private static boolean shouldNotBeTyped(String... tags){
+		int unexpectedTypes = 0;
+		for(GraphElement ge : Common.universe().nodesTaggedWithAny(tags).eval().nodes()){
+			if(ge.taggedWith(PurityAnalysis.READONLY) 
+			|| ge.taggedWith(PurityAnalysis.POLYREAD) 
+			|| ge.taggedWith(PurityAnalysis.MUTABLE)
+			|| ge.taggedWith(PurityAnalysis.UNTYPED)
+			|| ge.hasAttr(Utilities.IMMUTABILITY_QUALIFIERS)){
+				unexpectedTypes++;
+			}
+		}
+		boolean hasUnexpectedTypes = unexpectedTypes > 0;
+		if(hasUnexpectedTypes) Log.warning("There are " + unexpectedTypes + " nodes that gained unexpected types which should not be typed.");
+		return hasUnexpectedTypes;
+	}
+
+	private static boolean gainedTypes(String... tags) {
+		int unexpectedTypes = 0;
+		for(GraphElement ge : Common.universe().nodesTaggedWithAny(tags).eval().nodes()){
+			Set<ImmutabilityTypes> defaultTypes = PurityAnalysis.getDefaultTypes(ge);
+			Set<ImmutabilityTypes> finalTypes = new HashSet<ImmutabilityTypes>(Utilities.getTypes(ge));
+			finalTypes.removeAll(defaultTypes);
+			if(!finalTypes.isEmpty()){
+				unexpectedTypes++;
+			}
+		}
+		boolean hasUnexpectedTypes = unexpectedTypes > 0;
+		if(hasUnexpectedTypes) Log.warning("There are " + unexpectedTypes + " nodes that gained unexpected types over thier defaults.");
+		return hasUnexpectedTypes;
 	}
 
 	/**

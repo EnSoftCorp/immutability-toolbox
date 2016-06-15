@@ -13,7 +13,7 @@ public class Test1 {
 		Thing x = y.thing;
 		
 		// x is mutable
-		x.majig = 2;		
+		x.majig = 2;
 	}
 	
 }

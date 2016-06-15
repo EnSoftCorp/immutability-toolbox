@@ -179,9 +179,8 @@ public class FieldAssignmentChecker {
 		if(PurityPreferences.isInferenceRuleLoggingEnabled()) Log.info("TREAD (x=y.f, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ")");
 		
 		boolean typesChanged = false;
-		Set<ImmutabilityTypes> fTypes = getTypes(f);
 		Set<ImmutabilityTypes> xTypes = getTypes(x);
-		Set<ImmutabilityTypes> yTypes = getTypes(y);
+		
 		
 		boolean xIsPolyreadField = x.taggedWith(XCSG.Field) && (xTypes.contains(ImmutabilityTypes.POLYREAD) && xTypes.size() == 1);
 		boolean xIsMutableReference = !x.taggedWith(XCSG.Field) && (xTypes.contains(ImmutabilityTypes.MUTABLE) && xTypes.size() == 1);
@@ -205,11 +204,15 @@ public class FieldAssignmentChecker {
 			}
 		}
 		
+		// TODO: update y to be the field
 		if(y.taggedWith(XCSG.InstanceVariableValue) || y.taggedWith(Utilities.CLASS_VARIABLE_VALUE)){
 			// these constraints are too strong if y is a field...
 			// TODO: is this correct?
 			return typesChanged;
 		}
+		
+		Set<ImmutabilityTypes> fTypes = getTypes(f);
+		Set<ImmutabilityTypes> yTypes = getTypes(y);
 
 		// process s(x)
 		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(x) for constraint qy " + getTypes(y).toString() + " adapt qf " + getTypes(f).toString() + " <: qx " + getTypes(x).toString());
