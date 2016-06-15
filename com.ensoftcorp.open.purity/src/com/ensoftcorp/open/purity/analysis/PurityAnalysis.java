@@ -285,17 +285,13 @@ public class PurityAnalysis {
 					from = current;
 				}
 				
+				// TODO: this should have types I think...
 				if(from.taggedWith(XCSG.Operator)){
 					// the result of a primitive operation on primitive values is readonly
 					// but is a special sort of constraint value because its result would
 					// be stored in an accumulator and should not be treated as a data node
 					continue;
 				}
-				
-//				if(isDefaultReadonlyType(from)){
-//					// TODO: i don't even know anymore...
-//					continue;
-//				}
 				
 				boolean involvesField = false;
 				
