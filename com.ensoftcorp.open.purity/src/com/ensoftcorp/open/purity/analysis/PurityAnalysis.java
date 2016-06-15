@@ -270,6 +270,14 @@ public class PurityAnalysis {
 			// incoming edges represent a read relationship in an assignment
 			// outgoing edges represent a write relationship in an assignment
 			GraphElement to = workItem;
+			if(to.taggedWith(XCSG.Cast)){
+				GraphElement current = to;
+				while(current.taggedWith(XCSG.Cast)){
+					Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
+					current = localDataFlowEdges.predecessors(Common.toQ(current)).eval().nodes().getFirst();
+				}
+				to = current;
+			}
 			AtlasSet<GraphElement> inEdges = localDFGraph.edges(to, NodeDirection.IN);
 			for(GraphElement edge : inEdges){
 				GraphElement from = edge.getNode(EdgeDirection.FROM);
@@ -285,13 +293,6 @@ public class PurityAnalysis {
 					from = current;
 				}
 				
-				// TODO: this should have types I think...
-				if(from.taggedWith(XCSG.Operator)){
-					// the result of a primitive operation on primitive values is readonly
-					// but is a special sort of constraint value because its result would
-					// be stored in an accumulator and should not be treated as a data node
-					continue;
-				}
 				
 				boolean involvesField = false;
 				
@@ -605,7 +606,12 @@ public class PurityAnalysis {
 			qualifiers.add(ImmutabilityTypes.READONLY);
 			qualifiers.add(ImmutabilityTypes.POLYREAD);
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
-		}  else if(ge.taggedWith(XCSG.Assignment) || ge.taggedWith(XCSG.ParameterPass)){
+		} else if(ge.taggedWith(XCSG.Operator)){
+			// the result of a primitive operation on primitives or primitive references is always readonly
+			qualifiers.add(ImmutabilityTypes.READONLY);
+			qualifiers.add(ImmutabilityTypes.POLYREAD);
+			qualifiers.add(ImmutabilityTypes.MUTABLE);
+		} else if(ge.taggedWith(XCSG.Assignment) || ge.taggedWith(XCSG.ParameterPass)){
 			// could be a ParameterPass or local reference
 			// Section 2.4 of Reference 1
 			// "All other references are initialized to the maximal
@@ -655,14 +661,14 @@ public class PurityAnalysis {
 		}
 		
 		// tag the graph elements that were never touched as the default maximal type (most likely readonly)
-		Q primitives = Common.universe().nodesTaggedWithAll(XCSG.Primitive);
+		Q literals = Common.universe().nodesTaggedWithAll(XCSG.Literal);
 		Q parameters = Common.universe().nodesTaggedWithAny(XCSG.Parameter);
 		Q masterReturns = Common.universe().nodesTaggedWithAny(XCSG.MasterReturn);
 		Q instanceVariables = Common.universe().nodesTaggedWithAny(XCSG.InstanceVariable);
 		Q thisNodes = Common.universe().nodesTaggedWithAll(XCSG.InstanceMethod, XCSG.Constructor).children().nodesTaggedWithAny(XCSG.Identity);
 		Q classVariables = Common.universe().nodesTaggedWithAny(XCSG.ClassVariable);
 		// note local variables may also get tracked, but only if need be during the analysis
-		Q trackedItems = primitives.union(parameters, masterReturns, instanceVariables, thisNodes, classVariables);
+		Q trackedItems = literals.union(parameters, masterReturns, instanceVariables, thisNodes, classVariables);
 		Q untouchedTrackedItems = trackedItems.difference(trackedItems.nodesTaggedWithAny(READONLY, POLYREAD, MUTABLE), Common.toQ(attributedGraphElements));
 		for(GraphElement untouchedTrackedItem : untouchedTrackedItems.eval().nodes()){
 			ImmutabilityTypes maximalType = getDefaultMaximalType(untouchedTrackedItem);

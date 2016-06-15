@@ -21,18 +21,12 @@ public class SanityChecks {
 		boolean resultsAreSane = true;
 		
 		if(!PurityPreferences.isPartialProgramAnalysisEnabled()){
-			if(isDoubleTagged()){
-				resultsAreSane = false;
-			}
+			resultsAreSane &= !isDoubleTagged();
+			resultsAreSane &= !methodsDoNotHaveImmutabilityTypes();
 		}
 		
-		if(hasUnexpectedTypes()){
-			resultsAreSane = false;
-		}
-			
-		if(hasUntypedReferences()){
-			resultsAreSane = false;
-		}
+		resultsAreSane &= !hasUnexpectedTypes();
+		resultsAreSane &= !hasUntypedReferences();
 		
 		return resultsAreSane;
 	}
@@ -52,14 +46,35 @@ public class SanityChecks {
 			hasUnexpectedTypes = true;
 		}
 		
-		if(shouldNotBeTyped(XCSG.InstanceVariableAccess, Utilities.CLASS_VARIABLE_ACCESS, XCSG.Operator)){
+		if(shouldNotBeTyped(XCSG.InstanceVariableAccess, Utilities.CLASS_VARIABLE_ACCESS)){
 			hasUnexpectedTypes = true;
 		}
 		
-//		if(defaultReadonlyTypesAreReadonly()){
-//			hasUnexpectedTypes = true;
-//		}
+		if(defaultReadonlyTypesAreReadonly()){
+			hasUnexpectedTypes = true;
+		}
 		
+		return hasUnexpectedTypes;
+	}
+	
+	/**
+	 * Checks that methods do not have immutability tags
+	 * Only true for whole program analysis (partial program analysis is an exception)
+	 * @return
+	 */
+	private static boolean methodsDoNotHaveImmutabilityTypes(){
+		int unexpectedTypes = 0; 
+		for(GraphElement ge : Common.universe().nodesTaggedWithAny(XCSG.Method).eval().nodes()){
+			if(ge.taggedWith(PurityAnalysis.READONLY) 
+					|| ge.taggedWith(PurityAnalysis.POLYREAD) 
+					|| ge.taggedWith(PurityAnalysis.MUTABLE)
+					|| ge.taggedWith(PurityAnalysis.UNTYPED)
+					|| ge.hasAttr(Utilities.IMMUTABILITY_QUALIFIERS)){
+						unexpectedTypes++;
+			}
+		}
+		boolean hasUnexpectedTypes = unexpectedTypes > 0;
+		if(hasUnexpectedTypes) Log.warning("There are " + unexpectedTypes + " methods that were expected to not to have immutability types that do.");
 		return hasUnexpectedTypes;
 	}
 	
@@ -68,7 +83,6 @@ public class SanityChecks {
 	 * @return
 	 */
 	private static boolean defaultReadonlyTypesAreReadonly(){
-
 		Q readOnlyTypes = Common.typeSelect("java.lang", "Integer")
 				.union(Common.typeSelect("java.lang", "Long"), 
 					   Common.typeSelect("java.lang", "Short"), 
@@ -91,12 +105,17 @@ public class SanityChecks {
 		Q readonlyReferences = typeOfEdges.predecessors(readOnlyTypes);
 		Q identities = readonlyReferences.nodesTaggedWithAny(XCSG.Identity);
 		defaultReadonlyTypes.addAll(readonlyReferences.difference(identities).eval().nodes());
-		defaultReadonlyTypes.addAll(Common.universe().nodesTaggedWithAny(XCSG.Null, XCSG.Primitive, XCSG.Literal).eval().nodes());
+		defaultReadonlyTypes.addAll(Common.universe().nodesTaggedWithAny(XCSG.Null, XCSG.Literal, XCSG.Operator).eval().nodes());
 		
 		int unexpectedTypes = 0; 
 		for(GraphElement ge : defaultReadonlyTypes){
-			if(!ge.taggedWith(XCSG.Null) || !ge.taggedWith(PurityAnalysis.READONLY)){
-				Log.warning("Readonly type " + ge.address().toAddressString() + " is not readonly.");
+			if(ge.taggedWith(XCSG.Null)){
+				// null is a special case, mutations can happen to nulls but its a runtime exception
+				// one might argue this does not change the program state but it does if a runtime exception is thrown!
+				continue;
+			}
+			if(!ge.taggedWith(PurityAnalysis.READONLY)){
+				if(PurityPreferences.isDebugLoggingEnabled()) Log.warning("Readonly type " + ge.address().toAddressString() + " is not readonly.");
 				unexpectedTypes++;
 			}
 		}
