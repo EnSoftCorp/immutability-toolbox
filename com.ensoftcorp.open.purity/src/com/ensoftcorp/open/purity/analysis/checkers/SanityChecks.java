@@ -1,7 +1,8 @@
 package com.ensoftcorp.open.purity.analysis.checkers;
 
-import java.util.HashSet;
 import java.util.Set;
+
+import org.eclipse.core.runtime.NullProgressMonitor;
 
 import com.ensoftcorp.atlas.core.db.graph.GraphElement;
 import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
@@ -20,41 +21,31 @@ public class SanityChecks {
 	public static boolean run(){
 		boolean resultsAreSane = true;
 		
-		if(!PurityPreferences.isPartialProgramAnalysisEnabled()){
-			resultsAreSane &= !isDoubleTagged();
-			resultsAreSane &= !methodsDoNotHaveImmutabilityTypes();
-		}
-		
-		resultsAreSane &= !hasUnexpectedTypes();
+		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Checking for untyped immutability types...");
 		resultsAreSane &= !hasUntypedReferences();
 		
+		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Checking for conservation of types (types cannot be gained)...");
+		resultsAreSane &= !gainedTypes(XCSG.Null, XCSG.Literal, 
+									   XCSG.Instantiation, XCSG.ArrayInstantiation, 
+									   XCSG.MasterReturn, XCSG.Identity, XCSG.Parameter,
+									   XCSG.InstanceVariable, XCSG.ClassVariable,
+									   XCSG.Method);
+		
+		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Checking that types were not accidently applied...");
+		resultsAreSane &= !shouldNotBeTyped(XCSG.InstanceVariableAccess, Utilities.CLASS_VARIABLE_ACCESS);
+		
+		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Checking that known readonly types are typed as readonly...");
+		resultsAreSane &= !defaultReadonlyTypesAreReadonly();
+		
+		if(!PurityPreferences.isPartialProgramAnalysisEnabled()){
+			if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Checking for double tagged immutability types...");
+			resultsAreSane &= !isDoubleTagged();
+			
+			if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Checking that methods are not tagged with immutability types...");
+			resultsAreSane &= !methodsDoNotHaveImmutabilityTypes();
+		}
+
 		return resultsAreSane;
-	}
-	
-	/**
-	 * Returns true if there are types on an unexpected node type
-	 * @return
-	 */
-	private static boolean hasUnexpectedTypes() {
-		boolean hasUnexpectedTypes = false;
-		
-		if(gainedTypes(XCSG.Null, XCSG.Literal, XCSG.Primitive, 
-								   XCSG.Instantiation, XCSG.ArrayInstantiation, 
-								   XCSG.MasterReturn, XCSG.Identity, XCSG.Parameter,
-								   XCSG.InstanceVariable, XCSG.ClassVariable,
-								   XCSG.Method)){
-			hasUnexpectedTypes = true;
-		}
-		
-		if(shouldNotBeTyped(XCSG.InstanceVariableAccess, Utilities.CLASS_VARIABLE_ACCESS)){
-			hasUnexpectedTypes = true;
-		}
-		
-		if(defaultReadonlyTypesAreReadonly()){
-			hasUnexpectedTypes = true;
-		}
-		
-		return hasUnexpectedTypes;
 	}
 	
 	/**
@@ -119,13 +110,13 @@ public class SanityChecks {
 				// we only need to consider operators on-demand so not all operators will actually be typed
 				// but if they are they'd better not be typed as anything but readonly
 				if(ge.taggedWith(PurityAnalysis.POLYREAD) || ge.taggedWith(PurityAnalysis.MUTABLE) || ge.taggedWith(PurityAnalysis.UNTYPED)){
-					if(PurityPreferences.isDebugLoggingEnabled()) Log.warning("Readonly type " + ge.address().toAddressString() + " is not readonly.");
+					if(PurityPreferences.isGeneralLoggingEnabled()) Log.warning("Readonly type " + ge.address().toAddressString() + " is not readonly.");
 					unexpectedTypes++;
 				}
 				continue;
 			}
 			if(!ge.taggedWith(PurityAnalysis.READONLY)){
-				if(PurityPreferences.isDebugLoggingEnabled()) Log.warning("Readonly type " + ge.address().toAddressString() + " is not readonly.");
+				if(PurityPreferences.isGeneralLoggingEnabled()) Log.warning("Readonly type " + ge.address().toAddressString() + " is not readonly.");
 				unexpectedTypes++;
 			}
 		}
@@ -136,7 +127,7 @@ public class SanityChecks {
 	
 	private static boolean shouldNotBeTyped(String... tags){
 		int unexpectedTypes = 0;
-		for(GraphElement ge : Common.universe().nodesTaggedWithAny(tags).eval().nodes()){
+		for(GraphElement ge : Common.resolve(new NullProgressMonitor(), Common.universe().nodesTaggedWithAny(tags).eval()).nodes()){
 			if(ge.taggedWith(PurityAnalysis.READONLY) 
 			|| ge.taggedWith(PurityAnalysis.POLYREAD) 
 			|| ge.taggedWith(PurityAnalysis.MUTABLE)
@@ -152,11 +143,13 @@ public class SanityChecks {
 
 	private static boolean gainedTypes(String... tags) {
 		int unexpectedTypes = 0;
-		for(GraphElement ge : Common.universe().nodesTaggedWithAny(tags).eval().nodes()){
+		for(GraphElement ge : Common.resolve(new NullProgressMonitor(), Common.universe().nodesTaggedWithAny(tags).eval()).nodes()){
 			Set<ImmutabilityTypes> defaultTypes = PurityAnalysis.getDefaultTypes(ge);
-			Set<ImmutabilityTypes> finalTypes = new HashSet<ImmutabilityTypes>(Utilities.getTypes(ge));
-			finalTypes.removeAll(defaultTypes);
-			if(!finalTypes.isEmpty()){
+			if(ge.taggedWith(PurityAnalysis.READONLY) && !defaultTypes.contains(ImmutabilityTypes.READONLY)){
+				unexpectedTypes++;
+			} else if(ge.taggedWith(PurityAnalysis.POLYREAD) && !defaultTypes.contains(ImmutabilityTypes.POLYREAD)){
+				unexpectedTypes++;
+			} else if(ge.taggedWith(PurityAnalysis.MUTABLE) && !defaultTypes.contains(ImmutabilityTypes.MUTABLE)){
 				unexpectedTypes++;
 			}
 		}
