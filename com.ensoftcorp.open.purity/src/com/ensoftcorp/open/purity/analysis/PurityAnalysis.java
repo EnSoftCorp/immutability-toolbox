@@ -386,23 +386,14 @@ public class PurityAnalysis {
 					// Type Rule 8 - TSCALL
 					// let, x = m(z)
 					try {
-						GraphElement x = to;
+						GraphElement x = Utilities.parseReference(to);
 						GraphElement callsite = from;
-						
-						// TODO: update this with method signature
-//						GraphElement method = Utilities.getInvokedMethodSignature(callsite);
-//						GraphElement identity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
-						
+	
+						GraphElement method = Utilities.getInvokedMethodSignature(callsite);
+
 						// ReturnValue (ret) -InterproceduralDataFlow-> CallSite (m)
 						GraphElement interproceduralDataFlowEdge = interproceduralDFGraph.edges(callsite, NodeDirection.IN).getFirst();
 						GraphElement ret = interproceduralDataFlowEdge.getNode(EdgeDirection.FROM);
-						
-						// Method (method) -Contains-> ReturnValue (ret)
-						// note that we could also use a control flow call edge to get the method
-						// Control Flow Block (cf) -Contains-> Callsite (m)
-						// Control Flow Block (cf) -Call-> Method (method)
-						GraphElement containsEdge = containsGraph.edges(ret, NodeDirection.IN).getFirst();
-						GraphElement method = containsEdge.getNode(EdgeDirection.FROM);
 						
 						// Method (method) -Contains-> Parameter (p1, p2, ...)
 						AtlasSet<GraphElement> parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
