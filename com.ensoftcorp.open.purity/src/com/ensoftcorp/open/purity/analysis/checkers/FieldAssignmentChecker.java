@@ -62,8 +62,7 @@ public class FieldAssignmentChecker {
 				}
 			}
 			
-			Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
-			x = interproceduralDataFlowEdges.predecessors(Common.toQ(x)).eval().nodes().getFirst();
+			x = Utilities.parseReference(x);
 		}
 		
 		// if x is a reference it must be mutable

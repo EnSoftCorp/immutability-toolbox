@@ -64,7 +64,6 @@ public class PurityAnalysis {
 	 * type system or implementation
 	 */
 	public static final String UNTYPED = "UNTYPED";
-	
 
 	/**
 	 * Runs the side effect (purity) analysis
@@ -73,12 +72,8 @@ public class PurityAnalysis {
 	 */
 	public static boolean run(IProgressMonitor monitor){
 		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Purity analysis started");
-		
-		// TODO: remove when there are appropriate alternatives
-		Utilities.addClassVariableAccessTags();
-		
 		long start = System.nanoTime();
-		runAnalysis();
+		boolean isSane = runAnalysis();
 		long stop = System.nanoTime();
 		double runtime = (stop-start)/1000.0/1000.0;
 		if(PurityPreferences.isGeneralLoggingEnabled()) {
@@ -88,28 +83,16 @@ public class PurityAnalysis {
 			String summary = "READONLY: " + numReadOnly + ", POLYREAD: " + numPolyRead + ", MUTABLE: " + numMutable;
 			Log.info("Purity analysis completed in " + runtime + " ms\n" + summary);
 		}
-		
-		boolean isSane = true;
-		if(PurityPreferences.isRunSanityChecksEnabled()){
-			Log.info("Running sanity checks...");
-			isSane = SanityChecks.run();
-			if(isSane){
-				Log.info("Sanity checks completed. Everything is sane.");
-			} else {
-				Log.warning("Sanity checks failed!");
-			}
-		}
-		
-		// TODO: remove when there are appropriate alternatives
-		Utilities.removeClassVariableAccessTags();
-		
 		return isSane;
 	}
 
 	/**
 	 * Runs the side effect (purity) analysis
 	 */
-	private static void runAnalysis(){
+	private static boolean runAnalysis(){
+		// TODO: remove when there are appropriate alternatives
+		Utilities.addClassVariableAccessTags();
+		
 		TreeSet<GraphElement> worklist = new TreeSet<GraphElement>();
 
 		// add all assignments to worklist
@@ -129,14 +112,8 @@ public class PurityAnalysis {
 		Q localDFEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
 		Q assignedCallsites = localDFEdges.predecessors(Common.universe().nodesTaggedWithAny(XCSG.Assignment)).nodesTaggedWithAny(XCSG.CallSite);
 		Q unassignedCallsites = callsites.difference(assignedCallsites);
-		Q unassignedDynamicDispatchCallsites = Common.resolve(new NullProgressMonitor(), unassignedCallsites.nodesTaggedWithAny(XCSG.DynamicDispatchCallSite));
-		for(GraphElement unassignedDynamicDispatchCallsite : unassignedDynamicDispatchCallsites.eval().nodes()){
-			worklist.add(unassignedDynamicDispatchCallsite);
-		}
-		
-		Q unassignedStaticDispatchCallsites = Common.resolve(new NullProgressMonitor(), unassignedCallsites.nodesTaggedWithAny(XCSG.StaticDispatchCallSite));
-		for(GraphElement unassignedStaticDispatchCallsite : unassignedStaticDispatchCallsites.eval().nodes()){
-			worklist.add(unassignedStaticDispatchCallsite);
+		for(GraphElement unassignedCallsite : unassignedCallsites.eval().nodes()){
+			worklist.add(unassignedCallsite);
 		}
 		
 		int iteration = 1;
@@ -193,7 +170,6 @@ public class PurityAnalysis {
 						attributedGraphElement.tag(type.toString());
 					}
 				}
-				attributedGraphElement.removeAttr(Utilities.IMMUTABILITY_QUALIFIERS);
 			}
 			if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Converted immutability sets into tags.");
 		} else {
@@ -212,6 +188,30 @@ public class PurityAnalysis {
 			long stopPurityTagging = System.nanoTime();
 			if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Applied method purity tags in " + (stopPurityTagging-startPurityTagging)/1000.0/1000.0 + "ms");
 		}
+		
+		boolean isSane = true;
+		if(PurityPreferences.isRunSanityChecksEnabled()){
+			Log.info("Running sanity checks...");
+			isSane = SanityChecks.run();
+			if(isSane){
+				Log.info("Sanity checks completed. Everything is sane.");
+			} else {
+				Log.warning("Sanity checks failed!");
+			}
+		}
+		
+		// TODO: enable
+		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Performing cleanup...");
+
+//		AtlasSet<GraphElement> attributedGraphElements = Common.universe().selectNode(Utilities.IMMUTABILITY_QUALIFIERS).eval().nodes();
+//		for(GraphElement attributedGraphElement : attributedGraphElements){
+//			attributedGraphElement.removeAttr(Utilities.IMMUTABILITY_QUALIFIERS);
+//		}
+		
+		// TODO: remove when there are appropriate alternatives
+		Utilities.removeClassVariableAccessTags();
+		
+		return isSane;
 	}
 	
 	/**
@@ -229,7 +229,7 @@ public class PurityAnalysis {
 		if(workItem.taggedWith(XCSG.Assignment) || workItem.taggedWith(XCSG.ParameterPass)){
 			Graph localDFGraph = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow).eval();
 			Graph interproceduralDFGraph = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow).eval();
-			Graph instanceVariableAccessedGraph = Common.universe().edgesTaggedWithAny(XCSG.InstanceVariableAccessed).eval();
+			Q instanceVariableAccessedEdges = Common.universe().edgesTaggedWithAny(XCSG.InstanceVariableAccessed);
 			Graph identityPassedToGraph = Common.universe().edgesTaggedWithAny(XCSG.IdentityPassedTo).eval();
 			Graph containsGraph = Common.universe().edgesTaggedWithAny(XCSG.Contains).eval();
 
@@ -248,22 +248,13 @@ public class PurityAnalysis {
 					// Type Rule 3 - TWRITE
 					// let, x.f = y
 					try {
-						// Reference (y) -LocalDataFlow-> InstanceVariableAssignment (f=)
-						GraphElement y = from;
-						if(y.taggedWith(XCSG.InstanceVariableValue)){
-							GraphElement interproceduralEdgeFromField = interproceduralDFGraph.edges(y, NodeDirection.IN).getFirst();
-							y = interproceduralEdgeFromField.getNode(EdgeDirection.FROM);
-						}
+						GraphElement y = Utilities.parseReference(from);
+						GraphElement f = Utilities.parseReference(to);
+
+						// Reference (x) -InstanceVariableAccessed-> InstanceVariableAssignment (f=)
 						GraphElement instanceVariableAssignment = to; // (f=)
-						
-						// InstanceVariableAssignment (f=) -InterproceduralDataFlow-> InstanceVariable (f)
-						GraphElement interproceduralEdgeToField = interproceduralDFGraph.edges(instanceVariableAssignment, NodeDirection.OUT).getFirst();
-						GraphElement f = interproceduralEdgeToField.getNode(EdgeDirection.TO);
-						
-						// Reference (x) -InstanceVariableAccessed-> InstanceVariableAssignment (.f)
-						GraphElement instanceVariableAccessedEdge = instanceVariableAccessedGraph.edges(instanceVariableAssignment, NodeDirection.IN).getFirst();
-						GraphElement x = instanceVariableAccessedEdge.getNode(EdgeDirection.FROM);
-						
+						GraphElement x = instanceVariableAccessedEdges.predecessors(Common.toQ(instanceVariableAssignment)).eval().nodes().getFirst();
+
 						if(FieldAssignmentChecker.handleFieldWrite(x, f, y)){
 							typesChanged = true;
 						}
@@ -279,22 +270,13 @@ public class PurityAnalysis {
 					// Type Rule 4 - TREAD
 					// let, x = y.f
 					try {
-						GraphElement x = to;
-						if(x.taggedWith(XCSG.InstanceVariableValue)){
-							GraphElement interproceduralEdgeFromField = interproceduralDFGraph.edges(x, NodeDirection.IN).getFirst();
-							x = interproceduralEdgeFromField.getNode(EdgeDirection.FROM);
-						}
-						
-						GraphElement instanceVariableValue = from; // (.f)
-						
-						// InstanceVariable (f) -InterproceduralDataFlow-> InstanceVariableValue (.f) 
-						GraphElement interproceduralEdgeFromField = interproceduralDFGraph.edges(instanceVariableValue, NodeDirection.IN).getFirst();
-						GraphElement f = interproceduralEdgeFromField.getNode(EdgeDirection.FROM);
-						
+						GraphElement x = Utilities.parseReference(to);
+						GraphElement f = Utilities.parseReference(from);
+
 						// Reference (y) -InstanceVariableAccessed-> InstanceVariableValue (.f)
-						GraphElement instanceVariableAccessedEdge = instanceVariableAccessedGraph.edges(instanceVariableValue, NodeDirection.IN).getFirst();
-						GraphElement y = instanceVariableAccessedEdge.getNode(EdgeDirection.FROM);
-						
+						GraphElement instanceVariableValue = from; // (.f)
+						GraphElement y = instanceVariableAccessedEdges.predecessors(Common.toQ(instanceVariableValue)).eval().nodes().getFirst();
+
 						if(FieldAssignmentChecker.handleFieldRead(x, y, f)){
 							typesChanged = true;
 						}
@@ -507,8 +489,6 @@ public class PurityAnalysis {
 				ImmutabilityTypes maximalType = orderedTypes.getLast();
 				attributedGraphElement.tag(maximalType.toString());
 			}
-			// TODO: enable
-//			attributedGraphElement.removeAttr(Utilities.IMMUTABILITY_QUALIFIERS);
 		}
 		
 		// tag the graph elements that were never touched as the default maximal type (most likely readonly)
