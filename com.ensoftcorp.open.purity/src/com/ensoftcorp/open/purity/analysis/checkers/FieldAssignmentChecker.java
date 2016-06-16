@@ -7,8 +7,6 @@ import java.util.EnumSet;
 import java.util.Set;
 
 import com.ensoftcorp.atlas.core.db.graph.GraphElement;
-import com.ensoftcorp.atlas.core.query.Q;
-import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.purity.analysis.ImmutabilityTypes;
 import com.ensoftcorp.open.purity.analysis.Utilities;
@@ -209,11 +207,8 @@ public class FieldAssignmentChecker {
 		}
 		
 		if(y.taggedWith(XCSG.InstanceVariableValue) || y.taggedWith(Utilities.CLASS_VARIABLE_VALUE)){
+			// the remaining constraints are too strong for multiple fields
 			return typesChanged;
-			
-			//TODO: debug
-//			Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
-//			y = interproceduralDataFlowEdges.predecessors(Common.toQ(y)).eval().nodes().getFirst();
 		}
 		
 		Set<ImmutabilityTypes> fTypes = getTypes(f);

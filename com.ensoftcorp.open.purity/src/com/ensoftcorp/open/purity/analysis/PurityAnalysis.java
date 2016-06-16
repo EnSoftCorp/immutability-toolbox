@@ -291,13 +291,10 @@ public class PurityAnalysis {
 				// let, x = sf
 				try {
 					if(from.taggedWith(Utilities.CLASS_VARIABLE_VALUE)){
-						GraphElement x = to;
-
-						// ClassVariable (sf) -InterproceduralDataFlow-> ClassVariableValue (.sf) 
-						GraphElement interproceduralEdgeFromField = interproceduralDFGraph.edges(from, NodeDirection.IN).getFirst();
-						GraphElement sf = interproceduralEdgeFromField.getNode(EdgeDirection.FROM);
-						
+						GraphElement x = Utilities.parseReference(to);
 						GraphElement m = Utilities.getContainingMethod(to);
+						GraphElement sf = Utilities.parseReference(from);
+						
 						if(FieldAssignmentChecker.handleStaticFieldRead(x, sf, m)){
 							typesChanged = true;
 						}
@@ -311,12 +308,10 @@ public class PurityAnalysis {
 				// let, sf = x
 				try {
 					if(to.taggedWith(Utilities.CLASS_VARIABLE_ASSIGNMENT)){
-						// ClassVariableAssignment (sf=) -InterproceduralDataFlow-> ClassVariable (sf)
-						GraphElement interproceduralEdgeToField = interproceduralDFGraph.edges(to, NodeDirection.OUT).getFirst();
-						GraphElement sf = interproceduralEdgeToField.getNode(EdgeDirection.TO);
-						
-						GraphElement x = from;
+						GraphElement sf = Utilities.parseReference(to);
 						GraphElement m = Utilities.getContainingMethod(to);
+						GraphElement x = Utilities.parseReference(from);
+
 						if(FieldAssignmentChecker.handleStaticFieldWrite(sf, x, m)){
 							typesChanged = true;
 						}
@@ -463,11 +458,10 @@ public class PurityAnalysis {
 	
 	public static ImmutabilityTypes getDefaultMaximalType(GraphElement ge) {
 		ImmutabilityTypes maximalType;
-//		GraphElement nullType = Common.universe().nodesTaggedWithAny(XCSG.Java.NullType).eval().nodes().getFirst();
-		if(/*ge.equals(nullType) || ge.taggedWith(XCSG.Null) ||*/ ge.taggedWith(XCSG.Instantiation) || ge.taggedWith(XCSG.ArrayInstantiation)){
+		if(ge.taggedWith(XCSG.Instantiation) || ge.taggedWith(XCSG.ArrayInstantiation)){
 			maximalType = ImmutabilityTypes.MUTABLE;
 		} else {
-			// all other cases default to readonly
+			// all other cases default to readonly as the maximal type
 			maximalType = ImmutabilityTypes.READONLY;
 		}
 		return maximalType;
