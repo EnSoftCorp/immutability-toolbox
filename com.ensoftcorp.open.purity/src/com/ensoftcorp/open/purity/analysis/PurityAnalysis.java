@@ -200,9 +200,9 @@ public class PurityAnalysis {
 			}
 		}
 		
-		// TODO: enable
 		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Performing cleanup...");
 
+		// TODO: enable
 //		AtlasSet<GraphElement> attributedGraphElements = Common.universe().selectNode(Utilities.IMMUTABILITY_QUALIFIERS).eval().nodes();
 //		for(GraphElement attributedGraphElement : attributedGraphElements){
 //			attributedGraphElement.removeAttr(Utilities.IMMUTABILITY_QUALIFIERS);
@@ -327,7 +327,8 @@ public class PurityAnalysis {
 					// Type Rule 5 - TCALL
 					// let, x = y.m(z)
 					try {
-						GraphElement x = to;
+						GraphElement containingMethod = Utilities.getContainingMethod(to);
+						GraphElement x = Utilities.parseReference(to);
 						GraphElement callsite = from;
 						
 						// TODO: update this with method signature
@@ -341,6 +342,7 @@ public class PurityAnalysis {
 						// Receiver (y) -LocalDataFlow-> IdentityPass (.this)
 						GraphElement localDataFlowEdge = localDFGraph.edges(identityPass, NodeDirection.IN).getFirst();
 						GraphElement y = localDataFlowEdge.getNode(EdgeDirection.FROM);
+						y = Utilities.parseReference(y);
 						
 						// ReturnValue (ret) -InterproceduralDataFlow-> CallSite (m)
 						GraphElement interproceduralDataFlowEdge = interproceduralDFGraph.edges(callsite, NodeDirection.IN).getFirst();
@@ -368,7 +370,7 @@ public class PurityAnalysis {
 						AtlasSet<GraphElement> parametersPassedEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow)
 								.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
 						
-						if(CallChecker.handleCall(x, y, identity, method, ret, parametersPassedEdges)){
+						if(CallChecker.handleCall(x, y, identity, method, ret, parametersPassedEdges, containingMethod)){
 							typesChanged = true;
 						}
 					} catch (Exception e){

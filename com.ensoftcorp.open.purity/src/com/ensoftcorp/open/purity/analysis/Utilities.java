@@ -365,12 +365,12 @@ public class Utilities {
 	
 	/**
 	 * Returns the fields or local variables accessed for an instance variable access
-	 * @param variableAccess
+	 * @param fieldAccess
 	 * @return
 	 */
-	public static AtlasSet<GraphElement> getAccessedContainers(GraphElement variableAccess){
+	public static AtlasSet<GraphElement> getAccessedContainers(GraphElement fieldAccess){
 		Q instanceVariableAccessedEdges = Common.universe().edgesTaggedWithAny(XCSG.InstanceVariableAccessed);
-		Q variablesAccessed = instanceVariableAccessedEdges.reverse(Common.toQ(variableAccess));
+		Q variablesAccessed = instanceVariableAccessedEdges.reverse(Common.toQ(fieldAccess));
 		Q instanceVariablesAccessed = variablesAccessed.nodesTaggedWithAny(XCSG.InstanceVariableAccess);
 		Q classVariablesAccessed = variablesAccessed.nodesTaggedWithAny(CLASS_VARIABLE_ACCESS);
 		Q localVariables = variablesAccessed.difference(instanceVariablesAccessed, classVariablesAccessed);

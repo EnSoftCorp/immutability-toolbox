@@ -28,9 +28,10 @@ public class CallChecker {
 	 * @param method
 	 * @param ret
 	 * @param parametersPassedEdges
+	 * @param containingMethod 
 	 * @return
 	 */
-	public static boolean handleCall(GraphElement x, GraphElement y, GraphElement identity, GraphElement method, GraphElement ret, AtlasSet<GraphElement> parametersPassedEdges) {
+	public static boolean handleCall(GraphElement x, GraphElement y, GraphElement identity, GraphElement method, GraphElement ret, AtlasSet<GraphElement> parametersPassedEdges, GraphElement containingMethod) {
 		
 		if(x==null){
 			Log.warning("x is null!");
@@ -80,15 +81,13 @@ public class CallChecker {
 			Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
 			Q returnValues = localDataFlowEdges.predecessors(Common.toQ(ret));
 			Q fieldValues = localDataFlowEdges.predecessors(returnValues).nodesTaggedWithAny(XCSG.InstanceVariableValue, Utilities.CLASS_VARIABLE_VALUE);
-			Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
-			Q fields = interproceduralDataFlowEdges.predecessors(fieldValues);
-			for(GraphElement field : fields.eval().nodes()){
-				for(GraphElement container : Utilities.getAccessedContainers(field)){
+			for(GraphElement fieldValue : fieldValues.eval().nodes()){
+				for(GraphElement container : Utilities.getAccessedContainers(fieldValue)){
 					if(removeTypes(container, ImmutabilityTypes.READONLY)){
 						typesChanged = true;
 					}
 					if(container.taggedWith(XCSG.ClassVariable)){
-						if(removeTypes(Utilities.getContainingMethod(x), ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)){
+						if(removeTypes(containingMethod, ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)){
 							typesChanged = true;
 						}
 					}
