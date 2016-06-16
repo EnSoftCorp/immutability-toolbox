@@ -590,10 +590,12 @@ public class CallChecker {
 		
 		GraphElement method = Utilities.getInvokedMethodSignature(unassignedCallsite);
 		
+		// TODO: is this correct?
 		if(processStrictReceiverConstraints(unassignedCallsite, method)){
 			typesChanged = true;
 		}
 		
+		// TODO: is this correct?
 		if(processStrictParameterConstraints(unassignedCallsite, method)){
 			typesChanged = true;
 		}
@@ -619,18 +621,18 @@ public class CallChecker {
 		
 		GraphElement method = Utilities.getInvokedMethodSignature(unassignedCallsite);
 		
-		// TODO: fix and enable
-//		if(processStrictParameterConstraints(unassignedCallsite, method)){
-//			typesChanged = true;
-//		}
+		// TODO: is this correct?
+		if(processStrictParameterConstraints(unassignedCallsite, method)){
+			typesChanged = true;
+		}
 		
 		// m' is the method that contains the callsite m()
 		GraphElement containingMethod = Utilities.getContainingMethod(unassignedCallsite);
 		
-		// TODO: fix and enable
-//		if(processStrictStaticDispatchConstraints(method, containingMethod)){
-//			typesChanged = true;
-//		}
+		// TODO: is this correct?
+		if(processStrictStaticDispatchConstraints(method, containingMethod)){
+			typesChanged = true;
+		}
 		
 		return typesChanged;
 	}
@@ -829,6 +831,7 @@ public class CallChecker {
 		
 		// Receiver (r) -LocalDataFlow-> IdentityPass (.this)
 		GraphElement r = localDFEdges.predecessors(identityPass).eval().nodes().getFirst();
+		r = Utilities.parseReference(r);
 
 		Set<ImmutabilityTypes> rTypes = getTypes(r);
 		

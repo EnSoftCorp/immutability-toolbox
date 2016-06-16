@@ -50,16 +50,11 @@ public class SanityChecks {
 	 * @return
 	 */
 	private static boolean methodsDoNotHaveImmutabilityTypes(){
-		int unexpectedTypes = 0; 
-		for(GraphElement ge : Common.universe().nodesTaggedWithAny(XCSG.Method).eval().nodes()){
-			if(ge.taggedWith(PurityAnalysis.READONLY) 
-					|| ge.taggedWith(PurityAnalysis.POLYREAD) 
-					|| ge.taggedWith(PurityAnalysis.MUTABLE)
-					|| ge.taggedWith(PurityAnalysis.UNTYPED)
-					|| ge.hasAttr(Utilities.IMMUTABILITY_QUALIFIERS)){
-						unexpectedTypes++;
-			}
-		}
+		long unexpectedTypes = 0;
+		unexpectedTypes += Common.universe().nodesTaggedWithAll(XCSG.Method, PurityAnalysis.READONLY).eval().nodes().size();
+		unexpectedTypes += Common.universe().nodesTaggedWithAll(XCSG.Method, PurityAnalysis.POLYREAD).eval().nodes().size();
+		unexpectedTypes += Common.universe().nodesTaggedWithAll(XCSG.Method, PurityAnalysis.MUTABLE).eval().nodes().size();
+		unexpectedTypes += Common.universe().nodesTaggedWithAll(XCSG.Method, PurityAnalysis.UNTYPED).eval().nodes().size();
 		boolean hasUnexpectedTypes = unexpectedTypes > 0;
 		if(hasUnexpectedTypes) Log.warning("There are " + unexpectedTypes + " methods that were expected to not to have immutability types that do.");
 		return hasUnexpectedTypes;

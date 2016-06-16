@@ -434,16 +434,16 @@ public class PurityAnalysis {
 			// a CHA, but we'd also have to update the callsite resolution which brought
 			// us to this point in the first place
 			GraphElement unassignedDynamicDispatchCallsite = workItem;
-//			if(CallChecker.handleUnassignedDynamicDispatchCallsites(unassignedDynamicDispatchCallsite)){
-//				typesChanged = true;
-//			}
+			if(CallChecker.handleUnassignedDynamicDispatchCallsites(unassignedDynamicDispatchCallsite)){
+				typesChanged = true;
+			}
 		} else if(workItem.taggedWith(XCSG.StaticDispatchCallSite)){
 			// constraints need to be checked for each callsite without an assignment 
 			// of this class method to satisfy constraints on parameters passed
 			GraphElement unassignedStaticDispatchCallsite = workItem;
-//			if(CallChecker.handleUnassignedStaticDispatchCallsites(unassignedStaticDispatchCallsite)){
-//				typesChanged = true;
-//			}
+			if(CallChecker.handleUnassignedStaticDispatchCallsites(unassignedStaticDispatchCallsite)){
+				typesChanged = true;
+			}
 		}
 		
 		return typesChanged;
@@ -465,7 +465,9 @@ public class PurityAnalysis {
 	 * and applies the maximal type as a tag
 	 */
 	private static void extractMaximalTypes(){
-		AtlasSet<GraphElement> attributedGraphElements = Common.universe().selectNode(Utilities.IMMUTABILITY_QUALIFIERS).eval().nodes();
+		Q methods = Common.universe().nodesTaggedWithAny(XCSG.Method);
+		Q typesToExtract = Common.universe().selectNode(Utilities.IMMUTABILITY_QUALIFIERS).difference(methods);
+		AtlasSet<GraphElement> attributedGraphElements = Common.resolve(new NullProgressMonitor(), typesToExtract.eval()).nodes();
 		for(GraphElement attributedGraphElement : attributedGraphElements){
 			LinkedList<ImmutabilityTypes> orderedTypes = new LinkedList<ImmutabilityTypes>();
 			orderedTypes.addAll(getTypes(attributedGraphElement));
@@ -478,7 +480,9 @@ public class PurityAnalysis {
 			}
 		}
 		
-		// tag the graph elements that were never touched as the default maximal type (most likely readonly)
+		// tag the graph elements that were never touched as the default maximal type
+		// the default maximal type is readonly because there is no evidence to the contrary
+		// and if there were evidence then the node would have been touched earlier
 		Q literals = Common.universe().nodesTaggedWithAll(XCSG.Literal);
 		Q parameters = Common.universe().nodesTaggedWithAny(XCSG.Parameter);
 		Q masterReturns = Common.universe().nodesTaggedWithAny(XCSG.MasterReturn);
