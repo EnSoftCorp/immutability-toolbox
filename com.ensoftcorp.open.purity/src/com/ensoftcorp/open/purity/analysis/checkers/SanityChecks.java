@@ -144,7 +144,7 @@ public class SanityChecks {
 	private static boolean gainedTypes(String... tags) {
 		int unexpectedTypes = 0;
 		for(GraphElement ge : Common.resolve(new NullProgressMonitor(), Common.universe().nodesTaggedWithAny(tags).eval()).nodes()){
-			Set<ImmutabilityTypes> defaultTypes = PurityAnalysis.getDefaultTypes(ge);
+			Set<ImmutabilityTypes> defaultTypes = Utilities.getDefaultTypes(ge);
 			if(ge.taggedWith(PurityAnalysis.READONLY) && !defaultTypes.contains(ImmutabilityTypes.READONLY)){
 				unexpectedTypes++;
 			} else if(ge.taggedWith(PurityAnalysis.POLYREAD) && !defaultTypes.contains(ImmutabilityTypes.POLYREAD)){

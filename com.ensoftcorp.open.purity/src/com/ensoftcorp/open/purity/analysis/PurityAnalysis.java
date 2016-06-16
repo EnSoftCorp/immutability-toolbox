@@ -3,7 +3,6 @@ package com.ensoftcorp.open.purity.analysis;
 import static com.ensoftcorp.open.purity.analysis.Utilities.getTypes;
 
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.Set;
 import java.util.TreeSet;
@@ -15,7 +14,6 @@ import com.ensoftcorp.atlas.core.db.graph.Graph;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.EdgeDirection;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.NodeDirection;
-import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
@@ -67,10 +65,7 @@ public class PurityAnalysis {
 	 */
 	public static final String UNTYPED = "UNTYPED";
 	
-	// caching some common graph types
-	private static Graph typeOfGraph;
-	private static AtlasSet<GraphElement> defaultReadonlyTypes;
-	
+
 	/**
 	 * Runs the side effect (purity) analysis
 	 * @param monitor 
@@ -81,9 +76,6 @@ public class PurityAnalysis {
 		
 		// TODO: remove when there are appropriate alternatives
 		Utilities.addClassVariableAccessTags();
-		
-		// cache
-		initializeCache(monitor);
 		
 		long start = System.nanoTime();
 		runAnalysis();
@@ -112,31 +104,6 @@ public class PurityAnalysis {
 		Utilities.removeClassVariableAccessTags();
 		
 		return isSane;
-	}
-
-	private static void initializeCache(IProgressMonitor monitor) {
-		typeOfGraph = Common.resolve(monitor, Common.universe().edgesTaggedWithAny(XCSG.TypeOf).eval());
-		
-		// initialize the cache of default readonly types
-		defaultReadonlyTypes = new AtlasHashSet<GraphElement>();
-		
-		// autoboxing
-		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Integer").eval().nodes().getFirst());
-		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Long").eval().nodes().getFirst());
-		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Short").eval().nodes().getFirst());
-		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Boolean").eval().nodes().getFirst());
-		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Byte").eval().nodes().getFirst());
-		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Double").eval().nodes().getFirst());
-		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Float").eval().nodes().getFirst());
-		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Character").eval().nodes().getFirst());
-		
-		// a few other objects are special cases for all practical purposes
-		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "String").eval().nodes().getFirst());
-		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Number").eval().nodes().getFirst());
-		defaultReadonlyTypes.add(Common.typeSelect("java.util.concurrent.atomic", "AtomicInteger").eval().nodes().getFirst());
-		defaultReadonlyTypes.add(Common.typeSelect("java.util.concurrent.atomic", "AtomicLong").eval().nodes().getFirst());
-		defaultReadonlyTypes.add(Common.typeSelect("java.math", "BigDecimal").eval().nodes().getFirst());
-		defaultReadonlyTypes.add(Common.typeSelect("java.math", "BigInteger").eval().nodes().getFirst());
 	}
 
 	/**
@@ -270,29 +237,9 @@ public class PurityAnalysis {
 			// incoming edges represent a read relationship in an assignment
 			// outgoing edges represent a write relationship in an assignment
 			GraphElement to = workItem;
-			if(to.taggedWith(XCSG.Cast)){
-				GraphElement current = to;
-				while(current.taggedWith(XCSG.Cast)){
-					Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
-					current = localDataFlowEdges.predecessors(Common.toQ(current)).eval().nodes().getFirst();
-				}
-				to = current;
-			}
 			AtlasSet<GraphElement> inEdges = localDFGraph.edges(to, NodeDirection.IN);
 			for(GraphElement edge : inEdges){
 				GraphElement from = edge.getNode(EdgeDirection.FROM);
-				
-				// if the from node is a cast we need to step back along data flow edges
-				// until we have found what it was casted from
-				if(from.taggedWith(XCSG.Cast)){
-					GraphElement current = from;
-					while(current.taggedWith(XCSG.Cast)){
-						Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
-						current = localDataFlowEdges.predecessors(Common.toQ(current)).eval().nodes().getFirst();
-					}
-					from = current;
-				}
-				
 				
 				boolean involvesField = false;
 				
@@ -503,9 +450,8 @@ public class PurityAnalysis {
 				// Type Rule 2 - TASSIGN
 				// let x = y
 				if(!involvesField && !involvesCallsite){
-					GraphElement x = to;
-					GraphElement y = from;
-					
+					GraphElement x = Utilities.parseReference(to);
+					GraphElement y = Utilities.parseReference(from);;
 					if(BasicAssignmentChecker.handleAssignment(x, y)){
 						typesChanged = true;
 					}
@@ -518,16 +464,16 @@ public class PurityAnalysis {
 			// a CHA, but we'd also have to update the callsite resolution which brought
 			// us to this point in the first place
 			GraphElement unassignedDynamicDispatchCallsite = workItem;
-			if(CallChecker.handleUnassignedDynamicDispatchCallsites(unassignedDynamicDispatchCallsite)){
-				typesChanged = true;
-			}
+//			if(CallChecker.handleUnassignedDynamicDispatchCallsites(unassignedDynamicDispatchCallsite)){
+//				typesChanged = true;
+//			}
 		} else if(workItem.taggedWith(XCSG.StaticDispatchCallSite)){
 			// constraints need to be checked for each callsite without an assignment 
 			// of this class method to satisfy constraints on parameters passed
 			GraphElement unassignedStaticDispatchCallsite = workItem;
-			if(CallChecker.handleUnassignedStaticDispatchCallsites(unassignedStaticDispatchCallsite)){
-				typesChanged = true;
-			}
+//			if(CallChecker.handleUnassignedStaticDispatchCallsites(unassignedStaticDispatchCallsite)){
+//				typesChanged = true;
+//			}
 		}
 		
 		return typesChanged;
@@ -543,101 +489,6 @@ public class PurityAnalysis {
 			maximalType = ImmutabilityTypes.READONLY;
 		}
 		return maximalType;
-	}
-	
-	private static GraphElement getObjectType(GraphElement ge) {
-		// ge -TypeOf-> getType
-		GraphElement typeOfEdge = typeOfGraph.edges(ge, NodeDirection.OUT).getFirst();
-		GraphElement geType = null;
-		if(typeOfEdge != null){
-			geType = typeOfEdge.getNode(EdgeDirection.TO);
-		}
-		return geType;
-	}
-
-	public static EnumSet<ImmutabilityTypes> getDefaultTypes(GraphElement ge) {
-		EnumSet<ImmutabilityTypes> qualifiers = EnumSet.noneOf(ImmutabilityTypes.class);
-		
-		GraphElement nullType = Common.universe().nodesTaggedWithAny(XCSG.Java.NullType).eval().nodes().getFirst();
-		if(ge.equals(nullType) || ge.taggedWith(XCSG.Null)){
-			// assignments of null mutate objects
-			// see https://github.com/proganalysis/type-inference/blob/master/inference-framework/checker-framework/checkers/src/checkers/inference2/reim/ReimChecker.java#L181
-			qualifiers.add(ImmutabilityTypes.READONLY);
-			// however in order to satisfy constraints the other types should be initialized
-			qualifiers.add(ImmutabilityTypes.POLYREAD);
-			qualifiers.add(ImmutabilityTypes.MUTABLE);
-		} else if(ge.taggedWith(XCSG.Literal) || ge.taggedWith(XCSG.Primitive) || isDefaultReadonlyType(getObjectType(ge))){
-			// several java objects are readonly for all practical purposes
-			// however in order to satisfy constraints the other types should be initialized
-			qualifiers.add(ImmutabilityTypes.READONLY);
-			qualifiers.add(ImmutabilityTypes.POLYREAD);
-			qualifiers.add(ImmutabilityTypes.MUTABLE);
-		} else if(ge.taggedWith(XCSG.Instantiation) || ge.taggedWith(XCSG.ArrayInstantiation)){
-			// Type Rule 1 - TNEW
-			// return type of a constructor is only mutable
-			// x = new C(); // no effect on qualifier to x
-			qualifiers.add(ImmutabilityTypes.MUTABLE);
-		} else if(ge.taggedWith(XCSG.MasterReturn)){
-			// Section 2.4 of Reference 1
-			// "Method returns are initialized S(ret) = {readonly, polyread} for each method m"
-			qualifiers.add(ImmutabilityTypes.READONLY);
-			qualifiers.add(ImmutabilityTypes.POLYREAD);
-		} else if (ge.taggedWith(XCSG.Parameter)){
-			qualifiers.add(ImmutabilityTypes.READONLY);
-			qualifiers.add(ImmutabilityTypes.POLYREAD);
-			qualifiers.add(ImmutabilityTypes.MUTABLE);
-		} else if(ge.taggedWith(XCSG.Identity)){
-			qualifiers.add(ImmutabilityTypes.READONLY);
-//			qualifiers.add(ImmutabilityTypes.POLYREAD); // TODO: this is causing problems, but...the paper specifically says its an valid type...
-			qualifiers.add(ImmutabilityTypes.MUTABLE);
-		} else if(ge.taggedWith(XCSG.InstanceVariable)){
-			// Section 2.4 of Reference 1
-			// "Fields are initialized to S(f) = {readonly, polyread}"
-			qualifiers.add(ImmutabilityTypes.READONLY);
-			qualifiers.add(ImmutabilityTypes.POLYREAD);
-		} else if(ge.taggedWith(XCSG.ClassVariable)){
-			// Section 3 of Reference 1
-			// static fields are initialized to S(sf) = {readonly, mutable}
-			qualifiers.add(ImmutabilityTypes.READONLY);
-			qualifiers.add(ImmutabilityTypes.MUTABLE);
-		} else if(ge.taggedWith(XCSG.Method)){
-			// Section 3 of Reference 1
-			// methods can have a static type of {readonly, polyread, mutable}
-			qualifiers.add(ImmutabilityTypes.READONLY);
-			qualifiers.add(ImmutabilityTypes.POLYREAD);
-			qualifiers.add(ImmutabilityTypes.MUTABLE);
-		} else if(ge.taggedWith(XCSG.Operator)){
-			// the result of a primitive operation on primitives or primitive references is always readonly
-			qualifiers.add(ImmutabilityTypes.READONLY);
-			qualifiers.add(ImmutabilityTypes.POLYREAD);
-			qualifiers.add(ImmutabilityTypes.MUTABLE);
-		} else if(ge.taggedWith(XCSG.Assignment) || ge.taggedWith(XCSG.ParameterPass)){
-			// could be a ParameterPass or local reference
-			// Section 2.4 of Reference 1
-			// "All other references are initialized to the maximal
-			// set of qualifiers, i.e. S(x) = {readonly, polyread, mutable}"
-			// But, what does it mean for a local reference to be polyread? ~Ben
-			qualifiers.add(ImmutabilityTypes.READONLY);
-//			qualifiers.add(ImmutabilityTypes.POLYREAD);
-			qualifiers.add(ImmutabilityTypes.MUTABLE);
-		} else {
-			RuntimeException e = new RuntimeException("Unexpected graph element: " + ge.address());
-			Log.error("Unexpected graph element: " + ge.address(), e);
-			throw e;
-		}
-		return qualifiers;
-	}
-	
-	/**
-	 * Returns true if the given type is a default readonly type
-	 * @param type
-	 * @return
-	 */
-	private static boolean isDefaultReadonlyType(GraphElement type) {
-		if(type == null){
-			return false;
-		}
-		return defaultReadonlyTypes.contains(type);
 	}
 	
 	/**

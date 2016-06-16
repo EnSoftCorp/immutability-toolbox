@@ -3,10 +3,14 @@ package com.ensoftcorp.open.purity.analysis;
 import java.util.EnumSet;
 import java.util.Set;
 
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
+
 import com.ensoftcorp.atlas.core.db.graph.Graph;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.EdgeDirection;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.NodeDirection;
+import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
@@ -15,6 +19,48 @@ import com.ensoftcorp.open.purity.log.Log;
 import com.ensoftcorp.open.purity.preferences.PurityPreferences;
 
 public class Utilities {
+	
+	// caching for some common graph types
+	private static boolean cacheInitialized = false;
+	private static AtlasSet<GraphElement> defaultReadonlyTypes;
+	
+	private static void initializeCache(IProgressMonitor monitor) {
+		// initialize the cache of default readonly types
+		defaultReadonlyTypes = new AtlasHashSet<GraphElement>();
+		
+		// autoboxing
+		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Integer").eval().nodes().getFirst());
+		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Long").eval().nodes().getFirst());
+		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Short").eval().nodes().getFirst());
+		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Boolean").eval().nodes().getFirst());
+		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Byte").eval().nodes().getFirst());
+		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Double").eval().nodes().getFirst());
+		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Float").eval().nodes().getFirst());
+		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Character").eval().nodes().getFirst());
+		
+		// a few other objects are special cases for all practical purposes
+		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "String").eval().nodes().getFirst());
+		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Number").eval().nodes().getFirst());
+		defaultReadonlyTypes.add(Common.typeSelect("java.util.concurrent.atomic", "AtomicInteger").eval().nodes().getFirst());
+		defaultReadonlyTypes.add(Common.typeSelect("java.util.concurrent.atomic", "AtomicLong").eval().nodes().getFirst());
+		defaultReadonlyTypes.add(Common.typeSelect("java.math", "BigDecimal").eval().nodes().getFirst());
+		defaultReadonlyTypes.add(Common.typeSelect("java.math", "BigInteger").eval().nodes().getFirst());
+	}
+	
+	/**
+	 * Returns true if the given type is a default readonly type
+	 * @param type
+	 * @return
+	 */
+	public static boolean isDefaultReadonlyType(GraphElement type) {
+		if(type == null){
+			return false;
+		}
+		if(!cacheInitialized){
+			initializeCache(new NullProgressMonitor());
+		}
+		return type.taggedWith(XCSG.Primitive) || defaultReadonlyTypes.contains(type);
+	}
 	
 	/**
 	 * Used as an attribute key to temporarily compute the potential immutability qualifiers
@@ -117,15 +163,145 @@ public class Utilities {
 		if(ge.hasAttr(IMMUTABILITY_QUALIFIERS)){
 			return (Set<ImmutabilityTypes>) ge.getAttr(IMMUTABILITY_QUALIFIERS);
 		} else {
-			EnumSet<ImmutabilityTypes> qualifiers = PurityAnalysis.getDefaultTypes(ge);
+			EnumSet<ImmutabilityTypes> qualifiers = getDefaultTypes(ge);
 			ge.putAttr(IMMUTABILITY_QUALIFIERS, qualifiers);
 			return qualifiers;
 		}
 	}
 	
+	public static GraphElement getObjectType(GraphElement ge) {
+		Q typeOfEdges = Common.universe().edgesTaggedWithAny(XCSG.TypeOf);
+		return typeOfEdges.successors(Common.toQ(ge)).eval().nodes().getFirst();
+	}
+	
+	public static GraphElement parseReference(GraphElement ge){
+		Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
+		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
+		GraphElement reference = ge;
+		while(reference != null && !isTyped(reference)){
+			// unwrap casts to reach reference
+			if(reference.taggedWith(XCSG.Cast)){
+				GraphElement current = reference;
+				while(current.taggedWith(XCSG.Cast)){
+					
+					current = localDataFlowEdges.predecessors(Common.toQ(current)).eval().nodes().getFirst();
+				}
+				reference = current;
+			}
+			
+			// get the field for instance and class variable values
+			if(reference.taggedWith(XCSG.InstanceVariableValue) || reference.taggedWith(Utilities.CLASS_VARIABLE_VALUE)){
+				reference = interproceduralDataFlowEdges.predecessors(Common.toQ(reference)).eval().nodes().getFirst();
+			}
+			
+			// TODO: handle array components
+		}
+		return reference;
+	}
+	
+	private static boolean isTyped(GraphElement ge){
+		boolean isTyped = false;
+		GraphElement nullType = Common.universe().nodesTaggedWithAny(XCSG.Java.NullType).eval().nodes().getFirst();
+		if(ge.equals(nullType) || ge.taggedWith(XCSG.Null)){
+			isTyped = true;
+		} else if(ge.taggedWith(XCSG.Literal) || isDefaultReadonlyType(getObjectType(ge))){
+			isTyped = true;
+		} else if(ge.taggedWith(XCSG.Instantiation) || ge.taggedWith(XCSG.ArrayInstantiation)){
+			isTyped = true;
+		} else if(ge.taggedWith(XCSG.MasterReturn)){
+			isTyped = true;
+		} else if (ge.taggedWith(XCSG.Parameter)){
+			isTyped = true;
+		} else if(ge.taggedWith(XCSG.Identity)){
+			isTyped = true;
+		} else if(ge.taggedWith(XCSG.InstanceVariable)){
+			isTyped = true;
+		} else if(ge.taggedWith(XCSG.ClassVariable)){
+			isTyped = true;
+		} else if(ge.taggedWith(XCSG.Method)){
+			isTyped = true;
+		} else if(ge.taggedWith(XCSG.Operator)){
+			isTyped = true;
+		} else if(ge.taggedWith(XCSG.Assignment) || ge.taggedWith(XCSG.ParameterPass)){
+			isTyped = true;
+		}
+		return isTyped;
+	}
+	
+	public static EnumSet<ImmutabilityTypes> getDefaultTypes(GraphElement ge) {
+		EnumSet<ImmutabilityTypes> qualifiers = EnumSet.noneOf(ImmutabilityTypes.class);
+		
+		GraphElement nullType = Common.universe().nodesTaggedWithAny(XCSG.Java.NullType).eval().nodes().getFirst();
+		if(ge.equals(nullType) || ge.taggedWith(XCSG.Null)){
+			// null does not modify the stack or heap so it is readonly
+			// note however that assignments of nulls to a field can still mutate an object
+			qualifiers.add(ImmutabilityTypes.READONLY);
+			// however in order to satisfy constraints the other types should be initialized
+			qualifiers.add(ImmutabilityTypes.POLYREAD);
+			qualifiers.add(ImmutabilityTypes.MUTABLE);
+		} else if(ge.taggedWith(XCSG.Literal) || isDefaultReadonlyType(Utilities.getObjectType(ge))){
+			// several java objects are readonly for all practical purposes
+			// however in order to satisfy constraints the other types should be initialized
+			qualifiers.add(ImmutabilityTypes.READONLY);
+			qualifiers.add(ImmutabilityTypes.POLYREAD);
+			qualifiers.add(ImmutabilityTypes.MUTABLE);
+		} else if(ge.taggedWith(XCSG.Instantiation) || ge.taggedWith(XCSG.ArrayInstantiation)){
+			// Type Rule 1 - TNEW
+			// return type of a constructor is only mutable
+			// x = new C(); // no effect on qualifier to x
+			qualifiers.add(ImmutabilityTypes.MUTABLE);
+		} else if(ge.taggedWith(XCSG.MasterReturn)){
+			// Section 2.4 of Reference 1
+			// "Method returns are initialized S(ret) = {readonly, polyread} for each method m"
+			qualifiers.add(ImmutabilityTypes.READONLY);
+			qualifiers.add(ImmutabilityTypes.POLYREAD);
+		} else if (ge.taggedWith(XCSG.Parameter)){
+			qualifiers.add(ImmutabilityTypes.READONLY);
+			qualifiers.add(ImmutabilityTypes.POLYREAD);
+			qualifiers.add(ImmutabilityTypes.MUTABLE);
+		} else if(ge.taggedWith(XCSG.Identity)){
+			qualifiers.add(ImmutabilityTypes.READONLY);
+//			qualifiers.add(ImmutabilityTypes.POLYREAD); // TODO: this is causing problems, but...the paper specifically says its an valid type...
+			qualifiers.add(ImmutabilityTypes.MUTABLE);
+		} else if(ge.taggedWith(XCSG.InstanceVariable)){
+			// Section 2.4 of Reference 1
+			// "Fields are initialized to S(f) = {readonly, polyread}"
+			qualifiers.add(ImmutabilityTypes.READONLY);
+			qualifiers.add(ImmutabilityTypes.POLYREAD);
+		} else if(ge.taggedWith(XCSG.ClassVariable)){
+			// Section 3 of Reference 1
+			// static fields are initialized to S(sf) = {readonly, mutable}
+			qualifiers.add(ImmutabilityTypes.READONLY);
+			qualifiers.add(ImmutabilityTypes.MUTABLE);
+		} else if(ge.taggedWith(XCSG.Method)){
+			// Section 3 of Reference 1
+			// methods can have a static type of {readonly, polyread, mutable}
+			qualifiers.add(ImmutabilityTypes.READONLY);
+			qualifiers.add(ImmutabilityTypes.POLYREAD);
+			qualifiers.add(ImmutabilityTypes.MUTABLE);
+		} else if(ge.taggedWith(XCSG.Operator)){
+			// the result of a primitive operation on primitives or primitive references is always readonly
+			qualifiers.add(ImmutabilityTypes.READONLY);
+			qualifiers.add(ImmutabilityTypes.POLYREAD);
+			qualifiers.add(ImmutabilityTypes.MUTABLE);
+		} else if(ge.taggedWith(XCSG.Assignment) || ge.taggedWith(XCSG.ParameterPass)){
+			// could be a ParameterPass or local reference
+			// Section 2.4 of Reference 1
+			// "All other references are initialized to the maximal
+			// set of qualifiers, i.e. S(x) = {readonly, polyread, mutable}"
+			// But, what does it mean for a local reference to be polyread? ~Ben
+			qualifiers.add(ImmutabilityTypes.READONLY);
+//			qualifiers.add(ImmutabilityTypes.POLYREAD);
+			qualifiers.add(ImmutabilityTypes.MUTABLE);
+		} else {
+			RuntimeException e = new RuntimeException("Unexpected graph element: " + ge.address());
+			Log.error("Unexpected graph element: " + ge.address(), e);
+			throw e;
+		}
+		return qualifiers;
+	}
+	
 	/**
-	 * TODO: fix InstanceVariableAccessed edges for class variables...
-	 * 
 	 * Returns the fields or local variables accessed for an instance variable access
 	 * @param variableAccess
 	 * @return

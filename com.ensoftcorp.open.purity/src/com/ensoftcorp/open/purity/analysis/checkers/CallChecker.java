@@ -591,14 +591,13 @@ public class CallChecker {
 		
 		GraphElement method = Utilities.getInvokedMethodSignature(unassignedCallsite);
 		
-		// TODO: fix and enable
-//		if(processStrictReceiverConstraints(unassignedCallsite, method)){
-//			typesChanged = true;
-//		}
-//		
-//		if(processStrictParameterConstraints(unassignedCallsite, method)){
-//			typesChanged = true;
-//		}
+		if(processStrictReceiverConstraints(unassignedCallsite, method)){
+			typesChanged = true;
+		}
+		
+		if(processStrictParameterConstraints(unassignedCallsite, method)){
+			typesChanged = true;
+		}
 			
 		return typesChanged;
 	}
@@ -831,6 +830,7 @@ public class CallChecker {
 		
 		// Receiver (r) -LocalDataFlow-> IdentityPass (.this)
 		GraphElement r = localDFEdges.predecessors(identityPass).eval().nodes().getFirst();
+
 		Set<ImmutabilityTypes> rTypes = getTypes(r);
 		
 		// process s(this)
