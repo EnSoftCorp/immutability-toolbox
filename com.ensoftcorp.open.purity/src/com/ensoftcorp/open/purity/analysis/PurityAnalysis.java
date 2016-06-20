@@ -93,6 +93,8 @@ public class PurityAnalysis {
 		// TODO: remove when there are appropriate alternatives
 		Utilities.addClassVariableAccessTags();
 		
+		Utilities.addVanillaDataFlowNodesTags();
+		
 		TreeSet<GraphElement> worklist = new TreeSet<GraphElement>();
 
 		// add all assignments to worklist
@@ -209,6 +211,8 @@ public class PurityAnalysis {
 		
 		// TODO: remove when there are appropriate alternatives
 		Utilities.removeClassVariableAccessTags();
+		
+//		Utilities.removeVanillaDataFlowNodesTags();
 		
 		return isSane;
 	}

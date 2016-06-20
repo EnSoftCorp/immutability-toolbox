@@ -1,5 +1,6 @@
 package com.ensoftcorp.open.purity.analysis;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Set;
 
@@ -70,6 +71,66 @@ public class Utilities {
 	public static final String CLASS_VARIABLE_ASSIGNMENT = "CLASS_VARIABLE_ASSIGNMENT";
 	public static final String CLASS_VARIABLE_VALUE = "CLASS_VARIABLE_VALUE";
 	public static final String CLASS_VARIABLE_ACCESS = "CLASS_VARIABLE_ACCESS";
+	
+	public static final String VANILLA_DATAFLOW_NODE = "VANILLA_DATAFLOW_NODE";
+	
+//	/**
+//	 * A vanilla data flow node is a node that is only tagged with XCSG.DataFlow_Node
+//	 * ASSUMPTION! Only vanilla data flow nodes are explicitly tagged with XCSG.DataFlow_Node
+//	 * @param ge
+//	 * @return
+//	 */
+//	public static boolean isVanillaDataFlowNode(GraphElement ge){
+//		boolean result = false;
+//		Iterator<String> iter = ge.explicitTagsI().iterator();
+//		while(iter.hasNext()){
+//			if(iter.next().equals(XCSG.DataFlow_Node)){
+//				result = true;
+//			}
+//		}
+//		return result;
+//	}
+	
+	/**
+	 * Adds VANILLA_DATAFLOW_NOD tags to display nodes
+	 * Vanilla data flow nodes are added for graph display reasons...
+	 */
+	public static void addVanillaDataFlowNodesTags() {
+		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Adding vanilla data flow node tags...");
+		ArrayList<String> nonVanillaDataFlowNodeTags = new ArrayList<String>();
+		for(String tag : XCSG.HIERARCHY.childrenOfOneParent(XCSG.DataFlow_Node)){
+			nonVanillaDataFlowNodeTags.add(tag);
+		}
+		String[] nonVanillaDataFlowNodeTagArray = new String[nonVanillaDataFlowNodeTags.size()];
+		nonVanillaDataFlowNodeTags.toArray(nonVanillaDataFlowNodeTagArray);
+		Q dataFlowNodes = Common.universe().nodesTaggedWithAny(XCSG.DataFlow_Node);
+		Q classVariableAccessNodes = Common.universe().nodesTaggedWithAny(CLASS_VARIABLE_ACCESS);
+		Q nonVanillaDataFlowNodes = Common.universe().nodesTaggedWithAny(nonVanillaDataFlowNodeTagArray);
+		for(GraphElement vanillaDataFlowNode : dataFlowNodes.difference(classVariableAccessNodes, nonVanillaDataFlowNodes).eval().nodes()){
+			vanillaDataFlowNode.tag(VANILLA_DATAFLOW_NODE);
+		}
+		
+		// sanity check, better to fail fast here than later...
+		Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
+		Q vanillaNodes = Common.universe().nodesTaggedWithAny("VANILLA_DATAFLOW_NODE");
+		
+		// vanilla data flow nodes should be accessible only from a local data flow edge
+		Q localVanillaNodes = localDataFlowEdges.reverseStep(vanillaNodes).retainEdges();
+		if(localVanillaNodes.intersection(vanillaNodes).eval().nodes().size() == vanillaNodes.eval().nodes().size()){
+			throw new RuntimeException("Unexpected vanilla data flow nodes!");
+		}
+	}
+	
+	/**
+	 * Removes VANILLA_DATAFLOW_NOD tags to display nodes
+	 */
+	public static void removeVanillaDataFlowNodesTags() {
+		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Removing vanilla data flow node tags...");
+		AtlasSet<GraphElement> vanillaDataFlowNodes = Common.universe().nodesTaggedWithAny(VANILLA_DATAFLOW_NODE).eval().nodes();
+		for(GraphElement vanillaDataFlowNode : vanillaDataFlowNodes){
+			vanillaDataFlowNode.tags().remove(VANILLA_DATAFLOW_NODE);
+		}
+	}
 	
 	/**
 	 * Adds CLASS_VARIABLE_ASSIGNMENT, CLASS_VARIABLE_VALUE, and CLASS_VARIABLE_ACCESS
@@ -318,7 +379,7 @@ public class Utilities {
 			return true;
 		}
 		
-		if(ge.taggedWith(XCSG.Assignment) || ge.taggedWith(XCSG.DataFlow_Node)){
+		if(ge.taggedWith(XCSG.Assignment) /*|| ge.taggedWith(XCSG.DataFlow_Node)*/){
 			if(!ge.taggedWith(XCSG.InstanceVariableAssignment) && !ge.taggedWith(Utilities.CLASS_VARIABLE_ASSIGNMENT)){
 				return true;
 			}
@@ -414,7 +475,7 @@ public class Utilities {
 			// But, what does it mean for a local reference to be polyread? ~Ben
 			qualifiers.add(ImmutabilityTypes.READONLY);
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
-		} else if(ge.taggedWith(XCSG.Assignment) || ge.taggedWith(XCSG.DataFlow_Node)){
+		} else if(ge.taggedWith(XCSG.Assignment) /*|| ge.taggedWith(XCSG.DataFlow_Node)*/){
 			if(!ge.taggedWith(XCSG.InstanceVariableAssignment) && !ge.taggedWith(Utilities.CLASS_VARIABLE_ASSIGNMENT)){
 				// could be a local reference
 				// Section 2.4 of Reference 1
