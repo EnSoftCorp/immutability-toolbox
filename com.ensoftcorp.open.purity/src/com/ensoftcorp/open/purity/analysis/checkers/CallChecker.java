@@ -87,7 +87,7 @@ public class CallChecker {
 						typesChanged = true;
 					}
 					if(container.taggedWith(XCSG.ClassVariable)){
-						if(removeTypes(containingMethod, ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)){
+						if(removeTypes(containingMethod, ImmutabilityTypes.READONLY)){
 							typesChanged = true;
 						}
 					}
@@ -409,7 +409,7 @@ public class CallChecker {
 						typesChanged = true;
 					}
 					if(container.taggedWith(XCSG.ClassVariable)){
-						if(removeTypes(Utilities.getContainingMethod(x), ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)){
+						if(removeTypes(Utilities.getContainingMethod(x), ImmutabilityTypes.READONLY)){
 							typesChanged = true;
 						}
 					}

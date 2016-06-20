@@ -176,6 +176,7 @@ public class Utilities {
 	}
 	
 	public static GraphElement parseReference(GraphElement ge){
+		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Parsing reference for " + ge.address().toAddressString());
 		Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
 		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
 		GraphElement reference = ge;
@@ -190,6 +191,13 @@ public class Utilities {
 				continue;
 			}
 			
+			if(reference.taggedWith(XCSG.CallSite)){
+				// parse return, a callsite on a callsite must be a callsite on the resulting object from the first callsite
+				GraphElement method = Utilities.getInvokedMethodSignature(reference);
+				GraphElement ret = Common.toQ(method).children().nodesTaggedWithAny(XCSG.MasterReturn).eval().nodes().getFirst();
+				reference = ret;
+			}
+			
 			// get the field for instance and class variable assignments
 			if(reference.taggedWith(XCSG.InstanceVariableAssignment) || reference.taggedWith(Utilities.CLASS_VARIABLE_ASSIGNMENT)){
 				reference = interproceduralDataFlowEdges.successors(Common.toQ(reference)).eval().nodes().getFirst();
@@ -201,26 +209,42 @@ public class Utilities {
 				reference = interproceduralDataFlowEdges.predecessors(Common.toQ(reference)).eval().nodes().getFirst();
 				continue;
 			}
-
-			// TODO: handle array components
+			
+			if(reference.taggedWith(XCSG.ArrayWrite)){
+				reference = interproceduralDataFlowEdges.successors(Common.toQ(reference)).eval().nodes().getFirst();
+				continue;
+			}
+			
+			if(reference.taggedWith(XCSG.ArrayRead)){
+				reference = interproceduralDataFlowEdges.predecessors(Common.toQ(reference)).eval().nodes().getFirst();
+				continue;
+			}
+			
+			String message = "Unhandled reference type for GraphElement " + ge.address().toAddressString();
+			RuntimeException e = new RuntimeException(message);
+			Log.error(message, e);
+			throw e;
 		}
+		
+		if(reference == null){
+			String message = "Null reference for GraphElement " + ge.address().toAddressString();
+			RuntimeException e = new RuntimeException(message);
+			Log.error(message, e);
+			throw e;
+		}
+		
 		return reference;
 	}
 	
 	public static boolean isTypable(GraphElement ge){
 		// invalid types
-		if(ge.taggedWith(XCSG.InstanceVariableAccess)){
+		if(ge.taggedWith(XCSG.InstanceVariableAccess) || ge.taggedWith(Utilities.CLASS_VARIABLE_ACCESS)){
 			return false;
 		}
 		
-		if(ge.taggedWith(Utilities.CLASS_VARIABLE_ACCESS)){
+		if(ge.taggedWith(XCSG.ArrayAccess)){
 			return false;
 		}
-		
-		if(ge.taggedWith(XCSG.ArrayComponents)){
-			return false;
-		}
-		
 		
 		// valid types
 		if(ge.taggedWith(XCSG.Null)){
@@ -265,13 +289,17 @@ public class Utilities {
 			return true;
 		}
 		
+		if(ge.taggedWith(XCSG.ArrayComponents)){
+			return true;
+		}
+		
 		if(ge.taggedWith(XCSG.Operator)){
 			return true;
 		} 
 		
-		if(isDefaultReadonlyType(getObjectType(ge))){
-			return true;
-		}
+//		if(isDefaultReadonlyType(getObjectType(ge))){
+//			return true;
+//		}
 		
 		// something made it through the gap...
 		return false;
@@ -349,13 +377,21 @@ public class Utilities {
 //				qualifiers.add(ImmutabilityTypes.POLYREAD);
 				qualifiers.add(ImmutabilityTypes.MUTABLE);
 			}
-		} else if(isDefaultReadonlyType(Utilities.getObjectType(ge))){
-			// several java objects are readonly for all practical purposes
-			// however in order to satisfy constraints the other types should be initialized
+		} else if(ge.taggedWith(XCSG.ArrayComponents)){
 			qualifiers.add(ImmutabilityTypes.READONLY);
-			qualifiers.add(ImmutabilityTypes.POLYREAD);
+//			qualifiers.add(ImmutabilityTypes.POLYREAD); // an array component is basically a local reference
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
-		} else {
+		} 
+		
+//		else if(isDefaultReadonlyType(Utilities.getObjectType(ge))){
+//			// several java objects are readonly for all practical purposes
+//			// however in order to satisfy constraints the other types should be initialized
+//			qualifiers.add(ImmutabilityTypes.READONLY);
+//			qualifiers.add(ImmutabilityTypes.POLYREAD);
+//			qualifiers.add(ImmutabilityTypes.MUTABLE);
+//		} 
+		
+		else {
 			RuntimeException e = new RuntimeException("Unexpected graph element: " + ge.address());
 			Log.error("Unexpected graph element: " + ge.address(), e);
 			throw e;

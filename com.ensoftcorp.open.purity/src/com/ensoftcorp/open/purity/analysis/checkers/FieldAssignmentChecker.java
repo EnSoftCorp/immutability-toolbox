@@ -54,7 +54,7 @@ public class FieldAssignmentChecker {
 					typesChanged = true;
 				}
 				if(container.taggedWith(XCSG.ClassVariable)){
-					if(removeTypes(Utilities.getContainingMethod(x), ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)){
+					if(removeTypes(Utilities.getContainingMethod(x), ImmutabilityTypes.READONLY)){
 						typesChanged = true;
 					}
 				}
@@ -199,7 +199,7 @@ public class FieldAssignmentChecker {
 					typesChanged = true;
 				}
 				if(container.taggedWith(XCSG.ClassVariable)){
-					if(removeTypes(Utilities.getContainingMethod(x), ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)){
+					if(removeTypes(Utilities.getContainingMethod(x), ImmutabilityTypes.READONLY)){
 						typesChanged = true;
 					}
 				}
@@ -316,7 +316,7 @@ public class FieldAssignmentChecker {
 		
 		boolean typesChanged = false;
 		
-		if(removeTypes(m, ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)){
+		if(removeTypes(m, ImmutabilityTypes.READONLY)){
 			typesChanged = true;
 		}
 

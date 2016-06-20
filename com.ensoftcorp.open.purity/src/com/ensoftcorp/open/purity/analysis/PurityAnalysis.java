@@ -120,17 +120,16 @@ public class PurityAnalysis {
 		while(true){
 			if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Purity analysis iteration: " + iteration);
 			long startIteration = System.nanoTime();
-			boolean fixedPoint = true;
-
+			
+			boolean typesChanged = false;
 			for(GraphElement workItem : worklist){
-				if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Applying inference rules for " + workItem.getAttr(XCSG.name) + ", Address: " + workItem.address().toAddressString());
-				long startInferenceRules = System.nanoTime();
-				boolean typesChanged = applyInferenceRules(workItem);
-				long stopInferenceRules = System.nanoTime();
-				if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Applied inference rules for " + workItem.getAttr(XCSG.name) + ", Address: " + workItem.address().toAddressString() + " in " + (stopInferenceRules-startInferenceRules)/1000.0/1000.0 + "ms");
-				
-				if(typesChanged){
-					fixedPoint = false;
+				try {
+					if(applyInferenceRules(workItem)){
+						typesChanged = true;
+					}
+				} catch (Exception e){
+					Log.error("Error applying inference rules for work item: " + workItem.address().toAddressString(), e);
+					throw e;
 				}
 			}
 			
@@ -147,7 +146,7 @@ public class PurityAnalysis {
 			// been reached (and perhaps a 4th iteration to realize it), but...
 			// not every reference is placed in our worklist (some references are processed
 			// on-demand) so we must run until fixed point.
-			if(fixedPoint){
+			if(!typesChanged){
 				if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Purity analysis reached fixed point in " + iteration + " iterations");
 				break;
 			} else {
@@ -181,7 +180,7 @@ public class PurityAnalysis {
 			if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Extracted maximal types in " + (stopExtraction-startExtraction)/1000.0/1000.0 + "ms");
 			
 			// tags pure methods
-			// must be run after extractMaximalTypes()
+			// must be run after extractMaximalTypes
 			if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Applying method purity tags...");
 			long startPurityTagging = System.nanoTime();
 			tagPureMethods();
@@ -222,13 +221,13 @@ public class PurityAnalysis {
 	 * @param workItem Returns true if any type qualifier sets changed
 	 * @return
 	 */
-	private static boolean applyInferenceRules(GraphElement workItem){
+	private static boolean applyInferenceRules(GraphElement workItem) throws RuntimeException {
 		
 		boolean typesChanged = false;
 		
 		if(workItem.taggedWith(XCSG.Assignment) || workItem.taggedWith(XCSG.ParameterPass)){
 			Graph localDFGraph = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow).eval();
-			Graph interproceduralDFGraph = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow).eval();
+			Q interproceduralDFEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
 			Q instanceVariableAccessedEdges = Common.universe().edgesTaggedWithAny(XCSG.InstanceVariableAccessed);
 			Graph identityPassedToGraph = Common.universe().edgesTaggedWithAny(XCSG.IdentityPassedTo).eval();
 			Graph containsGraph = Common.universe().edgesTaggedWithAny(XCSG.Contains).eval();
@@ -240,26 +239,34 @@ public class PurityAnalysis {
 			AtlasSet<GraphElement> inEdges = localDFGraph.edges(to, NodeDirection.IN);
 			for(GraphElement edge : inEdges){
 				GraphElement from = edge.getNode(EdgeDirection.FROM);
-				
+
 				boolean involvesField = false;
+				
+				GraphElement toReference = Utilities.parseReference(to);
+				if(toReference.taggedWith(XCSG.ArrayComponents)){
+					// an assignment to an array mutates the array
+					GraphElement arrayComponents = toReference;
+					Q arrayIdentityForEdges = Common.universe().edgesTaggedWithAny(XCSG.ArrayIdentityFor);
+					Q arrayWrite = interproceduralDFEdges.predecessors(Common.toQ(arrayComponents));
+					GraphElement arrayReference = arrayIdentityForEdges.predecessors(arrayWrite).eval().nodes().getFirst();
+					if(Utilities.removeTypes(arrayReference, ImmutabilityTypes.READONLY)){
+						typesChanged = true;
+					}
+				}
 				
 				// TWRITE
 				if(to.taggedWith(XCSG.InstanceVariableAssignment)){
 					// Type Rule 3 - TWRITE
 					// let, x.f = y
-					try {
-						GraphElement y = Utilities.parseReference(from);
-						GraphElement f = Utilities.parseReference(to);
+					GraphElement y = Utilities.parseReference(from);
+					GraphElement f = Utilities.parseReference(to);
 
-						// Reference (x) -InstanceVariableAccessed-> InstanceVariableAssignment (f=)
-						GraphElement instanceVariableAssignment = to; // (f=)
-						GraphElement x = instanceVariableAccessedEdges.predecessors(Common.toQ(instanceVariableAssignment)).eval().nodes().getFirst();
+					// Reference (x) -InstanceVariableAccessed-> InstanceVariableAssignment (f=)
+					GraphElement instanceVariableAssignment = to; // (f=)
+					GraphElement x = instanceVariableAccessedEdges.predecessors(Common.toQ(instanceVariableAssignment)).eval().nodes().getFirst();
 
-						if(FieldAssignmentChecker.handleFieldWrite(x, f, y)){
-							typesChanged = true;
-						}
-					} catch (Exception e){
-						if(PurityPreferences.isGeneralLoggingEnabled()) Log.error("Error parsing field write for work item: " + workItem.address().toAddressString(), e);
+					if(FieldAssignmentChecker.handleFieldWrite(x, f, y)){
+						typesChanged = true;
 					}
 					
 					involvesField = true;
@@ -269,19 +276,15 @@ public class PurityAnalysis {
 				if(from.taggedWith(XCSG.InstanceVariableValue)){
 					// Type Rule 4 - TREAD
 					// let, x = y.f
-					try {
-						GraphElement x = Utilities.parseReference(to);
-						GraphElement f = Utilities.parseReference(from);
+					GraphElement x = Utilities.parseReference(to);
+					GraphElement f = Utilities.parseReference(from);
 
-						// Reference (y) -InstanceVariableAccessed-> InstanceVariableValue (.f)
-						GraphElement instanceVariableValue = from; // (.f)
-						GraphElement y = instanceVariableAccessedEdges.predecessors(Common.toQ(instanceVariableValue)).eval().nodes().getFirst();
+					// Reference (y) -InstanceVariableAccessed-> InstanceVariableValue (.f)
+					GraphElement instanceVariableValue = from; // (.f)
+					GraphElement y = instanceVariableAccessedEdges.predecessors(Common.toQ(instanceVariableValue)).eval().nodes().getFirst();
 
-						if(FieldAssignmentChecker.handleFieldRead(x, y, f)){
-							typesChanged = true;
-						}
-					} catch (Exception e){
-						if(PurityPreferences.isGeneralLoggingEnabled()) Log.error("Error parsing field read for work item: " + workItem.address().toAddressString(), e);
+					if(FieldAssignmentChecker.handleFieldRead(x, y, f)){
+						typesChanged = true;
 					}
 					
 					involvesField = true;
@@ -289,92 +292,79 @@ public class PurityAnalysis {
 				
 				// Type Rule 7 - TSREAD
 				// let, x = sf
-				try {
-					if(from.taggedWith(Utilities.CLASS_VARIABLE_VALUE)){
-						GraphElement x = Utilities.parseReference(to);
-						GraphElement m = Utilities.getContainingMethod(to);
-						GraphElement sf = Utilities.parseReference(from);
-						
-						if(FieldAssignmentChecker.handleStaticFieldRead(x, sf, m)){
-							typesChanged = true;
-						}
-						involvesField = true;
-					}	
-				} catch (Exception e){
-					if(PurityPreferences.isGeneralLoggingEnabled()) Log.error("Error parsing static field read for work item: " + workItem.address().toAddressString(), e);
+				if(from.taggedWith(Utilities.CLASS_VARIABLE_VALUE)){
+					GraphElement x = Utilities.parseReference(to);
+					GraphElement m = Utilities.getContainingMethod(to);
+					GraphElement sf = Utilities.parseReference(from);
+					
+					if(FieldAssignmentChecker.handleStaticFieldRead(x, sf, m)){
+						typesChanged = true;
+					}
+					involvesField = true;
 				}
 				
 				// Type Rule 8 - TSWRITE
 				// let, sf = x
-				try {
-					if(to.taggedWith(Utilities.CLASS_VARIABLE_ASSIGNMENT)){
-						GraphElement sf = Utilities.parseReference(to);
-						GraphElement m = Utilities.getContainingMethod(to);
-						GraphElement x = Utilities.parseReference(from);
+				if(to.taggedWith(Utilities.CLASS_VARIABLE_ASSIGNMENT)){
+					GraphElement sf = Utilities.parseReference(to);
+					GraphElement m = Utilities.getContainingMethod(to);
+					GraphElement x = Utilities.parseReference(from);
 
-						if(FieldAssignmentChecker.handleStaticFieldWrite(sf, x, m)){
-							typesChanged = true;
-						}
-						involvesField = true;
-					}	
-				} catch (Exception e){
-					if(PurityPreferences.isGeneralLoggingEnabled()) Log.error("Error parsing static field read for work item: " + workItem.address().toAddressString(), e);
-				}
+					if(FieldAssignmentChecker.handleStaticFieldWrite(sf, x, m)){
+						typesChanged = true;
+					}
+					involvesField = true;
+				}	
 				
 				// TCALL
 				boolean involvesCallsite = false;
 				if(from.taggedWith(XCSG.DynamicDispatchCallSite)){
 					// Type Rule 5 - TCALL
 					// let, x = y.m(z)
-					try {
-						GraphElement containingMethod = Utilities.getContainingMethod(to);
-						GraphElement x = Utilities.parseReference(to);
-						GraphElement callsite = from;
-						
-						// TODO: update this with method signature
-//						GraphElement method = Utilities.getInvokedMethodSignature(callsite);
-//						GraphElement identity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
-						
-						// IdentityPass (.this) -IdentityPassedTo-> CallSite (m)
-						GraphElement identityPassedToEdge = identityPassedToGraph.edges(callsite, NodeDirection.IN).getFirst();
-						GraphElement identityPass = identityPassedToEdge.getNode(EdgeDirection.FROM);
-						
-						// Receiver (y) -LocalDataFlow-> IdentityPass (.this)
-						GraphElement localDataFlowEdge = localDFGraph.edges(identityPass, NodeDirection.IN).getFirst();
-						GraphElement y = localDataFlowEdge.getNode(EdgeDirection.FROM);
-						y = Utilities.parseReference(y);
-						
-						// ReturnValue (ret) -InterproceduralDataFlow-> CallSite (m)
-						GraphElement interproceduralDataFlowEdge = interproceduralDFGraph.edges(callsite, NodeDirection.IN).getFirst();
-						GraphElement ret = interproceduralDataFlowEdge.getNode(EdgeDirection.FROM);
-						
-						// Method (method) -Contains-> ReturnValue (ret)
-						// note that we could also use a control flow call edge to get the method
-						// Control Flow Block (cf) -Contains-> Callsite (m)
-						// Control Flow Block (cf) -Call-> Method (method)
-						GraphElement containsEdge = containsGraph.edges(ret, NodeDirection.IN).getFirst();
-						GraphElement method = containsEdge.getNode(EdgeDirection.FROM);
-						
-						// Method (method) -Contains-> Identity
-						GraphElement identity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
-						
-						// Method (method) -Contains-> Parameter (p1, p2, ...)
-						AtlasSet<GraphElement> parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
-						
-						// ControlFlow -Contains-> CallSite
-						// CallSite -Contains-> ParameterPassed (z1, z2, ...)
-						AtlasSet<GraphElement> parametersPassed = Common.toQ(callsite).parent().children().nodesTaggedWithAny(XCSG.ParameterPass).eval().nodes();
-						
-						// ParameterPassed (z1, z2, ...) -InterproceduralDataFlow-> Parameter (p1, p2, ...)
-						// such that z1-InterproceduralDataFlow->p1, z2-InterproceduralDataFlow->p2, ...
-						AtlasSet<GraphElement> parametersPassedEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow)
-								.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
-						
-						if(CallChecker.handleCall(x, y, identity, method, ret, parametersPassedEdges, containingMethod)){
-							typesChanged = true;
-						}
-					} catch (Exception e){
-						if(PurityPreferences.isGeneralLoggingEnabled()) Log.error("Error parsing callsite for work item: " + workItem.address().toAddressString(), e);
+					GraphElement containingMethod = Utilities.getContainingMethod(to);
+					GraphElement x = Utilities.parseReference(to);
+					GraphElement callsite = from;
+					
+					// TODO: update this with method signature
+//					GraphElement method = Utilities.getInvokedMethodSignature(callsite);
+//					GraphElement identity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
+					
+					// IdentityPass (.this) -IdentityPassedTo-> CallSite (m)
+					GraphElement identityPassedToEdge = identityPassedToGraph.edges(callsite, NodeDirection.IN).getFirst();
+					GraphElement identityPass = identityPassedToEdge.getNode(EdgeDirection.FROM);
+					
+					// Receiver (y) -LocalDataFlow-> IdentityPass (.this)
+					GraphElement localDataFlowEdge = localDFGraph.edges(identityPass, NodeDirection.IN).getFirst();
+					GraphElement y = localDataFlowEdge.getNode(EdgeDirection.FROM);
+					y = Utilities.parseReference(y);
+					
+					// ReturnValue (ret) -InterproceduralDataFlow-> CallSite (m)
+					GraphElement ret = interproceduralDFEdges.predecessors(Common.toQ(callsite)).eval().nodes().getFirst();
+
+					// Method (method) -Contains-> ReturnValue (ret)
+					// note that we could also use a control flow call edge to get the method
+					// Control Flow Block (cf) -Contains-> Callsite (m)
+					// Control Flow Block (cf) -Call-> Method (method)
+					GraphElement containsEdge = containsGraph.edges(ret, NodeDirection.IN).getFirst();
+					GraphElement method = containsEdge.getNode(EdgeDirection.FROM);
+					
+					// Method (method) -Contains-> Identity
+					GraphElement identity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
+					
+					// Method (method) -Contains-> Parameter (p1, p2, ...)
+					AtlasSet<GraphElement> parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
+					
+					// ControlFlow -Contains-> CallSite
+					// CallSite -Contains-> ParameterPassed (z1, z2, ...)
+					AtlasSet<GraphElement> parametersPassed = Common.toQ(callsite).parent().children().nodesTaggedWithAny(XCSG.ParameterPass).eval().nodes();
+					
+					// ParameterPassed (z1, z2, ...) -InterproceduralDataFlow-> Parameter (p1, p2, ...)
+					// such that z1-InterproceduralDataFlow->p1, z2-InterproceduralDataFlow->p2, ...
+					AtlasSet<GraphElement> parametersPassedEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow)
+							.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
+					
+					if(CallChecker.handleCall(x, y, identity, method, ret, parametersPassedEdges, containingMethod)){
+						typesChanged = true;
 					}
 					
 					involvesCallsite = true;
@@ -385,33 +375,28 @@ public class PurityAnalysis {
 					
 					// Type Rule 8 - TSCALL
 					// let, x = m(z)
-					try {
-						GraphElement x = Utilities.parseReference(to);
-						GraphElement callsite = from;
-	
-						GraphElement method = Utilities.getInvokedMethodSignature(callsite);
+					GraphElement x = Utilities.parseReference(to);
+					GraphElement callsite = from;
 
-						// ReturnValue (ret) -InterproceduralDataFlow-> CallSite (m)
-						GraphElement interproceduralDataFlowEdge = interproceduralDFGraph.edges(callsite, NodeDirection.IN).getFirst();
-						GraphElement ret = interproceduralDataFlowEdge.getNode(EdgeDirection.FROM);
-						
-						// Method (method) -Contains-> Parameter (p1, p2, ...)
-						AtlasSet<GraphElement> parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
-						
-						// ControlFlow -Contains-> CallSite
-						// CallSite -Contains-> ParameterPassed (z1, z2, ...)
-						AtlasSet<GraphElement> parametersPassed = Common.toQ(callsite).parent().children().nodesTaggedWithAny(XCSG.ParameterPass).eval().nodes();
-						
-						// ParameterPassed (z1, z2, ...) -InterproceduralDataFlow-> Parameter (p1, p2, ...)
-						// such that z1-InterproceduralDataFlow->p1, z2-InterproceduralDataFlow->p2, ...
-						AtlasSet<GraphElement> parametersPassedEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow)
-								.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
-						
-						if(CallChecker.handleStaticCall(x, callsite, method, ret, parametersPassedEdges)){
-							typesChanged = true;
-						}
-					} catch (Exception e){
-						if(PurityPreferences.isGeneralLoggingEnabled()) Log.error("Error parsing callsite for work item: " + workItem.address().toAddressString(), e);
+					GraphElement method = Utilities.getInvokedMethodSignature(callsite);
+
+					// ReturnValue (ret) -InterproceduralDataFlow-> CallSite (m)
+					GraphElement ret = interproceduralDFEdges.predecessors(Common.toQ(callsite)).eval().nodes().getFirst();
+					
+					// Method (method) -Contains-> Parameter (p1, p2, ...)
+					AtlasSet<GraphElement> parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
+					
+					// ControlFlow -Contains-> CallSite
+					// CallSite -Contains-> ParameterPassed (z1, z2, ...)
+					AtlasSet<GraphElement> parametersPassed = Common.toQ(callsite).parent().children().nodesTaggedWithAny(XCSG.ParameterPass).eval().nodes();
+					
+					// ParameterPassed (z1, z2, ...) -InterproceduralDataFlow-> Parameter (p1, p2, ...)
+					// such that z1-InterproceduralDataFlow->p1, z2-InterproceduralDataFlow->p2, ...
+					AtlasSet<GraphElement> parametersPassedEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow)
+							.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
+					
+					if(CallChecker.handleStaticCall(x, callsite, method, ret, parametersPassedEdges)){
+						typesChanged = true;
 					}
 					
 					involvesCallsite = true;
