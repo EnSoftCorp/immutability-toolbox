@@ -196,6 +196,7 @@ public class Utilities {
 				GraphElement method = Utilities.getInvokedMethodSignature(reference);
 				GraphElement ret = Common.toQ(method).children().nodesTaggedWithAny(XCSG.MasterReturn).eval().nodes().getFirst();
 				reference = ret;
+				continue;
 			}
 			
 			// get the field for instance and class variable assignments
@@ -297,6 +298,14 @@ public class Utilities {
 			return true;
 		} 
 		
+		if(ge.taggedWith(XCSG.CaughtValue)){
+			return true;
+		} 
+		
+		if(ge.taggedWith(XCSG.ElementFromCollection)){
+			return true;
+		}
+		
 //		if(isDefaultReadonlyType(getObjectType(ge))){
 //			return true;
 //		}
@@ -343,7 +352,8 @@ public class Utilities {
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		} else if(ge.taggedWith(XCSG.Identity)){
 			qualifiers.add(ImmutabilityTypes.READONLY);
-//			qualifiers.add(ImmutabilityTypes.POLYREAD); // TODO: this is causing problems, but...the paper specifically says its an valid type...
+			// TODO: this is causing problems, but...the reference 1 specifically says its an valid type...
+//			qualifiers.add(ImmutabilityTypes.POLYREAD);
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		} else if(ge.taggedWith(XCSG.InstanceVariable)){
 			// Section 2.4 of Reference 1
@@ -366,6 +376,18 @@ public class Utilities {
 			qualifiers.add(ImmutabilityTypes.READONLY);
 			qualifiers.add(ImmutabilityTypes.POLYREAD);
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
+		} else if(ge.taggedWith(XCSG.ArrayComponents)){
+			qualifiers.add(ImmutabilityTypes.READONLY);
+//			qualifiers.add(ImmutabilityTypes.POLYREAD); // an array component is basically a local reference, TODO: what about array fields?
+			qualifiers.add(ImmutabilityTypes.MUTABLE);
+		} else if(ge.taggedWith(XCSG.CaughtValue)){
+			// caught exceptions could be polyread since they could come from multiple call stacks
+			qualifiers.add(ImmutabilityTypes.READONLY);
+			qualifiers.add(ImmutabilityTypes.POLYREAD); 
+			qualifiers.add(ImmutabilityTypes.MUTABLE);
+		}  else if(ge.taggedWith(XCSG.ElementFromCollection)){
+			qualifiers.add(ImmutabilityTypes.READONLY);
+			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		} else if(ge.taggedWith(XCSG.Assignment) || ge.taggedWith(XCSG.ParameterPass)){
 			if(!ge.taggedWith(XCSG.InstanceVariableAssignment) && !ge.taggedWith(Utilities.CLASS_VARIABLE_ASSIGNMENT)){
 				// could be a ParameterPass or local reference
@@ -374,14 +396,9 @@ public class Utilities {
 				// set of qualifiers, i.e. S(x) = {readonly, polyread, mutable}"
 				// But, what does it mean for a local reference to be polyread? ~Ben
 				qualifiers.add(ImmutabilityTypes.READONLY);
-//				qualifiers.add(ImmutabilityTypes.POLYREAD);
 				qualifiers.add(ImmutabilityTypes.MUTABLE);
 			}
-		} else if(ge.taggedWith(XCSG.ArrayComponents)){
-			qualifiers.add(ImmutabilityTypes.READONLY);
-//			qualifiers.add(ImmutabilityTypes.POLYREAD); // an array component is basically a local reference
-			qualifiers.add(ImmutabilityTypes.MUTABLE);
-		} 
+		}
 		
 //		else if(isDefaultReadonlyType(Utilities.getObjectType(ge))){
 //			// several java objects are readonly for all practical purposes
