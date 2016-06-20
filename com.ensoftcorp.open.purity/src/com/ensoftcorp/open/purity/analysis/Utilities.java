@@ -114,10 +114,16 @@ public class Utilities {
 		Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
 		Q displayNodes = Common.universe().nodesTaggedWithAny(DATAFLOW_DISPLAY_NODE);
 		
-		// vanilla data flow nodes should be accessible only from a local data flow edge
+		// data flow display nodes should be accessible only from a local data flow edge
 		Q localDataFlowDisplayNodes = localDataFlowEdges.reverseStep(displayNodes).retainEdges();
 		if(localDataFlowDisplayNodes.intersection(displayNodes).eval().nodes().size() != displayNodes.eval().nodes().size()){
-			throw new RuntimeException("Unexpected display data flow nodes!");
+			throw new RuntimeException("Unexpected data flow display nodes!");
+		}
+		
+		// data flow display nodes parents should not also be data flow display nodes
+		Q dataFlowDisplayNodeParents = localDataFlowEdges.predecessors(displayNodes);
+		if(!dataFlowDisplayNodeParents.nodesTaggedWithAny(DATAFLOW_DISPLAY_NODE).eval().nodes().isEmpty()){
+			throw new RuntimeException("Unexpected data flow display nodes parents!");
 		}
 	}
 	
@@ -130,6 +136,12 @@ public class Utilities {
 		for(GraphElement dataFlowDisplayNode : dataFlowDisplayNodes){
 			dataFlowDisplayNode.tags().remove(DATAFLOW_DISPLAY_NODE);
 		}
+	}
+	
+	public static AtlasSet<GraphElement> getDisplayNodeReferences(GraphElement displayNode){
+		Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
+		Q dataFlowDisplayNodeParents = localDataFlowEdges.predecessors(Common.toQ(displayNode));
+		return dataFlowDisplayNodeParents.eval().nodes();
 	}
 	
 	/**
@@ -234,17 +246,19 @@ public class Utilities {
 	
 	public static GraphElement parseReference(GraphElement ge){
 		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Parsing reference for " + ge.address().toAddressString());
-		Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
+		Q dataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.DataFlow_Edge);
 		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
 		GraphElement reference = ge;
 		while(reference != null && needsProcessing(reference)){
-			// unwrap casts to reach reference
+			// TODO: it may be possible for more than one cast predecessor
 			if(reference.taggedWith(XCSG.Cast)){
-				GraphElement current = reference;
-				while(current.taggedWith(XCSG.Cast)){
-					current = localDataFlowEdges.predecessors(Common.toQ(current)).eval().nodes().getFirst();
-				}
-				reference = current;
+				reference = dataFlowEdges.predecessors(Common.toQ(reference)).eval().nodes().getFirst();
+				continue;
+			}
+			
+			// TODO: it may be possible for more than one display node predecessor
+			if(reference.taggedWith(DATAFLOW_DISPLAY_NODE)){
+				reference = Utilities.getDisplayNodeReferences(reference).getFirst();
 				continue;
 			}
 			
@@ -297,6 +311,10 @@ public class Utilities {
 	}
 	
 	private static boolean needsProcessing(GraphElement ge){
+		if(ge.taggedWith(DATAFLOW_DISPLAY_NODE)){
+			return true;
+		}
+		
 		if(ge.taggedWith(XCSG.Cast)){
 			return true;
 		}
