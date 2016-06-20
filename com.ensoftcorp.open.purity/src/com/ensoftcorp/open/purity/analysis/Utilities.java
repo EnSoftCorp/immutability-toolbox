@@ -180,7 +180,7 @@ public class Utilities {
 		Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
 		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
 		GraphElement reference = ge;
-		while(reference != null && !isTypable(reference)){
+		while(reference != null && needsProcessing(reference)){
 			// unwrap casts to reach reference
 			if(reference.taggedWith(XCSG.Cast)){
 				GraphElement current = reference;
@@ -211,11 +211,13 @@ public class Utilities {
 				continue;
 			}
 			
+			// get the array components being written to
 			if(reference.taggedWith(XCSG.ArrayWrite)){
 				reference = interproceduralDataFlowEdges.successors(Common.toQ(reference)).eval().nodes().getFirst();
 				continue;
 			}
 			
+			// get the array components being read from
 			if(reference.taggedWith(XCSG.ArrayRead)){
 				reference = interproceduralDataFlowEdges.predecessors(Common.toQ(reference)).eval().nodes().getFirst();
 				continue;
@@ -235,6 +237,26 @@ public class Utilities {
 		}
 		
 		return reference;
+	}
+	
+	private static boolean needsProcessing(GraphElement ge){
+		if(ge.taggedWith(XCSG.Cast)){
+			return true;
+		}
+		
+		if(ge.taggedWith(XCSG.CallSite)){
+			return true;
+		}
+		
+		if(ge.taggedWith(XCSG.InstanceVariableAccess) || ge.taggedWith(Utilities.CLASS_VARIABLE_ACCESS)){
+			return true;
+		}
+		
+		if(ge.taggedWith(XCSG.ArrayAccess)){
+			return true;
+		}
+		
+		return !isTypable(ge);
 	}
 	
 	public static boolean isTypable(GraphElement ge){
@@ -280,17 +302,11 @@ public class Utilities {
 			return true;
 		}
 		
-		if(ge.taggedWith(XCSG.Assignment)){
-			if(!ge.taggedWith(XCSG.InstanceVariableAssignment) && !ge.taggedWith(Utilities.CLASS_VARIABLE_ASSIGNMENT)){
-				return true;
-			}
-		}
-		
-		if(ge.taggedWith(XCSG.ParameterPass)){
+		if(ge.taggedWith(XCSG.ArrayComponents)){
 			return true;
 		}
 		
-		if(ge.taggedWith(XCSG.ArrayComponents)){
+		if(ge.taggedWith(XCSG.ParameterPass)){
 			return true;
 		}
 		
@@ -304,6 +320,12 @@ public class Utilities {
 		
 		if(ge.taggedWith(XCSG.ElementFromCollection)){
 			return true;
+		}
+		
+		if(ge.taggedWith(XCSG.Assignment) || ge.taggedWith(XCSG.DataFlow_Node)){
+			if(!ge.taggedWith(XCSG.InstanceVariableAssignment) && !ge.taggedWith(Utilities.CLASS_VARIABLE_ASSIGNMENT)){
+				return true;
+			}
 		}
 		
 //		if(isDefaultReadonlyType(getObjectType(ge))){
@@ -389,9 +411,16 @@ public class Utilities {
 			// TODO: should probably treat these like array components (mutations to these mutate the collection)
 			qualifiers.add(ImmutabilityTypes.READONLY);
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
-		} else if(ge.taggedWith(XCSG.Assignment) || ge.taggedWith(XCSG.ParameterPass)){
+		} else if(ge.taggedWith(XCSG.ParameterPass)){
+			// Section 2.4 of Reference 1
+			// "All other references are initialized to the maximal
+			// set of qualifiers, i.e. S(x) = {readonly, polyread, mutable}"
+			// But, what does it mean for a local reference to be polyread? ~Ben
+			qualifiers.add(ImmutabilityTypes.READONLY);
+			qualifiers.add(ImmutabilityTypes.MUTABLE);
+		} else if(ge.taggedWith(XCSG.Assignment) || ge.taggedWith(XCSG.DataFlow_Node)){
 			if(!ge.taggedWith(XCSG.InstanceVariableAssignment) && !ge.taggedWith(Utilities.CLASS_VARIABLE_ASSIGNMENT)){
-				// could be a ParameterPass or local reference
+				// could be a local reference
 				// Section 2.4 of Reference 1
 				// "All other references are initialized to the maximal
 				// set of qualifiers, i.e. S(x) = {readonly, polyread, mutable}"
