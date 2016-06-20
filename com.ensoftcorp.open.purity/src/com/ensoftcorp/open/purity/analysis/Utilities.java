@@ -3,14 +3,10 @@ package com.ensoftcorp.open.purity.analysis;
 import java.util.EnumSet;
 import java.util.Set;
 
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.NullProgressMonitor;
-
 import com.ensoftcorp.atlas.core.db.graph.Graph;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.EdgeDirection;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.NodeDirection;
-import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
@@ -20,50 +16,50 @@ import com.ensoftcorp.open.purity.preferences.PurityPreferences;
 
 public class Utilities {
 	
-	// caching for some common graph types
-	private static boolean cacheInitialized = false;
-	private static AtlasSet<GraphElement> defaultReadonlyTypes;
-	
-	private static void initializeCache(IProgressMonitor monitor) {
-		// initialize the cache of default readonly types
-		defaultReadonlyTypes = new AtlasHashSet<GraphElement>();
-		
-		// null types
-		defaultReadonlyTypes.add(Common.universe().nodesTaggedWithAny(XCSG.Java.NullType).eval().nodes().getFirst());
-		
-		// autoboxing
-		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Integer").eval().nodes().getFirst());
-		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Long").eval().nodes().getFirst());
-		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Short").eval().nodes().getFirst());
-		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Boolean").eval().nodes().getFirst());
-		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Byte").eval().nodes().getFirst());
-		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Double").eval().nodes().getFirst());
-		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Float").eval().nodes().getFirst());
-		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Character").eval().nodes().getFirst());
-		
-		// a few other objects are special cases for all practical purposes
-		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "String").eval().nodes().getFirst());
-		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Number").eval().nodes().getFirst());
-		defaultReadonlyTypes.add(Common.typeSelect("java.util.concurrent.atomic", "AtomicInteger").eval().nodes().getFirst());
-		defaultReadonlyTypes.add(Common.typeSelect("java.util.concurrent.atomic", "AtomicLong").eval().nodes().getFirst());
-		defaultReadonlyTypes.add(Common.typeSelect("java.math", "BigDecimal").eval().nodes().getFirst());
-		defaultReadonlyTypes.add(Common.typeSelect("java.math", "BigInteger").eval().nodes().getFirst());
-	}
-	
-	/**
-	 * Returns true if the given type is a default readonly type
-	 * @param type
-	 * @return
-	 */
-	public static boolean isDefaultReadonlyType(GraphElement type) {
-		if(type == null){
-			return false;
-		}
-		if(!cacheInitialized){
-			initializeCache(new NullProgressMonitor());
-		}
-		return type.taggedWith(XCSG.Primitive) || defaultReadonlyTypes.contains(type);
-	}
+//	// caching for some common graph types
+//	private static boolean cacheInitialized = false;
+//	private static AtlasSet<GraphElement> defaultReadonlyTypes;
+//	
+//	private static void initializeCache(IProgressMonitor monitor) {
+//		// initialize the cache of default readonly types
+//		defaultReadonlyTypes = new AtlasHashSet<GraphElement>();
+//		
+//		// null types
+//		defaultReadonlyTypes.add(Common.universe().nodesTaggedWithAny(XCSG.Java.NullType).eval().nodes().getFirst());
+//		
+//		// autoboxing
+//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Integer").eval().nodes().getFirst());
+//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Long").eval().nodes().getFirst());
+//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Short").eval().nodes().getFirst());
+//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Boolean").eval().nodes().getFirst());
+//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Byte").eval().nodes().getFirst());
+//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Double").eval().nodes().getFirst());
+//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Float").eval().nodes().getFirst());
+//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Character").eval().nodes().getFirst());
+//		
+//		// a few other objects are special cases for all practical purposes
+//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "String").eval().nodes().getFirst());
+//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Number").eval().nodes().getFirst());
+//		defaultReadonlyTypes.add(Common.typeSelect("java.util.concurrent.atomic", "AtomicInteger").eval().nodes().getFirst());
+//		defaultReadonlyTypes.add(Common.typeSelect("java.util.concurrent.atomic", "AtomicLong").eval().nodes().getFirst());
+//		defaultReadonlyTypes.add(Common.typeSelect("java.math", "BigDecimal").eval().nodes().getFirst());
+//		defaultReadonlyTypes.add(Common.typeSelect("java.math", "BigInteger").eval().nodes().getFirst());
+//	}
+//	
+//	/**
+//	 * Returns true if the given type is a default readonly type
+//	 * @param type
+//	 * @return
+//	 */
+//	public static boolean isDefaultReadonlyType(GraphElement type) {
+//		if(type == null){
+//			return false;
+//		}
+//		if(!cacheInitialized){
+//			initializeCache(new NullProgressMonitor());
+//		}
+//		return type.taggedWith(XCSG.Primitive) || defaultReadonlyTypes.contains(type);
+//	}
 	
 	/**
 	 * Used as an attribute key to temporarily compute the potential immutability qualifiers
