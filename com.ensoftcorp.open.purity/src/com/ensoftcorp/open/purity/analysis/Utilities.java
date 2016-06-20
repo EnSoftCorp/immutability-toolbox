@@ -386,6 +386,7 @@ public class Utilities {
 			qualifiers.add(ImmutabilityTypes.POLYREAD); 
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		}  else if(ge.taggedWith(XCSG.ElementFromCollection)){
+			// TODO: should probably treat these like array components (mutations to these mutate the collection)
 			qualifiers.add(ImmutabilityTypes.READONLY);
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		} else if(ge.taggedWith(XCSG.Assignment) || ge.taggedWith(XCSG.ParameterPass)){
