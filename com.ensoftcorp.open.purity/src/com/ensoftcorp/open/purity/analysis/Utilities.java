@@ -72,7 +72,7 @@ public class Utilities {
 	public static final String CLASS_VARIABLE_VALUE = "CLASS_VARIABLE_VALUE";
 	public static final String CLASS_VARIABLE_ACCESS = "CLASS_VARIABLE_ACCESS";
 	
-	public static final String VANILLA_DATAFLOW_NODE = "VANILLA_DATAFLOW_NODE";
+	public static final String DATAFLOW_DISPLAY_NODE = "DATAFLOW_DISPLAY_NODE";
 	
 //	/**
 //	 * A vanilla data flow node is a node that is only tagged with XCSG.DataFlow_Node
@@ -92,43 +92,43 @@ public class Utilities {
 //	}
 	
 	/**
-	 * Adds VANILLA_DATAFLOW_NODE tags to display nodes
-	 * Vanilla data flow nodes are added for graph display reasons...
+	 * Adds DATAFLOW_DISPLAY_NODE tags to display nodes
+	 * Data flow display nodes are added for graph display reasons...
 	 */
-	public static void addVanillaDataFlowNodesTags() {
-		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Adding vanilla data flow node tags...");
-		ArrayList<String> nonVanillaDataFlowNodeTags = new ArrayList<String>();
+	public static void addDataFlowDisplayNodeTags() {
+		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Adding data flow display node tags...");
+		ArrayList<String> nonDataFlowDisplayNodeTags = new ArrayList<String>();
 		for(String tag : XCSG.HIERARCHY.childrenOfOneParent(XCSG.DataFlow_Node)){
-			nonVanillaDataFlowNodeTags.add(tag);
+			nonDataFlowDisplayNodeTags.add(tag);
 		}
-		String[] nonVanillaDataFlowNodeTagArray = new String[nonVanillaDataFlowNodeTags.size()];
-		nonVanillaDataFlowNodeTags.toArray(nonVanillaDataFlowNodeTagArray);
+		String[] nonDataFlowDisplayNodeTagArray = new String[nonDataFlowDisplayNodeTags.size()];
+		nonDataFlowDisplayNodeTags.toArray(nonDataFlowDisplayNodeTagArray);
 		Q dataFlowNodes = Common.universe().nodesTaggedWithAny(XCSG.DataFlow_Node);
 		Q classVariableAccessNodes = Common.universe().nodesTaggedWithAny(CLASS_VARIABLE_ACCESS);
-		Q nonVanillaDataFlowNodes = Common.universe().nodesTaggedWithAny(nonVanillaDataFlowNodeTagArray);
-		for(GraphElement vanillaDataFlowNode : dataFlowNodes.difference(classVariableAccessNodes, nonVanillaDataFlowNodes).eval().nodes()){
-			vanillaDataFlowNode.tag(VANILLA_DATAFLOW_NODE);
+		Q nonVanillaDataFlowNodes = Common.universe().nodesTaggedWithAny(nonDataFlowDisplayNodeTagArray);
+		for(GraphElement dataFlowDisplayNode : dataFlowNodes.difference(classVariableAccessNodes, nonVanillaDataFlowNodes).eval().nodes()){
+			dataFlowDisplayNode.tag(DATAFLOW_DISPLAY_NODE);
 		}
 		
 		// sanity check, better to fail fast here than later...
 		Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
-		Q vanillaNodes = Common.universe().nodesTaggedWithAny("VANILLA_DATAFLOW_NODE");
+		Q displayNodes = Common.universe().nodesTaggedWithAny(DATAFLOW_DISPLAY_NODE);
 		
 		// vanilla data flow nodes should be accessible only from a local data flow edge
-		Q localVanillaNodes = localDataFlowEdges.reverseStep(vanillaNodes).retainEdges();
-		if(localVanillaNodes.intersection(vanillaNodes).eval().nodes().size() != vanillaNodes.eval().nodes().size()){
-			throw new RuntimeException("Unexpected vanilla data flow nodes!");
+		Q localDataFlowDisplayNodes = localDataFlowEdges.reverseStep(displayNodes).retainEdges();
+		if(localDataFlowDisplayNodes.intersection(displayNodes).eval().nodes().size() != displayNodes.eval().nodes().size()){
+			throw new RuntimeException("Unexpected display data flow nodes!");
 		}
 	}
 	
 	/**
-	 * Removes VANILLA_DATAFLOW_NOD tags to display nodes
+	 * Removes DATAFLOW_DISPLAY_NODE tags to display nodes
 	 */
-	public static void removeVanillaDataFlowNodesTags() {
-		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Removing vanilla data flow node tags...");
-		AtlasSet<GraphElement> vanillaDataFlowNodes = Common.universe().nodesTaggedWithAny(VANILLA_DATAFLOW_NODE).eval().nodes();
-		for(GraphElement vanillaDataFlowNode : vanillaDataFlowNodes){
-			vanillaDataFlowNode.tags().remove(VANILLA_DATAFLOW_NODE);
+	public static void removeDataFlowDisplayNodeTags() {
+		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Removing data flow display node tags...");
+		AtlasSet<GraphElement> dataFlowDisplayNodes = Common.universe().nodesTaggedWithAny(DATAFLOW_DISPLAY_NODE).eval().nodes();
+		for(GraphElement dataFlowDisplayNode : dataFlowDisplayNodes){
+			dataFlowDisplayNode.tags().remove(DATAFLOW_DISPLAY_NODE);
 		}
 	}
 	
