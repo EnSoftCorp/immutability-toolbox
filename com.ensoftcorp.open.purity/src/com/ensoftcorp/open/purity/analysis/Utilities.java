@@ -92,7 +92,7 @@ public class Utilities {
 //	}
 	
 	/**
-	 * Adds VANILLA_DATAFLOW_NOD tags to display nodes
+	 * Adds VANILLA_DATAFLOW_NODE tags to display nodes
 	 * Vanilla data flow nodes are added for graph display reasons...
 	 */
 	public static void addVanillaDataFlowNodesTags() {
@@ -116,7 +116,7 @@ public class Utilities {
 		
 		// vanilla data flow nodes should be accessible only from a local data flow edge
 		Q localVanillaNodes = localDataFlowEdges.reverseStep(vanillaNodes).retainEdges();
-		if(localVanillaNodes.intersection(vanillaNodes).eval().nodes().size() == vanillaNodes.eval().nodes().size()){
+		if(localVanillaNodes.intersection(vanillaNodes).eval().nodes().size() != vanillaNodes.eval().nodes().size()){
 			throw new RuntimeException("Unexpected vanilla data flow nodes!");
 		}
 	}
