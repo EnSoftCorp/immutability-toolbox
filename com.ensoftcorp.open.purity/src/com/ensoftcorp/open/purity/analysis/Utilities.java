@@ -3,11 +3,13 @@ package com.ensoftcorp.open.purity.analysis;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Set;
+import java.util.TreeSet;
 
 import com.ensoftcorp.atlas.core.db.graph.Graph;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.EdgeDirection;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.NodeDirection;
+import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
@@ -224,70 +226,91 @@ public class Utilities {
 		return typeOfEdges.successors(Common.toQ(ge)).eval().nodes().getFirst();
 	}
 	
-	public static GraphElement parseReference(GraphElement ge){
+	public static AtlasSet<GraphElement> parseReferences(GraphElement ge){
 		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Parsing reference for " + ge.address().toAddressString());
+		AtlasSet<GraphElement> parsedReferences = new AtlasHashSet<GraphElement>();
+		TreeSet<GraphElement> worklist = new TreeSet<GraphElement>();
+		worklist.add(ge);
+		
 		Q dataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.DataFlow_Edge);
 		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
-		GraphElement reference = ge;
-		while(reference != null && needsProcessing(reference)){
-			// TODO: it may be possible for more than one cast predecessor
-			if(reference.taggedWith(XCSG.Cast)){
-				reference = dataFlowEdges.predecessors(Common.toQ(reference)).eval().nodes().getFirst();
-				continue;
+		
+		while(!worklist.isEmpty()){
+			GraphElement reference = worklist.pollFirst();
+			if(reference != null && needsProcessing(reference)){
+				// TODO: it may be possible for more than one cast predecessor
+				if(reference.taggedWith(XCSG.Cast)){
+					for(GraphElement workItem : dataFlowEdges.predecessors(Common.toQ(reference)).eval().nodes()){
+						worklist.add(workItem);
+					}
+					continue;
+				}
+				
+				// TODO: it may be possible for more than one display node predecessor
+				if(reference.taggedWith(DATAFLOW_DISPLAY_NODE)){
+					for(GraphElement workItem : Utilities.getDisplayNodeReferences(reference)){
+						worklist.add(workItem);
+					}
+					continue;
+				}
+				
+				if(reference.taggedWith(XCSG.CallSite)){
+					// parse return, a callsite on a callsite must be a callsite on the resulting object from the first callsite
+					GraphElement method = Utilities.getInvokedMethodSignature(reference);
+					GraphElement ret = Common.toQ(method).children().nodesTaggedWithAny(XCSG.MasterReturn).eval().nodes().getFirst();
+					reference = ret;
+					continue;
+				}
+				
+				// get the field for instance and class variable assignments
+				if(reference.taggedWith(XCSG.InstanceVariableAssignment) || reference.taggedWith(Utilities.CLASS_VARIABLE_ASSIGNMENT)){
+					for(GraphElement workItem : interproceduralDataFlowEdges.successors(Common.toQ(reference)).eval().nodes()){
+						worklist.add(workItem);
+					}
+					continue;
+				}
+				
+				// get the field for instance and class variable values
+				if(reference.taggedWith(XCSG.InstanceVariableValue) || reference.taggedWith(Utilities.CLASS_VARIABLE_VALUE)){
+					for(GraphElement workItem : interproceduralDataFlowEdges.predecessors(Common.toQ(reference)).eval().nodes()){
+						worklist.add(workItem);
+					}
+					continue;
+				}
+				
+				// get the array components being written to
+				if(reference.taggedWith(XCSG.ArrayWrite)){
+					for(GraphElement workItem : interproceduralDataFlowEdges.successors(Common.toQ(reference)).eval().nodes()){
+						worklist.add(workItem);
+					}
+					continue;
+				}
+				
+				// get the array components being read from
+				if(reference.taggedWith(XCSG.ArrayRead)){
+					for(GraphElement workItem : interproceduralDataFlowEdges.predecessors(Common.toQ(reference)).eval().nodes()){
+						worklist.add(workItem);
+					}
+					continue;
+				}
+				
+				String message = "Unhandled reference type for GraphElement " + ge.address().toAddressString();
+				RuntimeException e = new RuntimeException(message);
+				Log.error(message, e);
+				throw e;
+			} else {
+				if(reference == null){
+					String message = "Null reference for GraphElement " + ge.address().toAddressString();
+					RuntimeException e = new RuntimeException(message);
+					Log.error(message, e);
+					throw e;
+				} else {
+					parsedReferences.add(reference);
+				}
 			}
-			
-			// TODO: it may be possible for more than one display node predecessor
-			if(reference.taggedWith(DATAFLOW_DISPLAY_NODE)){
-				reference = Utilities.getDisplayNodeReferences(reference).getFirst();
-				continue;
-			}
-			
-			if(reference.taggedWith(XCSG.CallSite)){
-				// parse return, a callsite on a callsite must be a callsite on the resulting object from the first callsite
-				GraphElement method = Utilities.getInvokedMethodSignature(reference);
-				GraphElement ret = Common.toQ(method).children().nodesTaggedWithAny(XCSG.MasterReturn).eval().nodes().getFirst();
-				reference = ret;
-				continue;
-			}
-			
-			// get the field for instance and class variable assignments
-			if(reference.taggedWith(XCSG.InstanceVariableAssignment) || reference.taggedWith(Utilities.CLASS_VARIABLE_ASSIGNMENT)){
-				reference = interproceduralDataFlowEdges.successors(Common.toQ(reference)).eval().nodes().getFirst();
-				continue;
-			}
-			
-			// get the field for instance and class variable values
-			if(reference.taggedWith(XCSG.InstanceVariableValue) || reference.taggedWith(Utilities.CLASS_VARIABLE_VALUE)){
-				reference = interproceduralDataFlowEdges.predecessors(Common.toQ(reference)).eval().nodes().getFirst();
-				continue;
-			}
-			
-			// get the array components being written to
-			if(reference.taggedWith(XCSG.ArrayWrite)){
-				reference = interproceduralDataFlowEdges.successors(Common.toQ(reference)).eval().nodes().getFirst();
-				continue;
-			}
-			
-			// get the array components being read from
-			if(reference.taggedWith(XCSG.ArrayRead)){
-				reference = interproceduralDataFlowEdges.predecessors(Common.toQ(reference)).eval().nodes().getFirst();
-				continue;
-			}
-			
-			String message = "Unhandled reference type for GraphElement " + ge.address().toAddressString();
-			RuntimeException e = new RuntimeException(message);
-			Log.error(message, e);
-			throw e;
 		}
 		
-		if(reference == null){
-			String message = "Null reference for GraphElement " + ge.address().toAddressString();
-			RuntimeException e = new RuntimeException(message);
-			Log.error(message, e);
-			throw e;
-		}
-		
-		return reference;
+		return parsedReferences;
 	}
 	
 	private static boolean needsProcessing(GraphElement ge){

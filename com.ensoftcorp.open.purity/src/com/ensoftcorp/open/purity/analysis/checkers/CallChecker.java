@@ -829,51 +829,54 @@ public class CallChecker {
 		// IdentityPass (.this) -IdentityPassedTo-> CallSite (m)
 		Q identityPass = identityPassedToEdges.predecessors(Common.toQ(unassignedCallsite));
 		
-		// Receiver (r) -LocalDataFlow-> IdentityPass (.this)
-		GraphElement r = localDFEdges.predecessors(identityPass).eval().nodes().getFirst();
-		r = Utilities.parseReference(r);
-
-		Set<ImmutabilityTypes> rTypes = getTypes(r);
+		// Receiver (receiver) -LocalDataFlow-> IdentityPass (.this)
+		GraphElement receiver = localDFEdges.predecessors(identityPass).eval().nodes().getFirst();
+		AtlasSet<GraphElement> rReferences = Utilities.parseReferences(receiver);
 		
-		// process s(this)
-		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(this)");
-		Set<ImmutabilityTypes> identityTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-		for(ImmutabilityTypes identityType : identityTypes){
-			boolean isSatisfied = false;
-			satisfied:
-			for(ImmutabilityTypes rType : rTypes){
-				if(rType.compareTo(identityType) >= 0){
-					isSatisfied = true;
-					break satisfied;
-				}
-			}
-			if(!isSatisfied){
-				identityTypesToRemove.add(identityType);
-			}
-		}
-		if(removeTypes(identity, identityTypesToRemove)){
-			typesChanged = true;
-		}
-		
-		// process s(r)
-		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(r)");
-		Set<ImmutabilityTypes> rTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-		for(ImmutabilityTypes rType : rTypes){
-			boolean isSatisfied = false;
-			satisfied:
+		for(GraphElement r : rReferences){
+			Set<ImmutabilityTypes> rTypes = getTypes(r);
+			
+			// process s(this)
+			if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(this)");
+			Set<ImmutabilityTypes> identityTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 			for(ImmutabilityTypes identityType : identityTypes){
-				if(rType.compareTo(identityType) >= 0){
-					isSatisfied = true;
-					break satisfied;
+				boolean isSatisfied = false;
+				satisfied:
+				for(ImmutabilityTypes rType : rTypes){
+					if(rType.compareTo(identityType) >= 0){
+						isSatisfied = true;
+						break satisfied;
+					}
+				}
+				if(!isSatisfied){
+					identityTypesToRemove.add(identityType);
 				}
 			}
-			if(!isSatisfied){
-				rTypesToRemove.add(rType);
+			if(removeTypes(identity, identityTypesToRemove)){
+				typesChanged = true;
+			}
+			
+			// process s(r)
+			if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(r)");
+			Set<ImmutabilityTypes> rTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
+			for(ImmutabilityTypes rType : rTypes){
+				boolean isSatisfied = false;
+				satisfied:
+				for(ImmutabilityTypes identityType : identityTypes){
+					if(rType.compareTo(identityType) >= 0){
+						isSatisfied = true;
+						break satisfied;
+					}
+				}
+				if(!isSatisfied){
+					rTypesToRemove.add(rType);
+				}
+			}
+			if(removeTypes(r, rTypesToRemove)){
+				typesChanged = true;
 			}
 		}
-		if(removeTypes(r, rTypesToRemove)){
-			typesChanged = true;
-		}
+
 		return typesChanged;
 	}
 

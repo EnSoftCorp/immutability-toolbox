@@ -44,24 +44,6 @@ public class FieldAssignmentChecker {
 		if(PurityPreferences.isInferenceRuleLoggingEnabled()) Log.info("TWRITE (x.f=y, x=" + x.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")");
 		
 		boolean typesChanged = false;
-
-		if(x.taggedWith(XCSG.InstanceVariableValue) || x.taggedWith(Utilities.CLASS_VARIABLE_VALUE)){
-			// if a field changes in an object then that object and any container 
-			// objects which contain an object where the field is have also changed
-			// for example z.x.f = y, x is being mutated and so is z
-			for(GraphElement container : Utilities.getAccessedContainers(x)){
-				if(removeTypes(container, ImmutabilityTypes.READONLY)){
-					typesChanged = true;
-				}
-				if(container.taggedWith(XCSG.ClassVariable)){
-					if(removeTypes(Utilities.getContainingMethod(x), ImmutabilityTypes.READONLY)){
-						typesChanged = true;
-					}
-				}
-			}
-			
-			x = Utilities.parseReference(x);
-		}
 		
 		// if x is a reference it must be mutable
 		// if x is a field it must be polyread
