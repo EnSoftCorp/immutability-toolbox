@@ -25,9 +25,6 @@ public class Utilities {
 //		// initialize the cache of default readonly types
 //		defaultReadonlyTypes = new AtlasHashSet<GraphElement>();
 //		
-//		// null types
-//		defaultReadonlyTypes.add(Common.universe().nodesTaggedWithAny(XCSG.Java.NullType).eval().nodes().getFirst());
-//		
 //		// autoboxing
 //		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Integer").eval().nodes().getFirst());
 //		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Long").eval().nodes().getFirst());
@@ -73,23 +70,6 @@ public class Utilities {
 	public static final String CLASS_VARIABLE_ACCESS = "CLASS_VARIABLE_ACCESS";
 	
 	public static final String DATAFLOW_DISPLAY_NODE = "DATAFLOW_DISPLAY_NODE";
-	
-//	/**
-//	 * A vanilla data flow node is a node that is only tagged with XCSG.DataFlow_Node
-//	 * ASSUMPTION! Only vanilla data flow nodes are explicitly tagged with XCSG.DataFlow_Node
-//	 * @param ge
-//	 * @return
-//	 */
-//	public static boolean isVanillaDataFlowNode(GraphElement ge){
-//		boolean result = false;
-//		Iterator<String> iter = ge.explicitTagsI().iterator();
-//		while(iter.hasNext()){
-//			if(iter.next().equals(XCSG.DataFlow_Node)){
-//				result = true;
-//			}
-//		}
-//		return result;
-//	}
 	
 	/**
 	 * Adds DATAFLOW_DISPLAY_NODE tags to display nodes
