@@ -6,7 +6,7 @@ import static com.ensoftcorp.open.purity.analysis.Utilities.removeTypes;
 import java.util.EnumSet;
 import java.util.Set;
 
-import com.ensoftcorp.atlas.core.db.graph.GraphElement;
+import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.purity.analysis.ImmutabilityTypes;
 import com.ensoftcorp.open.purity.analysis.Utilities;
@@ -24,7 +24,7 @@ public class FieldAssignmentChecker {
 	 * @param y The reference being read from
 	 * @return Returns true if the graph element's ImmutabilityTypes have changed
 	 */
-	public static boolean handleFieldWrite(GraphElement x, GraphElement f, GraphElement y) {
+	public static boolean handleFieldWrite(Node x, Node f, Node y) {
 
 		if(PurityPreferences.isInferenceRuleLoggingEnabled()) Log.info("TWRITE (x.f=y, x=" + x.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")");
 		
@@ -128,7 +128,7 @@ public class FieldAssignmentChecker {
 	 * @param f The field of the receiver object being read from
 	 * @return Returns true if the graph element's ImmutabilityTypes have changed
 	 */
-	public static boolean handleFieldRead(GraphElement x, GraphElement y, GraphElement f) {
+	public static boolean handleFieldRead(Node x, Node y, Node f) {
 		
 		if(PurityPreferences.isInferenceRuleLoggingEnabled()) Log.info("TREAD (x=y.f, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ")");
 		
@@ -146,7 +146,7 @@ public class FieldAssignmentChecker {
 			if(removeTypes(f, ImmutabilityTypes.READONLY)){
 				typesChanged = true;
 			}
-			for(GraphElement container : Utilities.getAccessedContainers(y)){
+			for(Node container : Utilities.getAccessedContainers(y)){
 				if(removeTypes(container, ImmutabilityTypes.READONLY)){
 					typesChanged = true;
 				}
@@ -248,7 +248,7 @@ public class FieldAssignmentChecker {
 	 * 
 	 * @return
 	 */
-	public static boolean handleStaticFieldWrite(GraphElement sf, GraphElement x, GraphElement m) {
+	public static boolean handleStaticFieldWrite(Node sf, Node x, Node m) {
 		if(PurityPreferences.isInferenceRuleLoggingEnabled()) Log.info("TSWRITE (sf=x, sf=" + sf.getAttr(XCSG.name) + ", x=" + x.getAttr(XCSG.name) + ")");
 		
 		boolean typesChanged = false;
@@ -269,7 +269,7 @@ public class FieldAssignmentChecker {
 	 * @param m The method where the assignment happens
 	 * @return
 	 */
-	public static boolean handleStaticFieldRead(GraphElement x, GraphElement sf, GraphElement m) {
+	public static boolean handleStaticFieldRead(Node x, Node sf, Node m) {
 		if(PurityPreferences.isInferenceRuleLoggingEnabled()) Log.info("TSREAD (x=sf, x=" + x.getAttr(XCSG.name) + ", sf=" + sf.getAttr(XCSG.name) + ")");
 		
 		boolean typesChanged = false;

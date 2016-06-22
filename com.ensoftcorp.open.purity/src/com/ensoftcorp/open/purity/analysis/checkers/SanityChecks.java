@@ -5,6 +5,7 @@ import java.util.Set;
 import org.eclipse.core.runtime.NullProgressMonitor;
 
 import com.ensoftcorp.atlas.core.db.graph.GraphElement;
+import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
@@ -144,19 +145,19 @@ public class SanityChecks {
 	private static boolean isDoubleTagged() {
 		boolean isDoubleTagged = false;
 		
-		AtlasSet<GraphElement> readonlyPolyread = Common.universe().nodesTaggedWithAll(PurityAnalysis.READONLY, PurityAnalysis.POLYREAD).eval().nodes();
+		AtlasSet<Node> readonlyPolyread = Common.universe().nodesTaggedWithAll(PurityAnalysis.READONLY, PurityAnalysis.POLYREAD).eval().nodes();
 		if(readonlyPolyread.size() > 0){
 			isDoubleTagged = true;
 			Log.warning("There are " + readonlyPolyread.size() + " nodes that are tagged as " + PurityAnalysis.READONLY + " and " + PurityAnalysis.POLYREAD);
 		}
 		
-		AtlasSet<GraphElement> readonlyMutable = Common.universe().nodesTaggedWithAll(PurityAnalysis.READONLY, PurityAnalysis.MUTABLE).eval().nodes();
+		AtlasSet<Node> readonlyMutable = Common.universe().nodesTaggedWithAll(PurityAnalysis.READONLY, PurityAnalysis.MUTABLE).eval().nodes();
 		if(readonlyMutable.size() > 0){
 			isDoubleTagged = true;
 			Log.warning("There are " + readonlyMutable.size() + " nodes that are tagged as " + PurityAnalysis.READONLY + " and " + PurityAnalysis.MUTABLE);
 		}
 		
-		AtlasSet<GraphElement> polyreadMutable = Common.universe().nodesTaggedWithAll(PurityAnalysis.POLYREAD, PurityAnalysis.MUTABLE).eval().nodes();
+		AtlasSet<Node> polyreadMutable = Common.universe().nodesTaggedWithAll(PurityAnalysis.POLYREAD, PurityAnalysis.MUTABLE).eval().nodes();
 		if(polyreadMutable.size() > 0){
 			isDoubleTagged = true;
 			Log.warning("There are " + polyreadMutable.size() + " nodes that are tagged as " + PurityAnalysis.POLYREAD + " and " + PurityAnalysis.MUTABLE);
@@ -171,7 +172,7 @@ public class SanityChecks {
 	 */
 	private static boolean hasUntypedReferences(){
 		boolean hasUntypedReferences = false;
-		AtlasSet<GraphElement> untypedReferences = Common.universe().nodesTaggedWithAny(PurityAnalysis.UNTYPED).eval().nodes();
+		AtlasSet<Node> untypedReferences = Common.universe().nodesTaggedWithAny(PurityAnalysis.UNTYPED).eval().nodes();
 		if(untypedReferences.size() > 0){
 			hasUntypedReferences = true;
 			Log.warning("There are " + untypedReferences.size() + " references with no immutability types!");

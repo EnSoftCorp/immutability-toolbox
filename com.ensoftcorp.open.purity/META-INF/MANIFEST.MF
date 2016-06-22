@@ -6,8 +6,8 @@ Bundle-Version: 2.6.3.qualifier
 Bundle-Activator: com.ensoftcorp.open.purity.Activator
 Bundle-Vendor: EnSoft Corp.
 Require-Bundle: org.eclipse.debug.ui,
- com.ensoftcorp.open.toolbox.commons;visibility:=reexport,
- com.ensoftcorp.atlas.ui
+ com.ensoftcorp.atlas.ui,
+ com.ensoftcorp.open.commons;bundle-version="3.0.6"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ActivationPolicy: lazy
 Export-Package: com.ensoftcorp.open.purity.ui

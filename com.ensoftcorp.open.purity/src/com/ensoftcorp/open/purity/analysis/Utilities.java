@@ -9,6 +9,7 @@ import com.ensoftcorp.atlas.core.db.graph.Graph;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.EdgeDirection;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.NodeDirection;
+import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
@@ -204,13 +205,13 @@ public class Utilities {
 	 */
 	public static void removeDataFlowDisplayNodeTags() {
 		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Removing data flow display node tags...");
-		AtlasSet<GraphElement> dataFlowDisplayNodes = Common.universe().nodesTaggedWithAny(DATAFLOW_DISPLAY_NODE).eval().nodes();
-		for(GraphElement dataFlowDisplayNode : dataFlowDisplayNodes){
+		AtlasSet<Node> dataFlowDisplayNodes = Common.universe().nodesTaggedWithAny(DATAFLOW_DISPLAY_NODE).eval().nodes();
+		for(Node dataFlowDisplayNode : dataFlowDisplayNodes){
 			dataFlowDisplayNode.tags().remove(DATAFLOW_DISPLAY_NODE);
 		}
 	}
 	
-	public static AtlasSet<GraphElement> getDisplayNodeReferences(GraphElement displayNode){
+	public static AtlasSet<Node> getDisplayNodeReferences(GraphElement displayNode){
 		Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
 		Q dataFlowDisplayNodeParents = localDataFlowEdges.predecessors(Common.toQ(displayNode));
 		return dataFlowDisplayNodeParents.eval().nodes();
@@ -224,12 +225,12 @@ public class Utilities {
 		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Adding class variable access tags...");
 		Q classVariables = Common.universe().nodesTaggedWithAny(XCSG.ClassVariable);
 		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
-		AtlasSet<GraphElement> classVariableAssignments = interproceduralDataFlowEdges.predecessors(classVariables).eval().nodes();
+		AtlasSet<Node> classVariableAssignments = interproceduralDataFlowEdges.predecessors(classVariables).eval().nodes();
 		for(GraphElement classVariableAssignment : classVariableAssignments){
 			classVariableAssignment.tag(CLASS_VARIABLE_ASSIGNMENT);
 			classVariableAssignment.tag(CLASS_VARIABLE_ACCESS);
 		}
-		AtlasSet<GraphElement> classVariableValues = interproceduralDataFlowEdges.successors(classVariables).eval().nodes();
+		AtlasSet<Node> classVariableValues = interproceduralDataFlowEdges.successors(classVariables).eval().nodes();
 		for(GraphElement classVariableValue : classVariableValues){
 			classVariableValue.tag(CLASS_VARIABLE_VALUE);
 			classVariableValue.tag(CLASS_VARIABLE_ACCESS);
@@ -244,12 +245,12 @@ public class Utilities {
 		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Removing class variable access tags...");
 		Q classVariables = Common.universe().nodesTaggedWithAny(XCSG.ClassVariable);
 		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
-		AtlasSet<GraphElement> classVariableAssignments = interproceduralDataFlowEdges.predecessors(classVariables).eval().nodes();
+		AtlasSet<Node> classVariableAssignments = interproceduralDataFlowEdges.predecessors(classVariables).eval().nodes();
 		for(GraphElement classVariableAssignment : classVariableAssignments){
 			classVariableAssignment.tags().remove(CLASS_VARIABLE_ASSIGNMENT);
 			classVariableAssignment.tags().remove(CLASS_VARIABLE_ACCESS);
 		}
-		AtlasSet<GraphElement> classVariableValues = interproceduralDataFlowEdges.successors(classVariables).eval().nodes();
+		AtlasSet<Node> classVariableValues = interproceduralDataFlowEdges.successors(classVariables).eval().nodes();
 		for(GraphElement classVariableValue : classVariableValues){
 			classVariableValue.tags().remove(CLASS_VARIABLE_VALUE);
 			classVariableValue.tags().remove(CLASS_VARIABLE_ACCESS);
@@ -261,23 +262,23 @@ public class Utilities {
 	 * @param callsite
 	 * @return
 	 */
-	public static GraphElement getInvokedMethodSignature(GraphElement callsite) {
+	public static Node getInvokedMethodSignature(GraphElement callsite) {
 		// XCSG.InvokedSignature connects a dynamic dispatch to its signature method
 		// XCSG.InvokedFunction connects a static dispatch to it actual target method
 		Q invokedEdges = Common.universe().edgesTaggedWithAny(XCSG.InvokedSignature, XCSG.InvokedFunction);
-		GraphElement method = invokedEdges.successors(Common.toQ(callsite)).eval().nodes().getFirst();
+		Node method = invokedEdges.successors(Common.toQ(callsite)).eval().nodes().getFirst();
 		return method;
 	}
 	
 	/**
 	 * Sets the type qualifier for a graph element
-	 * @param ge
+	 * @param node
 	 * @param qualifier
 	 * @return Returns true if the type qualifier changed
 	 */
-	public static boolean removeTypes(GraphElement ge, Set<ImmutabilityTypes> typesToRemove){
-		Set<ImmutabilityTypes> typeSet = getTypes(ge);
-		String logMessage = "Remove: " + typesToRemove.toString() + " from " + typeSet.toString() + " for " + ge.getAttr(XCSG.name);
+	public static boolean removeTypes(Node node, Set<ImmutabilityTypes> typesToRemove){
+		Set<ImmutabilityTypes> typeSet = getTypes(node);
+		String logMessage = "Remove: " + typesToRemove.toString() + " from " + typeSet.toString() + " for " + node.getAttr(XCSG.name);
 		boolean typesChanged = typeSet.removeAll(typesToRemove);
 		if(typesChanged){
 			if(PurityPreferences.isDebugLoggingEnabled()) Log.info(logMessage);
@@ -288,16 +289,16 @@ public class Utilities {
 	
 	/**
 	 * Sets the type qualifier for a graph element
-	 * @param ge
+	 * @param node
 	 * @param qualifier
 	 * @return Returns true if the type qualifier changed
 	 */
-	public static boolean removeTypes(GraphElement ge, ImmutabilityTypes... types){
+	public static boolean removeTypes(Node node, ImmutabilityTypes... types){
 		EnumSet<ImmutabilityTypes> typesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes type : types){
 			typesToRemove.add(type);
 		}
-		return removeTypes(ge, typesToRemove);
+		return removeTypes(node, typesToRemove);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -316,11 +317,11 @@ public class Utilities {
 		return typeOfEdges.successors(Common.toQ(ge)).eval().nodes().getFirst();
 	}
 	
-	public static AtlasSet<GraphElement> parseReferences(GraphElement ge){
-		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Parsing reference for " + ge.address().toAddressString());
-		AtlasSet<GraphElement> parsedReferences = new AtlasHashSet<GraphElement>();
-		TreeSet<GraphElement> worklist = new TreeSet<GraphElement>();
-		worklist.add(ge);
+	public static AtlasSet<Node> parseReferences(Node node){
+		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Parsing reference for " + node.address().toAddressString());
+		AtlasSet<Node> parsedReferences = new AtlasHashSet<Node>();
+		TreeSet<Node> worklist = new TreeSet<Node>();
+		worklist.add(node);
 		
 		Q dataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.DataFlow_Edge);
 		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
@@ -329,14 +330,14 @@ public class Utilities {
 			GraphElement reference = worklist.pollFirst();
 			if(reference != null && needsProcessing(reference)){
 				if(reference.taggedWith(XCSG.Cast)){
-					for(GraphElement workItem : dataFlowEdges.predecessors(Common.toQ(reference)).eval().nodes()){
+					for(Node workItem : dataFlowEdges.predecessors(Common.toQ(reference)).eval().nodes()){
 						worklist.add(workItem);
 					}
 					continue;
 				}
 				
 				if(reference.taggedWith(DATAFLOW_DISPLAY_NODE)){
-					for(GraphElement workItem : Utilities.getDisplayNodeReferences(reference)){
+					for(Node workItem : Utilities.getDisplayNodeReferences(reference)){
 						worklist.add(workItem);
 					}
 					continue;
@@ -344,14 +345,14 @@ public class Utilities {
 				
 				if(reference.taggedWith(XCSG.CallSite)){
 					// parse return, a callsite on a callsite must be a callsite on the resulting object from the first callsite
-					GraphElement method = Utilities.getInvokedMethodSignature(reference);
+					Node method = Utilities.getInvokedMethodSignature(reference);
 					worklist.add(Common.toQ(method).children().nodesTaggedWithAny(XCSG.ReturnValue).eval().nodes().getFirst());
 					continue;
 				}
 				
 				// get the field for instance and class variable assignments
 				if(reference.taggedWith(XCSG.InstanceVariableAssignment) || reference.taggedWith(Utilities.CLASS_VARIABLE_ASSIGNMENT)){
-					for(GraphElement workItem : interproceduralDataFlowEdges.successors(Common.toQ(reference)).eval().nodes()){
+					for(Node workItem : interproceduralDataFlowEdges.successors(Common.toQ(reference)).eval().nodes()){
 						worklist.add(workItem);
 					}
 					continue;
@@ -359,7 +360,7 @@ public class Utilities {
 				
 				// get the field for instance and class variable values
 				if(reference.taggedWith(XCSG.InstanceVariableValue) || reference.taggedWith(Utilities.CLASS_VARIABLE_VALUE)){
-					for(GraphElement workItem : interproceduralDataFlowEdges.predecessors(Common.toQ(reference)).eval().nodes()){
+					for(Node workItem : interproceduralDataFlowEdges.predecessors(Common.toQ(reference)).eval().nodes()){
 						worklist.add(workItem);
 					}
 					continue;
@@ -367,7 +368,7 @@ public class Utilities {
 				
 				// get the array components being written to
 				if(reference.taggedWith(XCSG.ArrayWrite)){
-					for(GraphElement workItem : interproceduralDataFlowEdges.successors(Common.toQ(reference)).eval().nodes()){
+					for(Node workItem : interproceduralDataFlowEdges.successors(Common.toQ(reference)).eval().nodes()){
 						worklist.add(workItem);
 					}
 					continue;
@@ -375,19 +376,19 @@ public class Utilities {
 				
 				// get the array components being read from
 				if(reference.taggedWith(XCSG.ArrayRead)){
-					for(GraphElement workItem : interproceduralDataFlowEdges.predecessors(Common.toQ(reference)).eval().nodes()){
+					for(Node workItem : interproceduralDataFlowEdges.predecessors(Common.toQ(reference)).eval().nodes()){
 						worklist.add(workItem);
 					}
 					continue;
 				}
 				
-				String message = "Unhandled reference type for GraphElement " + ge.address().toAddressString();
+				String message = "Unhandled reference type for GraphElement " + node.address().toAddressString();
 				RuntimeException e = new RuntimeException(message);
 				Log.error(message, e);
 				throw e;
 			} else {
 				if(reference == null){
-					String message = "Null reference for GraphElement " + ge.address().toAddressString();
+					String message = "Null reference for GraphElement " + node.address().toAddressString();
 					RuntimeException e = new RuntimeException(message);
 					Log.error(message, e);
 					throw e;
@@ -626,7 +627,7 @@ public class Utilities {
 	 * @param fieldAccess
 	 * @return
 	 */
-	public static AtlasSet<GraphElement> getAccessedContainers(GraphElement fieldAccess){
+	public static AtlasSet<Node> getAccessedContainers(GraphElement fieldAccess){
 		Q instanceVariableAccessedEdges = Common.universe().edgesTaggedWithAny(XCSG.InstanceVariableAccessed);
 		Q variablesAccessed = instanceVariableAccessedEdges.reverse(Common.toQ(fieldAccess));
 		Q instanceVariablesAccessed = variablesAccessed.nodesTaggedWithAny(XCSG.InstanceVariableAccess);
@@ -639,12 +640,12 @@ public class Utilities {
 	
 	/**
 	 * Returns the containing method of a given graph element or null if one is not found
-	 * @param ge
+	 * @param node
 	 * @return
 	 */
-	public static GraphElement getContainingMethod(GraphElement ge) {
+	public static Node getContainingMethod(Node node) {
 		// NOTE: the enclosing method may be two steps or more above
-		return getContainingNode(ge, XCSG.Method);
+		return getContainingNode(node, XCSG.Method);
 	}
 	
 	/**
@@ -654,7 +655,7 @@ public class Utilities {
 	 * @param containingTag
 	 * @return the next immediate containing node, or null if none exists; never returns the given node
 	 */
-	public static GraphElement getContainingNode(GraphElement node, String containingTag) {
+	public static Node getContainingNode(Node node, String containingTag) {
 		if(node == null){
 			return null;
 		}
@@ -665,7 +666,7 @@ public class Utilities {
 				return null;
 			}
 			
-			GraphElement parent = containsEdge.getNode(EdgeDirection.FROM);
+			Node parent = containsEdge.getNode(EdgeDirection.FROM);
 			if(parent.taggedWith(containingTag)){
 				return parent;
 			}

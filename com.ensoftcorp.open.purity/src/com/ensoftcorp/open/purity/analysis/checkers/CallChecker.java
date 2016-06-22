@@ -6,8 +6,10 @@ import static com.ensoftcorp.open.purity.analysis.Utilities.removeTypes;
 import java.util.EnumSet;
 import java.util.Set;
 
+import com.ensoftcorp.atlas.core.db.graph.Edge;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.EdgeDirection;
+import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
@@ -31,7 +33,7 @@ public class CallChecker {
 	 * @param containingMethod 
 	 * @return
 	 */
-	public static boolean handleCall(GraphElement x, GraphElement y, GraphElement identity, GraphElement method, GraphElement ret, AtlasSet<GraphElement> parametersPassedEdges, GraphElement containingMethod) {
+	public static boolean handleCall(Node x, Node y, Node identity, Node method, Node ret, AtlasSet<Edge> parametersPassedEdges, Node containingMethod) {
 		
 		if(PurityPreferences.isInferenceRuleLoggingEnabled()) Log.info("TCALL (x=y.m(z), x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", m=" + method.getAttr("##signature") + ")");
 		
@@ -56,8 +58,8 @@ public class CallChecker {
 			Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
 			Q returnValues = localDataFlowEdges.predecessors(Common.toQ(ret));
 			Q fieldValues = localDataFlowEdges.predecessors(returnValues).nodesTaggedWithAny(XCSG.InstanceVariableValue, Utilities.CLASS_VARIABLE_VALUE);
-			for(GraphElement fieldValue : fieldValues.eval().nodes()){
-				for(GraphElement container : Utilities.getAccessedContainers(fieldValue)){
+			for(Node fieldValue : fieldValues.eval().nodes()){
+				for(Node container : Utilities.getAccessedContainers(fieldValue)){
 					if(removeTypes(container, ImmutabilityTypes.READONLY)){
 						typesChanged = true;
 					}
@@ -164,7 +166,7 @@ public class CallChecker {
 			if(PurityPreferences.isInferenceRuleLoggingEnabled()) Log.info("TCALL (Overridden Method)");
 			
 			// Method (method) -Contains-> ReturnValue (ret)
-			GraphElement overriddenMethodReturn = Common.toQ(overriddenMethod).children().nodesTaggedWithAny(XCSG.ReturnValue).eval().nodes().getFirst();
+			Node overriddenMethodReturn = Common.toQ(overriddenMethod).children().nodesTaggedWithAny(XCSG.ReturnValue).eval().nodes().getFirst();
 			Set<ImmutabilityTypes> overriddenRetTypes = getTypes(overriddenMethodReturn);
 			
 			// constraint: overriddenReturn <: return
@@ -211,7 +213,7 @@ public class CallChecker {
 			}
 			
 			// Method (method) -Contains-> Identity
-			GraphElement overriddenMethodIdentity = Common.toQ(overriddenMethod).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
+			Node overriddenMethodIdentity = Common.toQ(overriddenMethod).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
 			Set<ImmutabilityTypes> overriddenIdentityTypes = getTypes(overriddenMethodIdentity);
 
 			// constraint: this <: overriddenThis 
@@ -258,7 +260,7 @@ public class CallChecker {
 			}
 
 			// Method (method) -Contains-> Parameter (p1, p2, ...)
-			AtlasSet<GraphElement> overriddenMethodParameters = Common.toQ(overriddenMethod).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
+			AtlasSet<Node> overriddenMethodParameters = Common.toQ(overriddenMethod).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
 			
 			// get the parameters of the method
 			AtlasSet<GraphElement> parameters = new AtlasHashSet<GraphElement>();
@@ -273,8 +275,8 @@ public class CallChecker {
 			long numParams = overriddenMethodParameters.size();
 			if(numParams > 0){
 				for(int i=0; i<numParams; i++){
-					GraphElement p = Common.toQ(parameters).selectNode(XCSG.parameterIndex, i).eval().nodes().getFirst();
-					GraphElement pOverridden = Common.toQ(overriddenMethodParameters).selectNode(XCSG.parameterIndex, i).eval().nodes().getFirst();
+					Node p = Common.toQ(parameters).selectNode(XCSG.parameterIndex, i).eval().nodes().getFirst();
+					Node pOverridden = Common.toQ(overriddenMethodParameters).selectNode(XCSG.parameterIndex, i).eval().nodes().getFirst();
 					
 					Set<ImmutabilityTypes> pTypes = getTypes(p);
 					Set<ImmutabilityTypes> pOverriddenTypes = getTypes(pOverridden);
@@ -335,7 +337,7 @@ public class CallChecker {
 	 * @param parametersPassedEdges
 	 * @return
 	 */
-	public static boolean handleStaticCall(GraphElement x, GraphElement callsite, GraphElement method, GraphElement ret, AtlasSet<GraphElement> parametersPassedEdges) {
+	public static boolean handleStaticCall(Node x, Node callsite, Node method, Node ret, AtlasSet<Edge> parametersPassedEdges) {
 		
 		if(PurityPreferences.isInferenceRuleLoggingEnabled()) Log.info("TSCALL (x=y.m(z), x=" + x.getAttr(XCSG.name) + ", m=" + method.getAttr("##signature") + ")");
 		
@@ -359,8 +361,8 @@ public class CallChecker {
 			Q fieldValues = localDataFlowEdges.predecessors(returnValues).nodesTaggedWithAny(XCSG.InstanceVariableValue, Utilities.CLASS_VARIABLE_VALUE);
 			Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
 			Q fields = interproceduralDataFlowEdges.predecessors(fieldValues);
-			for(GraphElement field : fields.eval().nodes()){
-				for(GraphElement container : Utilities.getAccessedContainers(field)){
+			for(Node field : fields.eval().nodes()){
+				for(Node container : Utilities.getAccessedContainers(field)){
 					if(removeTypes(container, ImmutabilityTypes.READONLY)){
 						typesChanged = true;
 					}
@@ -387,7 +389,7 @@ public class CallChecker {
 		
 		/////////////////////// start qm' <: qx adapt qm /////////////////////////
 		// m' is the method that contains the callsite m()
-		GraphElement containingMethod = Utilities.getContainingMethod(callsite);
+		Node containingMethod = Utilities.getContainingMethod(callsite);
 		if(processStaticDispatchConstraints(x, method, containingMethod)){
 			typesChanged = true;
 		}
@@ -396,7 +398,7 @@ public class CallChecker {
 		return typesChanged;
 	}
 
-	private static boolean processStaticDispatchConstraints(GraphElement x, GraphElement method, GraphElement containingMethod) {
+	private static boolean processStaticDispatchConstraints(Node x, Node method, Node containingMethod) {
 		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process Static Dispatch Constraint qm' <: qx adapt qm");
 		boolean typesChanged = false;
 		
@@ -482,7 +484,7 @@ public class CallChecker {
 	 * @param parametersPassedEdges
 	 * @return
 	 */
-	private static boolean processParameterConstraints(GraphElement x, AtlasSet<GraphElement> parametersPassedEdges) {
+	private static boolean processParameterConstraints(Node x, AtlasSet<Edge> parametersPassedEdges) {
 		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process Constraint qz <: qx adapt qp");
 
 		boolean typesChanged = false;
@@ -490,8 +492,8 @@ public class CallChecker {
 		
 		// for each z,p pair process s(x), s(z), and s(p)
 		for(GraphElement parametersPassedEdge : parametersPassedEdges){
-			GraphElement z = parametersPassedEdge.getNode(EdgeDirection.FROM);
-			GraphElement p = parametersPassedEdge.getNode(EdgeDirection.TO);
+			Node z = parametersPassedEdge.getNode(EdgeDirection.FROM);
+			Node p = parametersPassedEdge.getNode(EdgeDirection.TO);
 			Set<ImmutabilityTypes> zTypes = getTypes(z);
 			Set<ImmutabilityTypes> pTypes = getTypes(p);
 			
@@ -573,7 +575,7 @@ public class CallChecker {
 	 * @param ret
 	 * @return
 	 */
-	private static boolean processReturnAssignmentConstraints(GraphElement x, GraphElement ret) {
+	private static boolean processReturnAssignmentConstraints(Node x, Node ret) {
 		
 		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process Constraint qx adapt qret <: qx");
 		

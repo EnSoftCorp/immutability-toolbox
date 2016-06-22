@@ -6,7 +6,7 @@ import static com.ensoftcorp.open.purity.analysis.Utilities.removeTypes;
 import java.util.EnumSet;
 import java.util.Set;
 
-import com.ensoftcorp.atlas.core.db.graph.GraphElement;
+import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.purity.analysis.ImmutabilityTypes;
 import com.ensoftcorp.open.purity.log.Log;
@@ -22,7 +22,7 @@ public class BasicAssignmentChecker {
 	 * @param y The reference be read from
 	 * @return
 	 */
-	public static boolean handleAssignment(GraphElement x, GraphElement y) {
+	public static boolean handleAssignment(Node x, Node y) {
 		
 		if(x==null){
 			Log.warning("x is null!");
