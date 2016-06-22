@@ -94,28 +94,18 @@ public class PurityAnalysis {
 		// TODO: remove when there are appropriate alternatives
 		Utilities.addClassVariableAccessTags();
 		Utilities.addDataFlowDisplayNodeTags();
-		
+		Utilities.addDummyReturnAssignments();
+
 		TreeSet<GraphElement> worklist = new TreeSet<GraphElement>();
 
 		// add all assignments to worklist
-		Q assignments = Common.resolve(new NullProgressMonitor(), Common.universe().nodesTaggedWithAny(XCSG.Assignment));
+		// treating parameter passes as assignments (for all purposes they are...)
+		// this includes dummy return assignments which are fillers for providing 
+		// context sensitivity when the return value of a call is unused
+		Q assignments = Common.universe().nodesTaggedWithAny(XCSG.Assignment, XCSG.ParameterPass);
+		assignments = Common.resolve(new NullProgressMonitor(), assignments);
 		for(GraphElement assignment : assignments.eval().nodes()){
 			worklist.add(assignment);
-		}
-		
-		// add all assignments to worklist
-		// treating parameter passes as assignments (for all purposes they are...)
-		Q parameterPass = Common.resolve(new NullProgressMonitor(), Common.universe().nodesTaggedWithAny(XCSG.ParameterPass));
-		for(GraphElement assignment : parameterPass.eval().nodes()){
-			worklist.add(assignment);
-		}
-		
-		Q callsites = Common.universe().nodesTaggedWithAny(XCSG.CallSite);
-		Q localDFEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
-		Q assignedCallsites = localDFEdges.predecessors(Common.universe().nodesTaggedWithAny(XCSG.Assignment)).nodesTaggedWithAny(XCSG.CallSite);
-		Q unassignedCallsites = callsites.difference(assignedCallsites);
-		for(GraphElement unassignedCallsite : unassignedCallsites.eval().nodes()){
-			worklist.add(unassignedCallsite);
 		}
 		
 		int iteration = 1;
@@ -130,7 +120,7 @@ public class PurityAnalysis {
 						typesChanged = true;
 					}
 				} catch (Exception e){
-					Log.error("Error applying inference rules for work item: " + workItem.address().toAddressString(), e);
+					Log.error("Error applying inference rules for work item: " + workItem.address().toAddressString() + "\n" + workItem.toString(), e);
 					throw e;
 				}
 			}
@@ -210,8 +200,9 @@ public class PurityAnalysis {
 //		}
 		
 		// TODO: remove when there are appropriate alternatives
-		Utilities.removeClassVariableAccessTags();
+		Utilities.removeDummyReturnAssignments();
 		Utilities.removeDataFlowDisplayNodeTags();
+		Utilities.removeClassVariableAccessTags();
 		
 		return isSane;
 	}
@@ -228,205 +219,169 @@ public class PurityAnalysis {
 		
 		boolean typesChanged = false;
 		
-		if(workItem.taggedWith(XCSG.Assignment) || workItem.taggedWith(XCSG.ParameterPass)){
-			Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
-			Q interproceduralDFEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
-			Q instanceVariableAccessedEdges = Common.universe().edgesTaggedWithAny(XCSG.InstanceVariableAccessed);
-			Graph identityPassedToGraph = Common.universe().edgesTaggedWithAny(XCSG.IdentityPassedTo).eval();
-			Graph containsGraph = Common.universe().edgesTaggedWithAny(XCSG.Contains).eval();
+		Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
+		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
+		Q instanceVariableAccessedEdges = Common.universe().edgesTaggedWithAny(XCSG.InstanceVariableAccessed);
+		Graph identityPassedToGraph = Common.universe().edgesTaggedWithAny(XCSG.IdentityPassedTo).eval();
+		Graph containsGraph = Common.universe().edgesTaggedWithAny(XCSG.Contains).eval();
 
-			// consider data flow edges
-			// incoming edges represent a read relationship in an assignment
-			// outgoing edges represent a write relationship in an assignment
-			GraphElement to = workItem;
-			AtlasSet<GraphElement> inEdges = localDataFlowEdges.reverseStep(Common.toQ(to)).eval().edges();
-			for(GraphElement edge : inEdges){
-				GraphElement from = edge.getNode(EdgeDirection.FROM);
-				boolean involvesField = false;
-				
-				AtlasSet<GraphElement> toReferences = Utilities.parseReferences(to);
-				for(GraphElement toReference : toReferences){
-					if(toReference.taggedWith(XCSG.ArrayComponents)){
-						// an assignment to an array mutates the array
-						GraphElement arrayComponents = toReference;
-						Q arrayIdentityForEdges = Common.universe().edgesTaggedWithAny(XCSG.ArrayIdentityFor);
-						Q arrayWrite = interproceduralDFEdges.predecessors(Common.toQ(arrayComponents));
-						for(GraphElement arrayIdentity : arrayIdentityForEdges.predecessors(arrayWrite).eval().nodes()){
-							for(GraphElement arrayReference : Utilities.parseReferences(arrayIdentity)){
-								if(Utilities.removeTypes(arrayReference, ImmutabilityTypes.READONLY)){
-									typesChanged = true;
-								}
+		// consider data flow edges
+		// incoming edges represent a read relationship in an assignment
+		// outgoing edges represent a write relationship in an assignment
+		GraphElement to = workItem;
+		AtlasSet<GraphElement> inEdges = localDataFlowEdges.reverseStep(Common.toQ(to)).eval().edges();
+		for(GraphElement edge : inEdges){
+			GraphElement from = edge.getNode(EdgeDirection.FROM);
+			boolean involvesField = false;
+			
+			AtlasSet<GraphElement> toReferences = Utilities.parseReferences(to);
+			for(GraphElement toReference : toReferences){
+				if(toReference.taggedWith(XCSG.ArrayComponents)){
+					// an assignment to an array mutates the array
+					GraphElement arrayComponents = toReference;
+					Q arrayIdentityForEdges = Common.universe().edgesTaggedWithAny(XCSG.ArrayIdentityFor);
+					Q arrayWrite = interproceduralDataFlowEdges.predecessors(Common.toQ(arrayComponents));
+					for(GraphElement arrayIdentity : arrayIdentityForEdges.predecessors(arrayWrite).eval().nodes()){
+						for(GraphElement arrayReference : Utilities.parseReferences(arrayIdentity)){
+							if(Utilities.removeTypes(arrayReference, ImmutabilityTypes.READONLY)){
+								typesChanged = true;
 							}
 						}
 					}
 				}
-				
-				// TWRITE
-				if(to.taggedWith(XCSG.InstanceVariableAssignment)){
-					// Type Rule 3 - TWRITE
-					// let, x.f = y
-					AtlasSet<GraphElement> yReferences = Utilities.parseReferences(from);
-					for(GraphElement y : yReferences){
-						AtlasSet<GraphElement> fReferences = Utilities.parseReferences(to);
-						for(GraphElement f : fReferences){
-							// Reference (x) -InstanceVariableAccessed-> InstanceVariableAssignment (f=)
-							GraphElement instanceVariableAssignment = to; // (f=)
-							GraphElement instanceVariableAccessed = instanceVariableAccessedEdges.predecessors(Common.toQ(instanceVariableAssignment)).eval().nodes().getFirst();
+			}
+			
+			// TWRITE
+			if(to.taggedWith(XCSG.InstanceVariableAssignment)){
+				// Type Rule 3 - TWRITE
+				// let, x.f = y
+				AtlasSet<GraphElement> yReferences = Utilities.parseReferences(from);
+				for(GraphElement y : yReferences){
+					AtlasSet<GraphElement> fReferences = Utilities.parseReferences(to);
+					for(GraphElement f : fReferences){
+						// Reference (x) -InstanceVariableAccessed-> InstanceVariableAssignment (f=)
+						GraphElement instanceVariableAssignment = to; // (f=)
+						GraphElement instanceVariableAccessed = instanceVariableAccessedEdges.predecessors(Common.toQ(instanceVariableAssignment)).eval().nodes().getFirst();
 
-							if(instanceVariableAccessed.taggedWith(XCSG.InstanceVariableValue) || instanceVariableAccessed.taggedWith(Utilities.CLASS_VARIABLE_VALUE)){
-								// if a field changes in an object then that object and any container 
-								// objects which contain an object where the field is have also changed
-								// for example z.x.f = y, x is being mutated and so is z
-								for(GraphElement container : Utilities.getAccessedContainers(instanceVariableAccessed)){
-									if(removeTypes(container, ImmutabilityTypes.READONLY)){
+						if(instanceVariableAccessed.taggedWith(XCSG.InstanceVariableValue) || instanceVariableAccessed.taggedWith(Utilities.CLASS_VARIABLE_VALUE)){
+							// if a field changes in an object then that object and any container 
+							// objects which contain an object where the field is have also changed
+							// for example z.x.f = y, x is being mutated and so is z
+							for(GraphElement container : Utilities.getAccessedContainers(instanceVariableAccessed)){
+								if(removeTypes(container, ImmutabilityTypes.READONLY)){
+									typesChanged = true;
+								}
+								if(container.taggedWith(XCSG.ClassVariable)){
+									if(removeTypes(Utilities.getContainingMethod(instanceVariableAccessed), ImmutabilityTypes.READONLY)){
 										typesChanged = true;
 									}
-									if(container.taggedWith(XCSG.ClassVariable)){
-										if(removeTypes(Utilities.getContainingMethod(instanceVariableAccessed), ImmutabilityTypes.READONLY)){
-											typesChanged = true;
-										}
-									}
-								}
-							}
-							
-							AtlasSet<GraphElement> xReferences = Utilities.parseReferences(instanceVariableAccessed);
-							for(GraphElement x : xReferences){
-								if(FieldAssignmentChecker.handleFieldWrite(x, f, y)){
-									typesChanged = true;
 								}
 							}
 						}
-					}
-					
-					involvesField = true;
-				}
-				
-				// TREAD
-				if(from.taggedWith(XCSG.InstanceVariableValue)){
-					// Type Rule 4 - TREAD
-					// let, x = y.f
-					AtlasSet<GraphElement> xReferences = Utilities.parseReferences(to);
-					for(GraphElement x : xReferences){
-						AtlasSet<GraphElement> fReferences = Utilities.parseReferences(from);
-						for(GraphElement f : fReferences){
-							// Reference (y) -InstanceVariableAccessed-> InstanceVariableValue (.f)
-							GraphElement instanceVariableValue = from; // (.f)
-							GraphElement instanceVariableAccessed = instanceVariableAccessedEdges.predecessors(Common.toQ(instanceVariableValue)).eval().nodes().getFirst();
-							AtlasSet<GraphElement> yReferences = Utilities.parseReferences(instanceVariableAccessed);
-							for(GraphElement y : yReferences){
-								if(FieldAssignmentChecker.handleFieldRead(x, y, f)){
-									typesChanged = true;
-								}
-							}
-						}
-					}
-					
-					involvesField = true;
-				}
-				
-				// Type Rule 7 - TSREAD
-				// let, x = sf
-				if(from.taggedWith(Utilities.CLASS_VARIABLE_VALUE)){
-					AtlasSet<GraphElement> xReferences = Utilities.parseReferences(to);
-					for(GraphElement x : xReferences){
-						GraphElement m = Utilities.getContainingMethod(to);
-						AtlasSet<GraphElement> sfReferences = Utilities.parseReferences(from);
-						for(GraphElement sf : sfReferences){
-							if(FieldAssignmentChecker.handleStaticFieldRead(x, sf, m)){
-								typesChanged = true;
-							}
-						}
-					}
-					
-					involvesField = true;
-				}
-				
-				// Type Rule 8 - TSWRITE
-				// let, sf = x
-				if(to.taggedWith(Utilities.CLASS_VARIABLE_ASSIGNMENT)){
-					AtlasSet<GraphElement> sfReferences = Utilities.parseReferences(to);
-					for(GraphElement sf : sfReferences){
-						GraphElement m = Utilities.getContainingMethod(to);
-						AtlasSet<GraphElement> xReferences = Utilities.parseReferences(from);
+						
+						AtlasSet<GraphElement> xReferences = Utilities.parseReferences(instanceVariableAccessed);
 						for(GraphElement x : xReferences){
-							if(FieldAssignmentChecker.handleStaticFieldWrite(sf, x, m)){
+							if(FieldAssignmentChecker.handleFieldWrite(x, f, y)){
 								typesChanged = true;
 							}
 						}
 					}
-					
-					involvesField = true;
-				}	
-				
-				// TCALL
-				boolean involvesCallsite = false;
-				if(from.taggedWith(XCSG.DynamicDispatchCallSite)){
-					// Type Rule 5 - TCALL
-					// let, x = y.m(z)
-					GraphElement containingMethod = Utilities.getContainingMethod(to);
-					AtlasSet<GraphElement> xReferences = Utilities.parseReferences(to);
-					for(GraphElement x : xReferences){
-						GraphElement callsite = from;
-						
-						// TODO: update this with method signature
-//						GraphElement method = Utilities.getInvokedMethodSignature(callsite);
-//						GraphElement identity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
-						
-						// IdentityPass (.this) -IdentityPassedTo-> CallSite (m)
-						GraphElement identityPassedToEdge = identityPassedToGraph.edges(callsite, NodeDirection.IN).getFirst();
-						GraphElement identityPass = identityPassedToEdge.getNode(EdgeDirection.FROM);
-						
-						// Receiver (r) -LocalDataFlow-> IdentityPass (.this)
-						GraphElement r = localDataFlowEdges.predecessors(Common.toQ(identityPass)).eval().nodes().getFirst();
-						AtlasSet<GraphElement> yReferences = Utilities.parseReferences(r);
-						for(GraphElement y : yReferences){
-							// ReturnValue (ret) -InterproceduralDataFlow-> CallSite (m)
-							GraphElement ret = interproceduralDFEdges.predecessors(Common.toQ(callsite)).eval().nodes().getFirst();
-
-							// Method (method) -Contains-> ReturnValue (ret)
-							// note that we could also use a control flow call edge to get the method
-							// Control Flow Block (cf) -Contains-> Callsite (m)
-							// Control Flow Block (cf) -Call-> Method (method)
-							GraphElement containsEdge = containsGraph.edges(ret, NodeDirection.IN).getFirst();
-							GraphElement method = containsEdge.getNode(EdgeDirection.FROM);
-							
-							// Method (method) -Contains-> Identity
-							GraphElement identity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
-							
-							// Method (method) -Contains-> Parameter (p1, p2, ...)
-							AtlasSet<GraphElement> parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
-							
-							// ControlFlow -Contains-> CallSite
-							// CallSite -Contains-> ParameterPassed (z1, z2, ...)
-							AtlasSet<GraphElement> parametersPassed = Common.toQ(callsite).parent().children().nodesTaggedWithAny(XCSG.ParameterPass).eval().nodes();
-							
-							// ParameterPassed (z1, z2, ...) -InterproceduralDataFlow-> Parameter (p1, p2, ...)
-							// such that z1-InterproceduralDataFlow->p1, z2-InterproceduralDataFlow->p2, ...
-							AtlasSet<GraphElement> parametersPassedEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow)
-									.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
-							
-							if(CallChecker.handleCall(x, y, identity, method, ret, parametersPassedEdges, containingMethod)){
-								typesChanged = true;
-							}
-						}
-					}
-					
-					involvesCallsite = true;
 				}
 				
-				// TSCALL
-				if(from.taggedWith(XCSG.StaticDispatchCallSite)){
-					
-					// Type Rule 8 - TSCALL
-					// let, x = m(z)
-					AtlasSet<GraphElement> xReferences = Utilities.parseReferences(to);
+				involvesField = true;
+			}
+			
+			// TREAD
+			if(from.taggedWith(XCSG.InstanceVariableValue)){
+				// Type Rule 4 - TREAD
+				// let, x = y.f
+				AtlasSet<GraphElement> xReferences = Utilities.parseReferences(to);
+				for(GraphElement x : xReferences){
+					AtlasSet<GraphElement> fReferences = Utilities.parseReferences(from);
+					for(GraphElement f : fReferences){
+						// Reference (y) -InstanceVariableAccessed-> InstanceVariableValue (.f)
+						GraphElement instanceVariableValue = from; // (.f)
+						GraphElement instanceVariableAccessed = instanceVariableAccessedEdges.predecessors(Common.toQ(instanceVariableValue)).eval().nodes().getFirst();
+						AtlasSet<GraphElement> yReferences = Utilities.parseReferences(instanceVariableAccessed);
+						for(GraphElement y : yReferences){
+							if(FieldAssignmentChecker.handleFieldRead(x, y, f)){
+								typesChanged = true;
+							}
+						}
+					}
+				}
+				
+				involvesField = true;
+			}
+			
+			// Type Rule 7 - TSREAD
+			// let, x = sf
+			if(from.taggedWith(Utilities.CLASS_VARIABLE_VALUE)){
+				AtlasSet<GraphElement> xReferences = Utilities.parseReferences(to);
+				for(GraphElement x : xReferences){
+					GraphElement m = Utilities.getContainingMethod(to);
+					AtlasSet<GraphElement> sfReferences = Utilities.parseReferences(from);
+					for(GraphElement sf : sfReferences){
+						if(FieldAssignmentChecker.handleStaticFieldRead(x, sf, m)){
+							typesChanged = true;
+						}
+					}
+				}
+				
+				involvesField = true;
+			}
+			
+			// Type Rule 8 - TSWRITE
+			// let, sf = x
+			if(to.taggedWith(Utilities.CLASS_VARIABLE_ASSIGNMENT)){
+				AtlasSet<GraphElement> sfReferences = Utilities.parseReferences(to);
+				for(GraphElement sf : sfReferences){
+					GraphElement m = Utilities.getContainingMethod(to);
+					AtlasSet<GraphElement> xReferences = Utilities.parseReferences(from);
 					for(GraphElement x : xReferences){
-						GraphElement callsite = from;
-
-						GraphElement method = Utilities.getInvokedMethodSignature(callsite);
-
+						if(FieldAssignmentChecker.handleStaticFieldWrite(sf, x, m)){
+							typesChanged = true;
+						}
+					}
+				}
+				
+				involvesField = true;
+			}	
+			
+			// TCALL
+			boolean involvesCallsite = false;
+			if(from.taggedWith(XCSG.DynamicDispatchCallSite)){
+				// Type Rule 5 - TCALL
+				// let, x = y.m(z)
+				GraphElement containingMethod = Utilities.getContainingMethod(to);
+				AtlasSet<GraphElement> xReferences = Utilities.parseReferences(to);
+				for(GraphElement x : xReferences){
+					GraphElement callsite = from;
+					
+					// TODO: update this with method signature
+//					GraphElement method = Utilities.getInvokedMethodSignature(callsite);
+//					GraphElement identity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
+					
+					// IdentityPass (.this) -IdentityPassedTo-> CallSite (m)
+					GraphElement identityPassedToEdge = identityPassedToGraph.edges(callsite, NodeDirection.IN).getFirst();
+					GraphElement identityPass = identityPassedToEdge.getNode(EdgeDirection.FROM);
+					
+					// Receiver (r) -LocalDataFlow-> IdentityPass (.this)
+					GraphElement r = localDataFlowEdges.predecessors(Common.toQ(identityPass)).eval().nodes().getFirst();
+					AtlasSet<GraphElement> yReferences = Utilities.parseReferences(r);
+					for(GraphElement y : yReferences){
 						// ReturnValue (ret) -InterproceduralDataFlow-> CallSite (m)
-						GraphElement ret = interproceduralDFEdges.predecessors(Common.toQ(callsite)).eval().nodes().getFirst();
+						GraphElement ret = interproceduralDataFlowEdges.predecessors(Common.toQ(callsite)).eval().nodes().getFirst();
+
+						// Method (method) -Contains-> ReturnValue (ret)
+						// note that we could also use a control flow call edge to get the method
+						// Control Flow Block (cf) -Contains-> Callsite (m)
+						// Control Flow Block (cf) -Call-> Method (method)
+						GraphElement containsEdge = containsGraph.edges(ret, NodeDirection.IN).getFirst();
+						GraphElement method = containsEdge.getNode(EdgeDirection.FROM);
+						
+						// Method (method) -Contains-> Identity
+						GraphElement identity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
 						
 						// Method (method) -Contains-> Parameter (p1, p2, ...)
 						AtlasSet<GraphElement> parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
@@ -440,47 +395,63 @@ public class PurityAnalysis {
 						AtlasSet<GraphElement> parametersPassedEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow)
 								.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
 						
-						if(CallChecker.handleStaticCall(x, callsite, method, ret, parametersPassedEdges)){
+						if(CallChecker.handleCall(x, y, identity, method, ret, parametersPassedEdges, containingMethod)){
 							typesChanged = true;
 						}
 					}
-					
-					involvesCallsite = true;
 				}
 				
-				// Type Rule 2 - TASSIGN
-				// let x = y
-				if(!involvesField && !involvesCallsite){
-					AtlasSet<GraphElement> xReferences = Utilities.parseReferences(to);
-					for(GraphElement x : xReferences){
-						AtlasSet<GraphElement> yReferences = Utilities.parseReferences(from);;
-						for(GraphElement y : yReferences){
-							if(BasicAssignmentChecker.handleAssignment(x, y)){
-								typesChanged = true;
-							}
+				involvesCallsite = true;
+			}
+			
+			// TSCALL
+			if(from.taggedWith(XCSG.StaticDispatchCallSite)){
+				
+				// Type Rule 8 - TSCALL
+				// let, x = m(z)
+				AtlasSet<GraphElement> xReferences = Utilities.parseReferences(to);
+				for(GraphElement x : xReferences){
+					GraphElement callsite = from;
+
+					GraphElement method = Utilities.getInvokedMethodSignature(callsite);
+
+					// ReturnValue (ret) -InterproceduralDataFlow-> CallSite (m)
+					GraphElement ret = interproceduralDataFlowEdges.predecessors(Common.toQ(callsite)).eval().nodes().getFirst();
+					
+					// Method (method) -Contains-> Parameter (p1, p2, ...)
+					AtlasSet<GraphElement> parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
+					
+					// ControlFlow -Contains-> CallSite
+					// CallSite -Contains-> ParameterPassed (z1, z2, ...)
+					AtlasSet<GraphElement> parametersPassed = Common.toQ(callsite).parent().children().nodesTaggedWithAny(XCSG.ParameterPass).eval().nodes();
+					
+					// ParameterPassed (z1, z2, ...) -InterproceduralDataFlow-> Parameter (p1, p2, ...)
+					// such that z1-InterproceduralDataFlow->p1, z2-InterproceduralDataFlow->p2, ...
+					AtlasSet<GraphElement> parametersPassedEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow)
+							.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
+
+					if(CallChecker.handleStaticCall(x, callsite, method, ret, parametersPassedEdges)){
+						typesChanged = true;
+					}
+				}
+				
+				involvesCallsite = true;
+			}
+			
+			// Type Rule 2 - TASSIGN
+			// let x = y
+			if(!involvesField && !involvesCallsite){
+				AtlasSet<GraphElement> xReferences = Utilities.parseReferences(to);
+				for(GraphElement x : xReferences){
+					AtlasSet<GraphElement> yReferences = Utilities.parseReferences(from);;
+					for(GraphElement y : yReferences){
+						if(BasicAssignmentChecker.handleAssignment(x, y)){
+							typesChanged = true;
 						}
 					}
 				}
 			}
-		} 
-//		else if(workItem.taggedWith(XCSG.DynamicDispatchCallSite)){
-//			// constraints need to be checked for each callsite without an assignment 
-//			// of this instance method to satisfy constraints on receivers and parameters passed
-//			// note that this could be refined with a precise call graph instead of 
-//			// a CHA, but we'd also have to update the callsite resolution which brought
-//			// us to this point in the first place
-//			GraphElement unassignedDynamicDispatchCallsite = workItem;
-//			if(CallChecker.handleUnassignedDynamicDispatchCallsites(unassignedDynamicDispatchCallsite)){
-//				typesChanged = true;
-//			}
-//		} else if(workItem.taggedWith(XCSG.StaticDispatchCallSite)){
-//			// constraints need to be checked for each callsite without an assignment 
-//			// of this class method to satisfy constraints on parameters passed
-//			GraphElement unassignedStaticDispatchCallsite = workItem;
-//			if(CallChecker.handleUnassignedStaticDispatchCallsites(unassignedStaticDispatchCallsite)){
-//				typesChanged = true;
-//			}
-//		}
+		}
 		
 		return typesChanged;
 	}
@@ -521,12 +492,12 @@ public class PurityAnalysis {
 		// and if there were evidence then the node would have been touched earlier
 		Q literals = Common.universe().nodesTaggedWithAll(XCSG.Literal);
 		Q parameters = Common.universe().nodesTaggedWithAny(XCSG.Parameter);
-		Q masterReturns = Common.universe().nodesTaggedWithAny(XCSG.MasterReturn);
+		Q returnValues = Common.universe().nodesTaggedWithAny(XCSG.ReturnValue);
 		Q instanceVariables = Common.universe().nodesTaggedWithAny(XCSG.InstanceVariable);
 		Q thisNodes = Common.universe().nodesTaggedWithAll(XCSG.InstanceMethod, XCSG.Constructor).children().nodesTaggedWithAny(XCSG.Identity);
 		Q classVariables = Common.universe().nodesTaggedWithAny(XCSG.ClassVariable);
 		// note local variables may also get tracked, but only if need be during the analysis
-		Q trackedItems = literals.union(parameters, masterReturns, instanceVariables, thisNodes, classVariables);
+		Q trackedItems = literals.union(parameters, returnValues, instanceVariables, thisNodes, classVariables);
 		Q untouchedTrackedItems = trackedItems.difference(trackedItems.nodesTaggedWithAny(READONLY, POLYREAD, MUTABLE), Common.toQ(attributedGraphElements));
 		for(GraphElement untouchedTrackedItem : untouchedTrackedItems.eval().nodes()){
 			ImmutabilityTypes maximalType = getDefaultMaximalType(untouchedTrackedItem);

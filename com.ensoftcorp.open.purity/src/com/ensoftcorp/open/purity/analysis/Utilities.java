@@ -66,12 +66,102 @@ public class Utilities {
 	 */
 	public static final String IMMUTABILITY_QUALIFIERS = "IMMUTABILITY_QUALIFIERS";
 	
-	// TODO: bug EnSoft to make tags like this...
+	// TODO: bug EnSoft to make tags like these...
 	public static final String CLASS_VARIABLE_ASSIGNMENT = "CLASS_VARIABLE_ASSIGNMENT";
 	public static final String CLASS_VARIABLE_VALUE = "CLASS_VARIABLE_VALUE";
 	public static final String CLASS_VARIABLE_ACCESS = "CLASS_VARIABLE_ACCESS";
 	
+	// TODO: pester EnSoft to remove these...or at least unify with source graph format
 	public static final String DATAFLOW_DISPLAY_NODE = "DATAFLOW_DISPLAY_NODE";
+	
+	public static final String DUMMY_ASSIGNMENT_NODE = "DUMMY_ASSIGNMENT_NODE";
+	public static final String DUMMY_RETURN_NODE = "DUMMY_RETURN_NODE";
+	
+	/**
+	 * Adds DUMMY_RETURN_NODE to void methods and DUMMY_ASSIGNMENT_NODE from unassigned callsites to a dummy assignment node
+	 */
+	public static void addDummyReturnAssignments(){
+		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Adding dummy return assignments...");
+		Q returnsEdges = Common.universe().edgesTaggedWithAny(XCSG.Returns).retainEdges();
+		Q voidMethods = returnsEdges.predecessors(Common.types("void"));
+		for(GraphElement voidMethod : voidMethods.eval().nodes()){
+			GraphElement returnValue = Graph.U.createNode();
+			returnValue.putAttr(XCSG.name, DUMMY_RETURN_NODE);
+			returnValue.tag(XCSG.ReturnValue);
+			returnValue.tag(DUMMY_RETURN_NODE);
+			// create a contains edge from the void method to the return value
+			GraphElement containsEdge = Graph.U.createEdge(voidMethod, returnValue);
+			containsEdge.tag(XCSG.Contains);
+		}
+		
+		// TODO: enable after known bug in Atlas is fixed
+//		// sanity check (all methods have a return value)
+//		Q allMethods = Common.universe().nodesTaggedWithAny(XCSG.Method);
+//		Q returnValues = Common.universe().nodesTaggedWithAny(XCSG.ReturnValue);
+//		long numMissingReturns = allMethods.difference(returnValues.parent()).eval().nodes().size();
+//		if(numMissingReturns > 0){
+//			throw new RuntimeException("There are " + numMissingReturns + " missing return value nodes!");
+//		}
+		
+		Q callsites = Common.universe().nodesTaggedWithAny(XCSG.CallSite);
+		Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
+		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
+		Q assignments = Common.universe().nodesTaggedWithAny(XCSG.Assignment);
+		Q assignedCallsites = localDataFlowEdges.predecessors(assignments).nodesTaggedWithAny(XCSG.CallSite);
+		Q unassignedCallsites = callsites.difference(assignedCallsites);
+		for(GraphElement unassignedCallsite : unassignedCallsites.eval().nodes()){
+			GraphElement dummyAssignmentNode = Graph.U.createNode();
+			dummyAssignmentNode.putAttr(XCSG.name, DUMMY_ASSIGNMENT_NODE);
+			dummyAssignmentNode.tag(XCSG.Assignment);
+			dummyAssignmentNode.tag(DUMMY_ASSIGNMENT_NODE);
+			// create edge from unassigned callsite to the dummy assignment node
+			GraphElement localDataFlowEdge = Graph.U.createEdge(unassignedCallsite, dummyAssignmentNode);
+			localDataFlowEdge.tag(XCSG.LocalDataFlow);
+			
+			// create a contains edge from the callsites parent to the dummy assignment node
+			GraphElement parent = Common.toQ(unassignedCallsite).parent().eval().nodes().getFirst();
+			GraphElement containsEdge = Graph.U.createEdge(parent, dummyAssignmentNode);
+			containsEdge.tag(XCSG.Contains);
+			
+			// if the unassigned callsite does not have an incoming interprocedural data flow edge
+			// then it must be a void method in which case we need to link it up with the corresponding
+			// dummy return node. Since the dummy nodes are just place holders for readonly types,
+			// its not terribly important to completely resolve dynamic dispatches and we can just link
+			// to the dummy return node of the signature method
+			if(interproceduralDataFlowEdges.predecessors(Common.toQ(unassignedCallsite)).eval().nodes().isEmpty()){
+				GraphElement method = getInvokedMethodSignature(unassignedCallsite);
+				GraphElement returnValue = Common.toQ(method).children().nodesTaggedWithAny(XCSG.ReturnValue).eval().nodes().getFirst();
+				GraphElement interproceduralDataFlowEdge = Graph.U.createEdge(returnValue, unassignedCallsite);
+				interproceduralDataFlowEdge.tag(XCSG.InterproceduralDataFlow);
+			}
+		}
+		
+		// sanity check (all callsites are assigned to an assignment node)
+		long numMissingCallsiteAssignments = callsites.difference(localDataFlowEdges.predecessors(assignments)).eval().nodes().size();
+		if(numMissingCallsiteAssignments > 0){
+			throw new RuntimeException("There are " + numMissingCallsiteAssignments + " missing callsite assignments!");
+		}
+		
+		// sanity check (all callsites get a value from a return value)
+		Q returnValuesToCallsites = interproceduralDataFlowEdges.successors(Common.universe().nodesTaggedWithAny(XCSG.ReturnValue)).nodesTaggedWithAny(XCSG.CallSite);
+		long numMissingCallsiteReturns = callsites.difference(returnValuesToCallsites).eval().nodes().size();
+		if(numMissingCallsiteReturns > 0){
+			throw new RuntimeException("There are " + numMissingCallsiteReturns + " missing callsite returns!");
+		}
+	}
+	
+	/**
+	 * Removes DUMMY_RETURN_NODE and DUMMY_ASSIGNMENT_NODE nodes and any edges connected to them
+	 */
+	public static void removeDummyReturnAssignments(){
+		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Removing dummy return assignments...");
+		// just need to remove the nodes
+		// edges connected to the new nodes will be removed once the nodes are removed
+		Q dummyNodes = Common.universe().nodesTaggedWithAny(DUMMY_RETURN_NODE, DUMMY_ASSIGNMENT_NODE);
+		for(GraphElement dummyNode : dummyNodes.eval().nodes()){
+			Graph.U.delete(dummyNode);
+		}
+	}
 	
 	/**
 	 * Adds DATAFLOW_DISPLAY_NODE tags to display nodes
@@ -238,7 +328,6 @@ public class Utilities {
 		while(!worklist.isEmpty()){
 			GraphElement reference = worklist.pollFirst();
 			if(reference != null && needsProcessing(reference)){
-				// TODO: it may be possible for more than one cast predecessor
 				if(reference.taggedWith(XCSG.Cast)){
 					for(GraphElement workItem : dataFlowEdges.predecessors(Common.toQ(reference)).eval().nodes()){
 						worklist.add(workItem);
@@ -246,7 +335,6 @@ public class Utilities {
 					continue;
 				}
 				
-				// TODO: it may be possible for more than one display node predecessor
 				if(reference.taggedWith(DATAFLOW_DISPLAY_NODE)){
 					for(GraphElement workItem : Utilities.getDisplayNodeReferences(reference)){
 						worklist.add(workItem);
@@ -257,7 +345,7 @@ public class Utilities {
 				if(reference.taggedWith(XCSG.CallSite)){
 					// parse return, a callsite on a callsite must be a callsite on the resulting object from the first callsite
 					GraphElement method = Utilities.getInvokedMethodSignature(reference);
-					GraphElement ret = Common.toQ(method).children().nodesTaggedWithAny(XCSG.MasterReturn).eval().nodes().getFirst();
+					GraphElement ret = Common.toQ(method).children().nodesTaggedWithAny(XCSG.ReturnValue).eval().nodes().getFirst();
 					reference = ret;
 					continue;
 				}
@@ -348,6 +436,11 @@ public class Utilities {
 		}
 		
 		// valid types
+		if(ge.taggedWith(DUMMY_ASSIGNMENT_NODE) || ge.taggedWith(DUMMY_RETURN_NODE)){
+			// these are dummy read only nodes
+			return true;
+		}
+		
 		if(ge.taggedWith(XCSG.Null)){
 			return true;
 		}
@@ -372,7 +465,7 @@ public class Utilities {
 			return true;
 		}
 		
-		if(ge.taggedWith(XCSG.MasterReturn)){
+		if(ge.taggedWith(XCSG.ReturnValue)){
 			return true;
 		}
 		
@@ -400,7 +493,7 @@ public class Utilities {
 			return true;
 		}
 		
-		if(ge.taggedWith(XCSG.Assignment) /*|| ge.taggedWith(XCSG.DataFlow_Node)*/){
+		if(ge.taggedWith(XCSG.Assignment)){
 			if(!ge.taggedWith(XCSG.InstanceVariableAssignment) && !ge.taggedWith(Utilities.CLASS_VARIABLE_ASSIGNMENT)){
 				return true;
 			}
@@ -423,7 +516,13 @@ public class Utilities {
 		
 		EnumSet<ImmutabilityTypes> qualifiers = EnumSet.noneOf(ImmutabilityTypes.class);
 		
-		if(ge.taggedWith(XCSG.Null)){
+		if(ge.taggedWith(DUMMY_ASSIGNMENT_NODE) || ge.taggedWith(DUMMY_RETURN_NODE)){
+			// these are dummy read only nodes that help to provide context sensitivity
+			// in unassigned callsites or void methods
+			qualifiers.add(ImmutabilityTypes.READONLY);
+			qualifiers.add(ImmutabilityTypes.POLYREAD);
+			qualifiers.add(ImmutabilityTypes.MUTABLE);
+		} else if(ge.taggedWith(XCSG.Null)){
 			// null does not modify the stack or heap so it is readonly
 			// note however that assignments of nulls to a field can still mutate an object
 			qualifiers.add(ImmutabilityTypes.READONLY);
@@ -441,7 +540,7 @@ public class Utilities {
 			// return type of a constructor is only mutable
 			// x = new C(); // no effect on qualifier to x
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
-		} else if(ge.taggedWith(XCSG.MasterReturn)){
+		} else if(ge.taggedWith(XCSG.ReturnValue)){
 			// Section 2.4 of Reference 1
 			// "Method returns are initialized S(ret) = {readonly, polyread} for each method m"
 			qualifiers.add(ImmutabilityTypes.READONLY);
@@ -496,7 +595,7 @@ public class Utilities {
 			// But, what does it mean for a local reference to be polyread? ~Ben
 			qualifiers.add(ImmutabilityTypes.READONLY);
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
-		} else if(ge.taggedWith(XCSG.Assignment) /*|| ge.taggedWith(XCSG.DataFlow_Node)*/){
+		} else if(ge.taggedWith(XCSG.Assignment)){
 			if(!ge.taggedWith(XCSG.InstanceVariableAssignment) && !ge.taggedWith(Utilities.CLASS_VARIABLE_ASSIGNMENT)){
 				// could be a local reference
 				// Section 2.4 of Reference 1
