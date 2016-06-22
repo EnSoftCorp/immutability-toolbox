@@ -11,10 +11,8 @@ import java.util.TreeSet;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 
-import com.ensoftcorp.atlas.core.db.graph.Graph;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.EdgeDirection;
-import com.ensoftcorp.atlas.core.db.graph.GraphElement.NodeDirection;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
@@ -222,8 +220,7 @@ public class PurityAnalysis {
 		Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
 		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
 		Q instanceVariableAccessedEdges = Common.universe().edgesTaggedWithAny(XCSG.InstanceVariableAccessed);
-		Graph identityPassedToGraph = Common.universe().edgesTaggedWithAny(XCSG.IdentityPassedTo).eval();
-		Graph containsGraph = Common.universe().edgesTaggedWithAny(XCSG.Contains).eval();
+		Q identityPassedToEdges = Common.universe().edgesTaggedWithAny(XCSG.IdentityPassedTo);
 
 		// consider data flow edges
 		// incoming edges represent a read relationship in an assignment
@@ -358,45 +355,72 @@ public class PurityAnalysis {
 				for(GraphElement x : xReferences){
 					GraphElement callsite = from;
 					
-					// TODO: update this with method signature
+//					// TODO: consider if this should be updated to use only the method signature
+//					// get the callsites invoked signature method
 //					GraphElement method = Utilities.getInvokedMethodSignature(callsite);
+//					
+//					// Method (method) -Contains-> Identity
 //					GraphElement identity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
-					
-					// IdentityPass (.this) -IdentityPassedTo-> CallSite (m)
-					GraphElement identityPassedToEdge = identityPassedToGraph.edges(callsite, NodeDirection.IN).getFirst();
-					GraphElement identityPass = identityPassedToEdge.getNode(EdgeDirection.FROM);
-					
-					// Receiver (r) -LocalDataFlow-> IdentityPass (.this)
-					GraphElement r = localDataFlowEdges.predecessors(Common.toQ(identityPass)).eval().nodes().getFirst();
-					AtlasSet<GraphElement> yReferences = Utilities.parseReferences(r);
-					for(GraphElement y : yReferences){
-						// ReturnValue (ret) -InterproceduralDataFlow-> CallSite (m)
-						GraphElement ret = interproceduralDataFlowEdges.predecessors(Common.toQ(callsite)).eval().nodes().getFirst();
+//					
+//					// Method (method) -Contains-> ReturnValue (ret)
+//					GraphElement ret = Common.toQ(method).children().nodesTaggedWithAny(XCSG.ReturnValue).eval().nodes().getFirst();
+//					
+//					// IdentityPass (.this) -IdentityPassedTo-> CallSite (m)
+//					AtlasSet<GraphElement> identityPassReferences = identityPassedToEdges.predecessors(Common.toQ(callsite)).eval().nodes();
+//					for(GraphElement identityPass : identityPassReferences){
+//						// Receiver (r) -LocalDataFlow-> IdentityPass (.this)
+//						GraphElement r = localDataFlowEdges.predecessors(Common.toQ(identityPass)).eval().nodes().getFirst();
+//						AtlasSet<GraphElement> yReferences = Utilities.parseReferences(r);
+//						for(GraphElement y : yReferences){
+//							// Method (method) -Contains-> Parameter (p1, p2, ...)
+//							AtlasSet<GraphElement> parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
+//							
+//							// ControlFlow -Contains-> CallSite
+//							// CallSite -Contains-> ParameterPassed (z1, z2, ...)
+//							AtlasSet<GraphElement> parametersPassed = Common.toQ(callsite).parent().children().nodesTaggedWithAny(XCSG.ParameterPass).eval().nodes();
+//							
+//							// ParameterPassed (z1, z2, ...) -InterproceduralDataFlow-> Parameter (p1, p2, ...)
+//							// such that z1-InterproceduralDataFlow->p1, z2-InterproceduralDataFlow->p2, ...
+//							AtlasSet<GraphElement> parametersPassedEdges = interproceduralDataFlowEdges
+//									.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
+//							
+//							if(CallChecker.handleCall(x, y, identity, method, ret, parametersPassedEdges, containingMethod)){
+//								typesChanged = true;
+//							}
+//						}
+//					}
 
-						// Method (method) -Contains-> ReturnValue (ret)
-						// note that we could also use a control flow call edge to get the method
-						// Control Flow Block (cf) -Contains-> Callsite (m)
-						// Control Flow Block (cf) -Call-> Method (method)
-						GraphElement containsEdge = containsGraph.edges(ret, NodeDirection.IN).getFirst();
-						GraphElement method = containsEdge.getNode(EdgeDirection.FROM);
-						
-						// Method (method) -Contains-> Identity
-						GraphElement identity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
-						
-						// Method (method) -Contains-> Parameter (p1, p2, ...)
-						AtlasSet<GraphElement> parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
-						
-						// ControlFlow -Contains-> CallSite
-						// CallSite -Contains-> ParameterPassed (z1, z2, ...)
-						AtlasSet<GraphElement> parametersPassed = Common.toQ(callsite).parent().children().nodesTaggedWithAny(XCSG.ParameterPass).eval().nodes();
-						
-						// ParameterPassed (z1, z2, ...) -InterproceduralDataFlow-> Parameter (p1, p2, ...)
-						// such that z1-InterproceduralDataFlow->p1, z2-InterproceduralDataFlow->p2, ...
-						AtlasSet<GraphElement> parametersPassedEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow)
-								.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
-						
-						if(CallChecker.handleCall(x, y, identity, method, ret, parametersPassedEdges, containingMethod)){
-							typesChanged = true;
+					// IdentityPass (.this) -IdentityPassedTo-> CallSite (m)
+					AtlasSet<GraphElement> identityPassReferences = identityPassedToEdges.predecessors(Common.toQ(callsite)).eval().nodes();
+					for(GraphElement identityPass : identityPassReferences){
+						// Receiver (receiver) -LocalDataFlow-> IdentityPass (.this)
+						GraphElement reciever = localDataFlowEdges.predecessors(Common.toQ(identityPass)).eval().nodes().getFirst();
+						AtlasSet<GraphElement> yReferences = Utilities.parseReferences(reciever);
+						for(GraphElement y : yReferences){
+							// ReturnValue (ret) -InterproceduralDataFlow-> CallSite (m)
+							GraphElement ret = interproceduralDataFlowEdges.predecessors(Common.toQ(callsite)).eval().nodes().getFirst();
+
+							// Method (method) -Contains-> ReturnValue (ret)
+							GraphElement method = Common.toQ(ret).parent().eval().nodes().getFirst();
+							
+							// Method (method) -Contains-> Identity
+							GraphElement identity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
+							
+							// Method (method) -Contains-> Parameter (p1, p2, ...)
+							AtlasSet<GraphElement> parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
+							
+							// ControlFlow -Contains-> CallSite
+							// CallSite -Contains-> ParameterPassed (z1, z2, ...)
+							AtlasSet<GraphElement> parametersPassed = Common.toQ(callsite).parent().children().nodesTaggedWithAny(XCSG.ParameterPass).eval().nodes();
+							
+							// ParameterPassed (z1, z2, ...) -InterproceduralDataFlow-> Parameter (p1, p2, ...)
+							// such that z1-InterproceduralDataFlow->p1, z2-InterproceduralDataFlow->p2, ...
+							AtlasSet<GraphElement> parametersPassedEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow)
+									.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
+							
+							if(CallChecker.handleCall(x, y, identity, method, ret, parametersPassedEdges, containingMethod)){
+								typesChanged = true;
+							}
 						}
 					}
 				}

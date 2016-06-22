@@ -345,8 +345,7 @@ public class Utilities {
 				if(reference.taggedWith(XCSG.CallSite)){
 					// parse return, a callsite on a callsite must be a callsite on the resulting object from the first callsite
 					GraphElement method = Utilities.getInvokedMethodSignature(reference);
-					GraphElement ret = Common.toQ(method).children().nodesTaggedWithAny(XCSG.ReturnValue).eval().nodes().getFirst();
-					reference = ret;
+					worklist.add(Common.toQ(method).children().nodesTaggedWithAny(XCSG.ReturnValue).eval().nodes().getFirst());
 					continue;
 				}
 				
@@ -551,8 +550,7 @@ public class Utilities {
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		} else if(ge.taggedWith(XCSG.Identity)){
 			qualifiers.add(ImmutabilityTypes.READONLY);
-			// TODO: this is causing problems, but...the reference 1 specifically says its an valid type...
-//			qualifiers.add(ImmutabilityTypes.POLYREAD);
+			qualifiers.add(ImmutabilityTypes.POLYREAD);
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		} else if(ge.taggedWith(XCSG.InstanceVariable)){
 			// Section 2.4 of Reference 1
