@@ -159,7 +159,12 @@ public class Utilities {
 		// just need to remove the nodes
 		// edges connected to the new nodes will be removed once the nodes are removed
 		Q dummyNodes = Common.universe().nodesTaggedWithAny(DUMMY_RETURN_NODE, DUMMY_ASSIGNMENT_NODE);
-		for(GraphElement dummyNode : dummyNodes.eval().nodes()){
+		TreeSet<Node> dummyNodesToRemove = new TreeSet<Node>();
+		for(Node dummyNode : dummyNodes.eval().nodes()){
+			dummyNodesToRemove.add(dummyNode);
+		}
+		while(!dummyNodesToRemove.isEmpty()){
+			Node dummyNode = dummyNodesToRemove.pollFirst();
 			Graph.U.delete(dummyNode);
 		}
 	}
