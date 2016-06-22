@@ -524,9 +524,9 @@ public class Utilities {
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		} else if(ge.taggedWith(XCSG.Null)){
 			// null does not modify the stack or heap so it is readonly
-			// note however that assignments of nulls to a field can still mutate an object
-			qualifiers.add(ImmutabilityTypes.READONLY);
 			// however in order to satisfy constraints the other types should be initialized
+			// note that assignments of nulls to a field can still mutate an object
+			qualifiers.add(ImmutabilityTypes.READONLY);
 			qualifiers.add(ImmutabilityTypes.POLYREAD);
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		} else if(ge.taggedWith(XCSG.Literal)){

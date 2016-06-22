@@ -25,22 +25,7 @@ public class FieldAssignmentChecker {
 	 * @return Returns true if the graph element's ImmutabilityTypes have changed
 	 */
 	public static boolean handleFieldWrite(GraphElement x, GraphElement f, GraphElement y) {
-		
-		if(x==null){
-			Log.warning("x is null!");
-			return false;
-		}
-		
-		if(f==null){
-			Log.warning("f is null!");
-			return false;
-		}
-		
-		if(y==null){
-			Log.warning("y is null!");
-			return false;
-		}
-		
+
 		if(PurityPreferences.isInferenceRuleLoggingEnabled()) Log.info("TWRITE (x.f=y, x=" + x.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")");
 		
 		boolean typesChanged = false;
@@ -145,21 +130,6 @@ public class FieldAssignmentChecker {
 	 */
 	public static boolean handleFieldRead(GraphElement x, GraphElement y, GraphElement f) {
 		
-		if(x==null){
-			Log.warning("x is null!");
-			return false;
-		}
-		
-		if(y==null){
-			Log.warning("y is null!");
-			return false;
-		}
-		
-		if(f==null){
-			Log.warning("f is null!");
-			return false;
-		}
-
 		if(PurityPreferences.isInferenceRuleLoggingEnabled()) Log.info("TREAD (x=y.f, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ")");
 		
 		boolean typesChanged = false;
@@ -187,8 +157,8 @@ public class FieldAssignmentChecker {
 				}
 			}
 		}
-		
-		if(y.taggedWith(XCSG.InstanceVariableValue) || y.taggedWith(Utilities.CLASS_VARIABLE_VALUE)){
+	
+		if(y.taggedWith(XCSG.InstanceVariable) || y.taggedWith(XCSG.ClassVariable)){
 			// the remaining constraints are too strong for multiple fields
 			return typesChanged;
 		}
@@ -279,21 +249,6 @@ public class FieldAssignmentChecker {
 	 * @return
 	 */
 	public static boolean handleStaticFieldWrite(GraphElement sf, GraphElement x, GraphElement m) {
-		if(sf==null){
-			Log.warning("sf is null!");
-			return false;
-		}
-		
-		if(x==null){
-			Log.warning("x is null!");
-			return false;
-		}
-
-		if(m==null){
-			Log.warning("m is null!");
-			return false;
-		}
-		
 		if(PurityPreferences.isInferenceRuleLoggingEnabled()) Log.info("TSWRITE (sf=x, sf=" + sf.getAttr(XCSG.name) + ", x=" + x.getAttr(XCSG.name) + ")");
 		
 		boolean typesChanged = false;
@@ -315,21 +270,6 @@ public class FieldAssignmentChecker {
 	 * @return
 	 */
 	public static boolean handleStaticFieldRead(GraphElement x, GraphElement sf, GraphElement m) {
-		if(x==null){
-			Log.warning("x is null!");
-			return false;
-		}
-		
-		if(sf==null){
-			Log.warning("sf is null!");
-			return false;
-		}
-		
-		if(m==null){
-			Log.warning("m is null!");
-			return false;
-		}
-		
 		if(PurityPreferences.isInferenceRuleLoggingEnabled()) Log.info("TSREAD (x=sf, x=" + x.getAttr(XCSG.name) + ", sf=" + sf.getAttr(XCSG.name) + ")");
 		
 		boolean typesChanged = false;
