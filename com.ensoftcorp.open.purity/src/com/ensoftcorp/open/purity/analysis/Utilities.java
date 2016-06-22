@@ -132,8 +132,16 @@ public class Utilities {
 			if(interproceduralDataFlowEdges.predecessors(Common.toQ(unassignedCallsite)).eval().nodes().isEmpty()){
 				GraphElement method = getInvokedMethodSignature(unassignedCallsite);
 				GraphElement returnValue = Common.toQ(method).children().nodesTaggedWithAny(XCSG.ReturnValue).eval().nodes().getFirst();
-				GraphElement interproceduralDataFlowEdge = Graph.U.createEdge(returnValue, unassignedCallsite);
-				interproceduralDataFlowEdge.tag(XCSG.InterproceduralDataFlow);
+				if(returnValue != null){
+					if(method != null){
+						GraphElement interproceduralDataFlowEdge = Graph.U.createEdge(returnValue, unassignedCallsite);
+						interproceduralDataFlowEdge.tag(XCSG.InterproceduralDataFlow);
+					} else {
+						Log.warning("Method is null for unassignedCallsite " + unassignedCallsite.address().toAddressString());
+					}
+				} else {
+					Log.warning("Return value is null for unassignedCallsite " + unassignedCallsite.address().toAddressString());
+				}
 			}
 		}
 		
