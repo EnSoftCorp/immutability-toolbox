@@ -5,6 +5,7 @@ import java.util.EnumSet;
 import java.util.Set;
 import java.util.TreeSet;
 
+import com.ensoftcorp.atlas.core.db.graph.Edge;
 import com.ensoftcorp.atlas.core.db.graph.Graph;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.EdgeDirection;
@@ -77,6 +78,7 @@ public class Utilities {
 	
 	public static final String DUMMY_ASSIGNMENT_NODE = "DUMMY_ASSIGNMENT_NODE";
 	public static final String DUMMY_RETURN_NODE = "DUMMY_RETURN_NODE";
+	public static final String DUMMY_RETURN_EDGE = "DUMMY_RETURN_EDGE";
 	
 	/**
 	 * Adds DUMMY_RETURN_NODE to void methods and DUMMY_ASSIGNMENT_NODE from unassigned callsites to a dummy assignment node
@@ -86,77 +88,114 @@ public class Utilities {
 		Q returnsEdges = Common.universe().edgesTaggedWithAny(XCSG.Returns).retainEdges();
 		Q voidMethods = returnsEdges.predecessors(Common.types("void"));
 		for(GraphElement voidMethod : voidMethods.eval().nodes()){
-			GraphElement returnValue = Graph.U.createNode();
-			returnValue.putAttr(XCSG.name, DUMMY_RETURN_NODE);
-			returnValue.tag(XCSG.ReturnValue);
-			returnValue.tag(DUMMY_RETURN_NODE);
-			// create a contains edge from the void method to the return value
-			GraphElement containsEdge = Graph.U.createEdge(voidMethod, returnValue);
-			containsEdge.tag(XCSG.Contains);
+			createDummyReturnNode(voidMethod);
 		}
 		
-		// TODO: enable after known bug in Atlas is fixed
-//		// sanity check (all methods have a return value)
-//		Q allMethods = Common.universe().nodesTaggedWithAny(XCSG.Method);
-//		Q returnValues = Common.universe().nodesTaggedWithAny(XCSG.ReturnValue);
-//		long numMissingReturns = allMethods.difference(returnValues.parent()).eval().nodes().size();
-//		if(numMissingReturns > 0){
-//			throw new RuntimeException("There are " + numMissingReturns + " missing return value nodes!");
-//		}
+		// the remaining methods without returns are likely ill formed methods
+		// we can correct for it and move on, but these should be fixed up stream
+		// in Atlas if they occur or there is an assumption here that is being violated
+		Q allMethods = Common.universe().nodesTaggedWithAny(XCSG.Method);
+		Q returnValues = Common.universe().nodesTaggedWithAny(XCSG.ReturnValue);
+		AtlasSet<Node> illFormedMethods = allMethods.difference(returnValues.parent()).eval().nodes();
+		if(!illFormedMethods.isEmpty()){
+			for(Node illFormedMethod : illFormedMethods){
+				Log.warning("Added a dummy return node for ill-formed method " + illFormedMethod.address().toAddressString());
+				createDummyReturnNode(illFormedMethod);
+			}
+		}
+
+		Log.info("Added " + Common.universe().nodesTaggedWithAny(DUMMY_RETURN_NODE).eval().nodes().size() + " dummy return nodes...");
 		
-		Q callsites = Common.universe().nodesTaggedWithAny(XCSG.CallSite);
-		Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
+		// sanity check (all (expected) methods have a return value)
+		returnValues = Common.universe().nodesTaggedWithAny(XCSG.ReturnValue); // refresh stale references
+		AtlasSet<Node> unexpectedMethodsMissingReturns = allMethods.difference(returnValues.parent()).eval().nodes();
+		if(!unexpectedMethodsMissingReturns.isEmpty()){
+			throw new RuntimeException("There are " + unexpectedMethodsMissingReturns.size() + " unexpected methods missing return value nodes!");
+		}
+		
+		// if the callsite does not have an incoming interprocedural data flow edge
+		// then it must be a void method in which case we need to link it up with the corresponding
+		// dummy (or regular) return node. Since the dummy nodes are just place holders for readonly types,
+		// its not terribly important to completely resolve dynamic dispatches and we can just link
+		// to the dummy return node of the signature method
+		returnValues = Common.universe().nodesTaggedWithAny(XCSG.ReturnValue); // refresh stale references
 		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
+		Q callsitesWithReturn = interproceduralDataFlowEdges.successors(returnValues).nodesTaggedWithAny(XCSG.CallSite);
+		Q callsites = Common.universe().nodesTaggedWithAny(XCSG.CallSite);
+		Q callsitesWithoutReturn = callsites.difference(callsitesWithReturn);
+		for(Node callsiteWithoutReturn : callsitesWithoutReturn.eval().nodes()){
+			GraphElement method = getInvokedMethodSignature(callsiteWithoutReturn);
+			GraphElement returnValue = Common.toQ(method).children().nodesTaggedWithAny(XCSG.ReturnValue).eval().nodes().getFirst();
+			createDummyReturnValueEdge(returnValue, callsiteWithoutReturn);
+		}
+		
+		Log.info("Added " + Common.universe().edgesTaggedWithAny(DUMMY_RETURN_EDGE).eval().edges().size() + " dummy return value edges...");
+		
+		// sanity check (all callsites have an incoming data flow edge from a return value)
+		callsites = Common.universe().nodesTaggedWithAny(XCSG.CallSite); // refresh stale references
+		returnValues = Common.universe().nodesTaggedWithAny(XCSG.ReturnValue); // refresh stale references
+		interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow); // refresh stale references
+		Q callsitesWithReturns = interproceduralDataFlowEdges.successors(returnValues).nodesTaggedWithAny(XCSG.CallSite);
+		AtlasSet<Node> callsiteNodesWithoutReturn = callsites.difference(callsitesWithReturns).eval().nodes();
+		if(!callsiteNodesWithoutReturn.isEmpty()){
+			throw new RuntimeException("There are " + callsiteNodesWithoutReturn.size() + " missing returns to callsites!");
+		}
+		
+		// create dummy assignment nodes for callsites without assignments
+		Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
 		Q assignments = Common.universe().nodesTaggedWithAny(XCSG.Assignment);
 		Q assignedCallsites = localDataFlowEdges.predecessors(assignments).nodesTaggedWithAny(XCSG.CallSite);
 		Q unassignedCallsites = callsites.difference(assignedCallsites);
 		for(GraphElement unassignedCallsite : unassignedCallsites.eval().nodes()){
-			GraphElement dummyAssignmentNode = Graph.U.createNode();
-			dummyAssignmentNode.putAttr(XCSG.name, DUMMY_ASSIGNMENT_NODE);
-			dummyAssignmentNode.tag(XCSG.Assignment);
-			dummyAssignmentNode.tag(DUMMY_ASSIGNMENT_NODE);
-			// create edge from unassigned callsite to the dummy assignment node
-			GraphElement localDataFlowEdge = Graph.U.createEdge(unassignedCallsite, dummyAssignmentNode);
-			localDataFlowEdge.tag(XCSG.LocalDataFlow);
-			
-			// create a contains edge from the callsites parent to the dummy assignment node
-			GraphElement parent = Common.toQ(unassignedCallsite).parent().eval().nodes().getFirst();
-			GraphElement containsEdge = Graph.U.createEdge(parent, dummyAssignmentNode);
-			containsEdge.tag(XCSG.Contains);
-			
-			// if the unassigned callsite does not have an incoming interprocedural data flow edge
-			// then it must be a void method in which case we need to link it up with the corresponding
-			// dummy return node. Since the dummy nodes are just place holders for readonly types,
-			// its not terribly important to completely resolve dynamic dispatches and we can just link
-			// to the dummy return node of the signature method
-			if(interproceduralDataFlowEdges.predecessors(Common.toQ(unassignedCallsite)).eval().nodes().isEmpty()){
-				GraphElement method = getInvokedMethodSignature(unassignedCallsite);
-				GraphElement returnValue = Common.toQ(method).children().nodesTaggedWithAny(XCSG.ReturnValue).eval().nodes().getFirst();
-				if(returnValue != null){
-					if(method != null){
-						GraphElement interproceduralDataFlowEdge = Graph.U.createEdge(returnValue, unassignedCallsite);
-						interproceduralDataFlowEdge.tag(XCSG.InterproceduralDataFlow);
-					} else {
-						Log.warning("Method is null for unassignedCallsite " + unassignedCallsite.address().toAddressString());
-					}
-				} else {
-					Log.warning("Return value is null for unassignedCallsite " + unassignedCallsite.address().toAddressString());
-				}
-			}
+			createDummyAssignmentNode(unassignedCallsite);
 		}
+		
+		Log.info("Added " + Common.universe().nodesTaggedWithAny(DUMMY_ASSIGNMENT_NODE).eval().nodes().size() + " dummy assignment nodes...");
 		
 		// sanity check (all callsites are assigned to an assignment node)
-		long numMissingCallsiteAssignments = callsites.difference(localDataFlowEdges.predecessors(assignments)).eval().nodes().size();
-		if(numMissingCallsiteAssignments > 0){
-			throw new RuntimeException("There are " + numMissingCallsiteAssignments + " missing callsite assignments!");
+		localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow); // refresh stale references
+		assignments = Common.universe().nodesTaggedWithAny(XCSG.Assignment); // refresh stale references
+		AtlasSet<Node> unexpectedCallsitesMissingAssignments =  callsites.difference(localDataFlowEdges.predecessors(assignments)).eval().nodes();
+		if(!unexpectedCallsitesMissingAssignments.isEmpty()){
+			throw new RuntimeException("There are " + unexpectedCallsitesMissingAssignments.size() + " unexpected callsites missing assignments!");
 		}
+	}
+
+	private static GraphElement createDummyReturnValueEdge(GraphElement returnValue, GraphElement callsite){
+		GraphElement interproceduralDataFlowEdge = Graph.U.createEdge(returnValue, callsite);
+		interproceduralDataFlowEdge.tag(XCSG.InterproceduralDataFlow);
+		interproceduralDataFlowEdge.tag(DUMMY_RETURN_EDGE);
+		return interproceduralDataFlowEdge;
+	}
+	
+	private static GraphElement createDummyAssignmentNode(GraphElement unassignedCallsite) {
+		// create the dummy assignment node
+		GraphElement dummyAssignmentNode = Graph.U.createNode();
+		dummyAssignmentNode.putAttr(XCSG.name, DUMMY_ASSIGNMENT_NODE);
+		dummyAssignmentNode.tag(XCSG.Assignment);
+		dummyAssignmentNode.tag(DUMMY_ASSIGNMENT_NODE);
 		
-		// sanity check (all callsites get a value from a return value)
-		Q returnValuesToCallsites = interproceduralDataFlowEdges.successors(Common.universe().nodesTaggedWithAny(XCSG.ReturnValue)).nodesTaggedWithAny(XCSG.CallSite);
-		long numMissingCallsiteReturns = callsites.difference(returnValuesToCallsites).eval().nodes().size();
-		if(numMissingCallsiteReturns > 0){
-			throw new RuntimeException("There are " + numMissingCallsiteReturns + " missing callsite returns!");
-		}
+		// create edge from unassigned callsite to the dummy assignment node
+		GraphElement localDataFlowEdge = Graph.U.createEdge(unassignedCallsite, dummyAssignmentNode);
+		localDataFlowEdge.tag(XCSG.LocalDataFlow);
+		
+		// create a contains edge from the callsites parent to the dummy assignment node
+		GraphElement parent = Common.toQ(unassignedCallsite).parent().eval().nodes().getFirst();
+		GraphElement containsEdge = Graph.U.createEdge(parent, dummyAssignmentNode);
+		containsEdge.tag(XCSG.Contains);
+		
+		return dummyAssignmentNode;
+	}
+
+	private static GraphElement createDummyReturnNode(GraphElement method) {
+		GraphElement returnValue = Graph.U.createNode();
+		returnValue.putAttr(XCSG.name, DUMMY_RETURN_NODE);
+		returnValue.tag(XCSG.ReturnValue);
+		returnValue.tag(DUMMY_RETURN_NODE);
+		// create a contains edge from the void method to the return value
+		GraphElement containsEdge = Graph.U.createEdge(method, returnValue);
+		containsEdge.tag(XCSG.Contains);
+		return returnValue;
 	}
 	
 	/**
@@ -164,8 +203,7 @@ public class Utilities {
 	 */
 	public static void removeDummyReturnAssignments(){
 		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Removing dummy return assignments...");
-		// just need to remove the nodes
-		// edges connected to the new nodes will be removed once the nodes are removed
+		// edges connected to the dummy nodes will be removed once the nodes are removed
 		Q dummyNodes = Common.universe().nodesTaggedWithAny(DUMMY_RETURN_NODE, DUMMY_ASSIGNMENT_NODE);
 		TreeSet<Node> dummyNodesToRemove = new TreeSet<Node>();
 		for(Node dummyNode : dummyNodes.eval().nodes()){
@@ -174,6 +212,18 @@ public class Utilities {
 		while(!dummyNodesToRemove.isEmpty()){
 			Node dummyNode = dummyNodesToRemove.pollFirst();
 			Graph.U.delete(dummyNode);
+		}
+		
+		// these edges were likely added to compensate in irregularities in the graph
+		// lets remove them now if we added any
+		Q dummyEdges = Common.universe().edgesTaggedWithAny(DUMMY_RETURN_EDGE);
+		TreeSet<Edge> dummyEdgesToRemove = new TreeSet<Edge>();
+		for(Edge dummyEdge : dummyEdges.eval().edges()){
+			dummyEdgesToRemove.add(dummyEdge);
+		}
+		while(!dummyEdgesToRemove.isEmpty()){
+			Edge dummyEdge = dummyEdgesToRemove.pollFirst();
+			Graph.U.delete(dummyEdge);
 		}
 	}
 	
@@ -395,7 +445,7 @@ public class Utilities {
 					continue;
 				}
 				
-				String message = "Unhandled reference type for GraphElement " + node.address().toAddressString();
+				String message = "Unhandled reference type for GraphElement " + node.address().toAddressString() + "\n" + node.toString();
 				RuntimeException e = new RuntimeException(message);
 				Log.error(message, e);
 				throw e;
