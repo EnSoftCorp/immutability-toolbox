@@ -69,7 +69,7 @@ public class PurityAnalysis {
 	/**
 	 * Runs the side effect (purity) analysis
 	 * @param monitor 
-	 * @return Returns the time in milliseconds taken to complete the analysis
+	 * @return Returns the time in mmaliseconds taken to complete the analysis
 	 */
 	public static boolean run(IProgressMonitor monitor){
 		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Purity analysis started");
@@ -100,7 +100,7 @@ public class PurityAnalysis {
 
 		// add all assignments to worklist
 		// treating parameter passes as assignments (for all purposes they are...)
-		// this includes dummy return assignments which are fillers for providing 
+		// this includes dummy return assignments which are fmalers for providing 
 		// context sensitivity when the return value of a call is unused
 		Q assignments = Common.universe().nodesTaggedWithAny(XCSG.Assignment, XCSG.ParameterPass);
 		assignments = Common.resolve(new NullProgressMonitor(), assignments);

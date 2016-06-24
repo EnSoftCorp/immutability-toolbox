@@ -96,11 +96,11 @@ public class Utilities {
 		// in Atlas if they occur or there is an assumption here that is being violated
 		Q allMethods = Common.universe().nodesTaggedWithAny(XCSG.Method);
 		Q returnValues = Common.universe().nodesTaggedWithAny(XCSG.ReturnValue);
-		AtlasSet<Node> illFormedMethods = allMethods.difference(returnValues.parent()).eval().nodes();
-		if(!illFormedMethods.isEmpty()){
-			for(Node illFormedMethod : illFormedMethods){
-				Log.warning("Added a dummy return node for ill-formed method " + illFormedMethod.address().toAddressString());
-				createDummyReturnNode(illFormedMethod);
+		AtlasSet<Node> malformedMethods = allMethods.difference(returnValues.parent()).eval().nodes();
+		if(!malformedMethods.isEmpty()){
+			for(Node malformedMethod : malformedMethods){
+				Log.warning("Added a dummy return node for malformed method " + malformedMethod.address().toAddressString());
+				createDummyReturnNode(malformedMethod);
 			}
 		}
 
