@@ -103,7 +103,8 @@ public class PurityAnalysis {
 		// this includes dummy return assignments which are fmalers for providing 
 		// context sensitivity when the return value of a call is unused
 		Q assignments = Common.universe().nodesTaggedWithAny(XCSG.Assignment, XCSG.ParameterPass);
-		assignments = Common.resolve(new NullProgressMonitor(), assignments);
+		Q dummyAssignments = Common.universe().nodesTaggedWithAny(Utilities.DUMMY_ASSIGNMENT_NODE);
+		assignments = Common.resolve(new NullProgressMonitor(), assignments.difference(dummyAssignments));
 		for(Node assignment : assignments.eval().nodes()){
 			worklist.add(assignment);
 		}
