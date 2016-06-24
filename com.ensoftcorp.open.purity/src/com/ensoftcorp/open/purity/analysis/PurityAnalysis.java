@@ -3,6 +3,7 @@ package com.ensoftcorp.open.purity.analysis;
 import static com.ensoftcorp.open.purity.analysis.Utilities.getTypes;
 import static com.ensoftcorp.open.purity.analysis.Utilities.removeTypes;
 
+import java.text.DecimalFormat;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Set;
@@ -65,6 +66,11 @@ public class PurityAnalysis {
 	 * type system or implementation
 	 */
 	public static final String UNTYPED = "UNTYPED";
+	
+	/**
+	 * Helper for formatting decimal strings
+	 */
+	private static final DecimalFormat FORMAT = new DecimalFormat("#.##"); 
 
 	/**
 	 * Runs the side effect (purity) analysis
@@ -82,7 +88,7 @@ public class PurityAnalysis {
 			long numPolyRead = Common.universe().nodesTaggedWithAny(POLYREAD).eval().nodes().size();
 			long numMutable = Common.universe().nodesTaggedWithAny(MUTABLE).eval().nodes().size();
 			String summary = "READONLY: " + numReadOnly + ", POLYREAD: " + numPolyRead + ", MUTABLE: " + numMutable;
-			Log.info("Purity analysis completed in " + runtime + " ms\n" + summary);
+			Log.info("Purity analysis completed in " + FORMAT.format(runtime) + " ms\n" + summary);
 		}
 		return isSane;
 	}
@@ -94,17 +100,17 @@ public class PurityAnalysis {
 		// TODO: remove when there are appropriate alternatives
 		Utilities.addClassVariableAccessTags();
 		Utilities.addDataFlowDisplayNodeTags();
+		
 		Utilities.addDummyReturnAssignments();
 
 		TreeSet<Node> worklist = new TreeSet<Node>();
 
 		// add all assignments to worklist
 		// treating parameter passes as assignments (for all purposes they are...)
-		// this includes dummy return assignments which are fmalers for providing 
+		// this includes dummy return assignments which are fillers for providing 
 		// context sensitivity when the return value of a call is unused
 		Q assignments = Common.universe().nodesTaggedWithAny(XCSG.Assignment, XCSG.ParameterPass);
-		Q dummyAssignments = Common.universe().nodesTaggedWithAny(Utilities.DUMMY_ASSIGNMENT_NODE);
-		assignments = Common.resolve(new NullProgressMonitor(), assignments.difference(dummyAssignments));
+		assignments = Common.resolve(new NullProgressMonitor(), assignments);
 		for(Node assignment : assignments.eval().nodes()){
 			worklist.add(assignment);
 		}
@@ -127,7 +133,7 @@ public class PurityAnalysis {
 			}
 			
 			long stopIteration = System.nanoTime();
-			if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Purity analysis iteration: " + iteration + " completed in " + (stopIteration-startIteration)/1000.0/1000.0 + "ms");
+			if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Purity analysis iteration: " + iteration + " completed in " + FORMAT.format((stopIteration-startIteration)/1000.0/1000.0) + " ms");
 			
 			// If every reference was in the worklist then theoretically each item
 			// should only ever be visited at most 3 times (because in the worst
@@ -170,7 +176,7 @@ public class PurityAnalysis {
 			long startExtraction = System.nanoTime();
 			extractMaximalTypes();
 			long stopExtraction = System.nanoTime();
-			if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Extracted maximal types in " + (stopExtraction-startExtraction)/1000.0/1000.0 + "ms");
+			if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Extracted maximal types in " + FORMAT.format((stopExtraction-startExtraction)/1000.0/1000.0) + " ms");
 			
 			// tags pure methods
 			// must be run after extractMaximalTypes
@@ -178,7 +184,7 @@ public class PurityAnalysis {
 			long startPurityTagging = System.nanoTime();
 			tagPureMethods();
 			long stopPurityTagging = System.nanoTime();
-			if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Applied method purity tags in " + (stopPurityTagging-startPurityTagging)/1000.0/1000.0 + "ms");
+			if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Applied method purity tags in " + FORMAT.format((stopPurityTagging-startPurityTagging)/1000.0/1000.0) + " ms");
 		}
 		
 		boolean isSane = true;
@@ -194,14 +200,14 @@ public class PurityAnalysis {
 		
 		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Performing cleanup...");
 
-		// TODO: enable
-//		AtlasSet<GraphElement> attributedGraphElements = Common.universe().selectNode(Utilities.IMMUTABILITY_QUALIFIERS).eval().nodes();
-//		for(GraphElement attributedGraphElement : attributedGraphElements){
-//			attributedGraphElement.removeAttr(Utilities.IMMUTABILITY_QUALIFIERS);
-//		}
+		AtlasSet<Node> attributedNodes = Common.universe().selectNode(Utilities.IMMUTABILITY_QUALIFIERS).eval().nodes();
+		for(Node attributedNode : attributedNodes){
+			attributedNode.removeAttr(Utilities.IMMUTABILITY_QUALIFIERS);
+		}
+		
+		Utilities.removeDummyReturnAssignments();
 		
 		// TODO: remove when there are appropriate alternatives
-		Utilities.removeDummyReturnAssignments();
 		Utilities.removeDataFlowDisplayNodeTags();
 		Utilities.removeClassVariableAccessTags();
 		
