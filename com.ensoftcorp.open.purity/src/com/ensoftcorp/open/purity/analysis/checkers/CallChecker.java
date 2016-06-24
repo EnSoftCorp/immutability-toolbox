@@ -34,7 +34,6 @@ public class CallChecker {
 	 * @return
 	 */
 	public static boolean handleCall(Node x, Node y, Node identity, Node method, Node ret, AtlasSet<Edge> parametersPassedEdges, Node containingMethod) {
-		
 		if(PurityPreferences.isInferenceRuleLoggingEnabled()) Log.info("TCALL (x=y.m(z), x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", m=" + method.getAttr("##signature") + ")");
 		
 		boolean typesChanged = false;

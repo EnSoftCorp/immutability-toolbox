@@ -406,22 +406,25 @@ public class PurityAnalysis {
 							Node method = Common.toQ(ret).parent().eval().nodes().getFirst();
 							
 							// Method (method) -Contains-> Identity
-							Node identity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
-							
-							// Method (method) -Contains-> Parameter (p1, p2, ...)
-							AtlasSet<Node> parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
-							
-							// ControlFlow -Contains-> CallSite
-							// CallSite -Contains-> ParameterPassed (z1, z2, ...)
-							AtlasSet<Node> parametersPassed = Common.toQ(callsite).parent().children().nodesTaggedWithAny(XCSG.ParameterPass).eval().nodes();
-							
-							// ParameterPassed (z1, z2, ...) -InterproceduralDataFlow-> Parameter (p1, p2, ...)
-							// such that z1-InterproceduralDataFlow->p1, z2-InterproceduralDataFlow->p2, ...
-							AtlasSet<Edge> parametersPassedEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow)
-									.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
-							
-							if(CallChecker.handleCall(x, y, identity, method, ret, parametersPassedEdges, containingMethod)){
-								typesChanged = true;
+							// there should only be one identity node, but in case the graph is malformed this will act as an early prevention measure
+							// TODO: assert this property through a sanity check before running this computation
+							AtlasSet<Node> identities = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes();
+							for(Node identity : identities){
+								// Method (method) -Contains-> Parameter (p1, p2, ...)
+								AtlasSet<Node> parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
+								
+								// ControlFlow -Contains-> CallSite
+								// CallSite -Contains-> ParameterPassed (z1, z2, ...)
+								AtlasSet<Node> parametersPassed = Common.toQ(callsite).parent().children().nodesTaggedWithAny(XCSG.ParameterPass).eval().nodes();
+								
+								// ParameterPassed (z1, z2, ...) -InterproceduralDataFlow-> Parameter (p1, p2, ...)
+								// such that z1-InterproceduralDataFlow->p1, z2-InterproceduralDataFlow->p2, ...
+								AtlasSet<Edge> parametersPassedEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow)
+										.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
+								
+								if(CallChecker.handleCall(x, y, identity, method, ret, parametersPassedEdges, containingMethod)){
+									typesChanged = true;
+								}
 							}
 						}
 					}

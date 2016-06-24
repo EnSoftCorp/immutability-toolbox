@@ -104,7 +104,7 @@ public class Utilities {
 			}
 		}
 
-		Log.info("Added " + Common.universe().nodesTaggedWithAny(DUMMY_RETURN_NODE).eval().nodes().size() + " dummy return nodes...");
+		Log.info("Added " + Common.universe().nodesTaggedWithAny(DUMMY_RETURN_NODE).eval().nodes().size() + " dummy return nodes.");
 		
 		// sanity check (all (expected) methods have a return value)
 		returnValues = Common.universe().nodesTaggedWithAny(XCSG.ReturnValue); // refresh stale references
@@ -129,7 +129,7 @@ public class Utilities {
 			createDummyReturnValueEdge(returnValue, callsiteWithoutReturn);
 		}
 		
-		Log.info("Added " + Common.universe().edgesTaggedWithAny(DUMMY_RETURN_EDGE).eval().edges().size() + " dummy return value edges...");
+		Log.info("Added " + Common.universe().edgesTaggedWithAny(DUMMY_RETURN_EDGE).eval().edges().size() + " dummy return value edges.");
 		
 		// sanity check (all callsites have an incoming data flow edge from a return value)
 		callsites = Common.universe().nodesTaggedWithAny(XCSG.CallSite); // refresh stale references
@@ -150,7 +150,7 @@ public class Utilities {
 			createDummyAssignmentNode(unassignedCallsite);
 		}
 		
-		Log.info("Added " + Common.universe().nodesTaggedWithAny(DUMMY_ASSIGNMENT_NODE).eval().nodes().size() + " dummy assignment nodes...");
+		Log.info("Added " + Common.universe().nodesTaggedWithAny(DUMMY_ASSIGNMENT_NODE).eval().nodes().size() + " dummy assignment nodes.");
 		
 		// sanity check (all callsites are assigned to an assignment node)
 		localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow); // refresh stale references
@@ -508,7 +508,7 @@ public class Utilities {
 			return true;
 		}
 		
-		if(ge.taggedWith(XCSG.Literal)){
+		if(ge.taggedWith(XCSG.Literal) || ge.taggedWith(XCSG.Type)){
 			return true;
 		}
 		
@@ -592,9 +592,13 @@ public class Utilities {
 			qualifiers.add(ImmutabilityTypes.READONLY);
 			qualifiers.add(ImmutabilityTypes.POLYREAD);
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
-		} else if(ge.taggedWith(XCSG.Literal)){
+		} else if(ge.taggedWith(XCSG.Literal) || ge.taggedWith(XCSG.Type)){
 			// several java objects are readonly for all practical purposes
 			// however in order to satisfy constraints the other types should be initialized
+			// Note that at least in Jimple its possible for a Type -> Literal -> Formal Parameter
+			// not the normal Type -> Literal -> Actual Parameter -> Formal Parameter
+			// so in this case the Type graph element should be treated as the type literal
+			// and hence readonly...TODO: bug EnSoft to see if this graph pattern is expected!
 			qualifiers.add(ImmutabilityTypes.READONLY);
 			qualifiers.add(ImmutabilityTypes.POLYREAD);
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
