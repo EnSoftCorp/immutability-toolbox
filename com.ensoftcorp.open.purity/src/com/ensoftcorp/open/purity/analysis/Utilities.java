@@ -269,7 +269,12 @@ public class Utilities {
 	public static void removeDataFlowDisplayNodeTags() {
 		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Removing data flow display node tags...");
 		AtlasSet<Node> dataFlowDisplayNodes = Common.universe().nodesTaggedWithAny(DATAFLOW_DISPLAY_NODE).eval().nodes();
+		TreeSet<Node> dataFlowDisplayNodesToUntag = new TreeSet<Node>();
 		for(Node dataFlowDisplayNode : dataFlowDisplayNodes){
+			dataFlowDisplayNodesToUntag.add(dataFlowDisplayNode);
+		}
+		while(!dataFlowDisplayNodes.isEmpty()){
+			Node dataFlowDisplayNode = dataFlowDisplayNodesToUntag.pollFirst();
 			dataFlowDisplayNode.tags().remove(DATAFLOW_DISPLAY_NODE);
 		}
 	}
@@ -308,15 +313,28 @@ public class Utilities {
 		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Removing class variable access tags...");
 		Q classVariables = Common.universe().nodesTaggedWithAny(XCSG.ClassVariable);
 		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
+		
+		// untag class variable assignments
 		AtlasSet<Node> classVariableAssignments = interproceduralDataFlowEdges.predecessors(classVariables).eval().nodes();
-		for(GraphElement classVariableAssignment : classVariableAssignments){
-			classVariableAssignment.tags().remove(CLASS_VARIABLE_ASSIGNMENT);
-			classVariableAssignment.tags().remove(CLASS_VARIABLE_ACCESS);
+		TreeSet<Node> classVariableAssignmentsToUntag = new TreeSet<Node>();
+		for(Node classVariableAssignmentToUntag : classVariableAssignments){
+			classVariableAssignmentsToUntag.add(classVariableAssignmentToUntag);
 		}
+		while(!classVariableAssignmentsToUntag.isEmpty()){
+			Node classVariableAssignmentToUntag = classVariableAssignmentsToUntag.pollFirst();
+			classVariableAssignmentToUntag.tags().remove(CLASS_VARIABLE_ASSIGNMENT);
+			classVariableAssignmentToUntag.tags().remove(CLASS_VARIABLE_ACCESS);
+		}
+		// untag class variable values
 		AtlasSet<Node> classVariableValues = interproceduralDataFlowEdges.successors(classVariables).eval().nodes();
-		for(GraphElement classVariableValue : classVariableValues){
-			classVariableValue.tags().remove(CLASS_VARIABLE_VALUE);
-			classVariableValue.tags().remove(CLASS_VARIABLE_ACCESS);
+		TreeSet<Node> classVariableValuesToUntag = new TreeSet<Node>();
+		for(Node classVariableValueToUntag : classVariableValues){
+			classVariableValuesToUntag.add(classVariableValueToUntag);
+		}
+		while(!classVariableValuesToUntag.isEmpty()){
+			Node classVariableValueToUntag = classVariableValuesToUntag.pollFirst();
+			classVariableValueToUntag.tags().remove(CLASS_VARIABLE_VALUE);
+			classVariableValueToUntag.tags().remove(CLASS_VARIABLE_ACCESS);
 		}
 	}
 	

@@ -200,8 +200,14 @@ public class PurityAnalysis {
 		
 		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Performing cleanup...");
 
+		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Removing Immutability Qualifier Sets...");
 		AtlasSet<Node> attributedNodes = Common.universe().selectNode(Utilities.IMMUTABILITY_QUALIFIERS).eval().nodes();
+		TreeSet<Node> attributedNodesToUnattribute = new TreeSet<Node>();
 		for(Node attributedNode : attributedNodes){
+			attributedNodesToUnattribute.add(attributedNode);
+		}
+		while(!attributedNodesToUnattribute.isEmpty()){
+			Node attributedNode = attributedNodesToUnattribute.pollFirst();
 			attributedNode.removeAttr(Utilities.IMMUTABILITY_QUALIFIERS);
 		}
 		
@@ -510,16 +516,16 @@ public class PurityAnalysis {
 	private static void extractMaximalTypes(){
 		Q methods = Common.universe().nodesTaggedWithAny(XCSG.Method);
 		Q typesToExtract = Common.universe().selectNode(Utilities.IMMUTABILITY_QUALIFIERS).difference(methods);
-		AtlasSet<Node> attributedGraphElements = Common.resolve(new NullProgressMonitor(), typesToExtract.eval()).nodes();
-		for(Node attributedGraphElement : attributedGraphElements){
+		AtlasSet<Node> attributedNodes = Common.resolve(new NullProgressMonitor(), typesToExtract.eval()).nodes();
+		for(Node attributedNode : attributedNodes){
 			LinkedList<ImmutabilityTypes> orderedTypes = new LinkedList<ImmutabilityTypes>();
-			orderedTypes.addAll(getTypes(attributedGraphElement));
+			orderedTypes.addAll(getTypes(attributedNode));
 			if(orderedTypes.isEmpty()){
-				attributedGraphElement.tag(UNTYPED);
+				attributedNode.tag(UNTYPED);
 			} else {
 				Collections.sort(orderedTypes);
 				ImmutabilityTypes maximalType = orderedTypes.getLast();
-				attributedGraphElement.tag(maximalType.toString());
+				attributedNode.tag(maximalType.toString());
 			}
 		}
 		
@@ -534,7 +540,7 @@ public class PurityAnalysis {
 		Q classVariables = Common.universe().nodesTaggedWithAny(XCSG.ClassVariable);
 		// note local variables may also get tracked, but only if need be during the analysis
 		Q trackedItems = literals.union(parameters, returnValues, instanceVariables, thisNodes, classVariables);
-		Q untouchedTrackedItems = trackedItems.difference(trackedItems.nodesTaggedWithAny(READONLY, POLYREAD, MUTABLE), Common.toQ(attributedGraphElements));
+		Q untouchedTrackedItems = trackedItems.difference(trackedItems.nodesTaggedWithAny(READONLY, POLYREAD, MUTABLE), Common.toQ(attributedNodes));
 		for(GraphElement untouchedTrackedItem : untouchedTrackedItems.eval().nodes()){
 			ImmutabilityTypes maximalType = getDefaultMaximalType(untouchedTrackedItem);
 			untouchedTrackedItem.tag(maximalType.toString());
