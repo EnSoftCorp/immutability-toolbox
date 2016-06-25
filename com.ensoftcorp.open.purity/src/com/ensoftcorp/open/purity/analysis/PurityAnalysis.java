@@ -158,14 +158,14 @@ public class PurityAnalysis {
 		if(PurityPreferences.isPartialProgramAnalysisEnabled()){
 			// serialize immutability sets to in Atlas tags
 			if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Converting immutability sets into tags...");
-			AtlasSet<Node> attributedGraphElements = Common.universe().selectNode(Utilities.IMMUTABILITY_QUALIFIERS).eval().nodes();
-			for(GraphElement attributedGraphElement : attributedGraphElements){
-				Set<ImmutabilityTypes> types = getTypes(attributedGraphElement);
+			AtlasSet<Node> attributedNodes = Common.universe().selectNode(Utilities.IMMUTABILITY_QUALIFIERS).eval().nodes();
+			for(GraphElement attributedNode : attributedNodes){
+				Set<ImmutabilityTypes> types = getTypes(attributedNode);
 				if(types.isEmpty()){
-					attributedGraphElement.tag(UNTYPED);
+					attributedNode.tag(UNTYPED);
 				} else {
 					for(ImmutabilityTypes type : types){
-						attributedGraphElement.tag(type.toString());
+						attributedNode.tag(type.toString());
 					}
 				}
 			}
