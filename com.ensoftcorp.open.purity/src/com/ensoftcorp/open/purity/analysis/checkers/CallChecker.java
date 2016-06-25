@@ -10,7 +10,6 @@ import com.ensoftcorp.atlas.core.db.graph.Edge;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.EdgeDirection;
 import com.ensoftcorp.atlas.core.db.graph.Node;
-import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
@@ -262,64 +261,70 @@ public class CallChecker {
 			AtlasSet<Node> overriddenMethodParameters = Common.toQ(overriddenMethod).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
 			
 			// get the parameters of the method
-			AtlasSet<GraphElement> parameters = new AtlasHashSet<GraphElement>();
-			for(GraphElement parametersPassedEdge : parametersPassedEdges){
-				GraphElement p = parametersPassedEdge.getNode(EdgeDirection.TO);
-				parameters.add(p);
-			}
-			
+			AtlasSet<Node> parameters = Common.toQ(parametersPassedEdges).nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
+					
 			// for each parameter and overridden parameter pair
 			// constraint: p <: pOverriden
 			if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process Constraint p <: pOverriden");
-			long numParams = overriddenMethodParameters.size();
-			if(numParams > 0){
-				for(int i=0; i<numParams; i++){
-					Node p = Common.toQ(parameters).selectNode(XCSG.parameterIndex, i).eval().nodes().getFirst();
-					Node pOverridden = Common.toQ(overriddenMethodParameters).selectNode(XCSG.parameterIndex, i).eval().nodes().getFirst();
-					
-					Set<ImmutabilityTypes> pTypes = getTypes(p);
-					Set<ImmutabilityTypes> pOverriddenTypes = getTypes(pOverridden);
-					
-					// process s(p)
-					if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(p)");
-					Set<ImmutabilityTypes> pTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-					for(ImmutabilityTypes pType : pTypes){
-						boolean isSatisfied = false;
-						satisfied:
-						for(ImmutabilityTypes pOverriddenType : pOverriddenTypes){
-							if(pOverriddenType.compareTo(pType) >= 0){
-								isSatisfied = true;
-								break satisfied;
-							}
-						}
-						if(!isSatisfied){
-							pTypesToRemove.add(pType);
-						}
-					}
-					if(removeTypes(p, pTypesToRemove)){
-						typesChanged = true;
-					}
-					
-					// process s(pOverridden)
-					if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(pOverridden)");
-					Set<ImmutabilityTypes> pOverriddenTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-					for(ImmutabilityTypes pOverriddenType : pOverriddenTypes){
-						boolean isSatisfied = false;
-						satisfied:
+			long numParams = parameters.size();
+			long numOverriddenParams = overriddenMethodParameters.size();
+			if(numParams == numOverriddenParams){
+				if(numOverriddenParams > 0){
+					for(int i=0; i<numOverriddenParams; i++){
+						Node p = Common.toQ(parameters).selectNode(XCSG.parameterIndex, i).eval().nodes().getFirst();
+						Node pOverridden = Common.toQ(overriddenMethodParameters).selectNode(XCSG.parameterIndex, i).eval().nodes().getFirst();
+						
+						Set<ImmutabilityTypes> pTypes = getTypes(p);
+						Set<ImmutabilityTypes> pOverriddenTypes = getTypes(pOverridden);
+						
+						// process s(p)
+						if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(p)");
+						Set<ImmutabilityTypes> pTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 						for(ImmutabilityTypes pType : pTypes){
-							if(pOverriddenType.compareTo(pType) >= 0){
-								isSatisfied = true;
-								break satisfied;
+							boolean isSatisfied = false;
+							satisfied:
+							for(ImmutabilityTypes pOverriddenType : pOverriddenTypes){
+								if(pOverriddenType.compareTo(pType) >= 0){
+									isSatisfied = true;
+									break satisfied;
+								}
+							}
+							if(!isSatisfied){
+								pTypesToRemove.add(pType);
 							}
 						}
-						if(!isSatisfied){
-							pOverriddenTypesToRemove.add(pOverriddenType);
+						if(removeTypes(p, pTypesToRemove)){
+							typesChanged = true;
 						}
-					}
-					if(removeTypes(pOverridden, pOverriddenTypesToRemove)){
-						typesChanged = true;
+						
+						// process s(pOverridden)
+						if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Process s(pOverridden)");
+						Set<ImmutabilityTypes> pOverriddenTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
+						for(ImmutabilityTypes pOverriddenType : pOverriddenTypes){
+							boolean isSatisfied = false;
+							satisfied:
+							for(ImmutabilityTypes pType : pTypes){
+								if(pOverriddenType.compareTo(pType) >= 0){
+									isSatisfied = true;
+									break satisfied;
+								}
+							}
+							if(!isSatisfied){
+								pOverriddenTypesToRemove.add(pOverriddenType);
+							}
+						}
+						if(removeTypes(pOverridden, pOverriddenTypesToRemove)){
+							typesChanged = true;
+						}
 					}
 				}
+			} else {
+				// note it seems that some Jimple methods are missing the parameter passed to edges 
+				// which is causing us not to find the parameters for the base method
+				// this should not happen and is a bug in Atlas!
+				Log.warning("Missing parameters for Method: " + method.address().toAddressString() 
+						+ " or Overriden Method: " + overriddenMethod.address().toAddressString(), 
+						new RuntimeException("Parameter counts do not match!"));
 			}
 		}
 		
