@@ -84,11 +84,16 @@ public class PurityAnalysis {
 		long stop = System.nanoTime();
 		double runtime = (stop-start)/1000.0/1000.0;
 		if(PurityPreferences.isGeneralLoggingEnabled()) {
-			long numReadOnly = Common.universe().nodesTaggedWithAny(READONLY).eval().nodes().size();
-			long numPolyRead = Common.universe().nodesTaggedWithAny(POLYREAD).eval().nodes().size();
-			long numMutable = Common.universe().nodesTaggedWithAny(MUTABLE).eval().nodes().size();
-			String summary = "READONLY: " + numReadOnly + ", POLYREAD: " + numPolyRead + ", MUTABLE: " + numMutable;
-			Log.info("Purity analysis completed in " + FORMAT.format(runtime) + " ms\n" + summary);
+			if(PurityPreferences.isPartialProgramAnalysisEnabled()){
+				Log.info("Purity analysis completed in " + FORMAT.format(runtime) + " ms\n");
+			} else {
+				long numReadOnly = Common.universe().nodesTaggedWithAny(READONLY).eval().nodes().size();
+				long numPolyRead = Common.universe().nodesTaggedWithAny(POLYREAD).eval().nodes().size();
+				long numMutable = Common.universe().nodesTaggedWithAny(MUTABLE).eval().nodes().size();
+				long numPure = Common.universe().nodesTaggedWithAny(PURE_METHOD).eval().nodes().size();
+				String summary = "READONLY: " + numReadOnly + ", POLYREAD: " + numPolyRead + ", MUTABLE: " + numMutable  + ", PURE: " + numPure;
+				Log.info("Purity analysis completed in " + FORMAT.format(runtime) + " ms\n" + summary);
+			}
 		}
 		return isSane;
 	}
