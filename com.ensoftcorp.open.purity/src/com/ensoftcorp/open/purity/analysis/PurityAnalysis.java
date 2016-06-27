@@ -4,10 +4,9 @@ import static com.ensoftcorp.open.purity.analysis.Utilities.getTypes;
 import static com.ensoftcorp.open.purity.analysis.Utilities.removeTypes;
 
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.Set;
-import java.util.TreeSet;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
@@ -16,6 +15,7 @@ import com.ensoftcorp.atlas.core.db.graph.Edge;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.EdgeDirection;
 import com.ensoftcorp.atlas.core.db.graph.Node;
+import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
@@ -108,7 +108,7 @@ public class PurityAnalysis {
 		
 		Utilities.addDummyReturnAssignments();
 
-		TreeSet<Node> worklist = new TreeSet<Node>();
+		AtlasHashSet<Node> worklist = new AtlasHashSet<Node>();
 
 		// add all assignments to worklist
 		// treating parameter passes as assignments (for all purposes they are...)
@@ -207,12 +207,13 @@ public class PurityAnalysis {
 
 		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Removing Immutability Qualifier Sets...");
 		AtlasSet<Node> attributedNodes = Common.universe().selectNode(Utilities.IMMUTABILITY_QUALIFIERS).eval().nodes();
-		TreeSet<Node> attributedNodesToUnattribute = new TreeSet<Node>();
+		AtlasHashSet<Node> attributedNodesToUnattribute = new AtlasHashSet<Node>();
 		for(Node attributedNode : attributedNodes){
 			attributedNodesToUnattribute.add(attributedNode);
 		}
 		while(!attributedNodesToUnattribute.isEmpty()){
-			Node attributedNode = attributedNodesToUnattribute.pollFirst();
+			Node attributedNode = attributedNodesToUnattribute.getFirst();
+			attributedNodesToUnattribute.remove(attributedNode);
 			attributedNode.removeAttr(Utilities.IMMUTABILITY_QUALIFIERS);
 		}
 		
@@ -523,13 +524,14 @@ public class PurityAnalysis {
 		Q typesToExtract = Common.universe().selectNode(Utilities.IMMUTABILITY_QUALIFIERS).difference(methods);
 		AtlasSet<Node> attributedNodes = Common.resolve(new NullProgressMonitor(), typesToExtract.eval()).nodes();
 		for(Node attributedNode : attributedNodes){
-			LinkedList<ImmutabilityTypes> orderedTypes = new LinkedList<ImmutabilityTypes>();
-			orderedTypes.addAll(getTypes(attributedNode));
+			Set<ImmutabilityTypes> types = getTypes(attributedNode);
+			ArrayList<ImmutabilityTypes> orderedTypes = new ArrayList<ImmutabilityTypes>(types.size());
+			orderedTypes.addAll(types);
 			if(orderedTypes.isEmpty()){
 				attributedNode.tag(UNTYPED);
 			} else {
 				Collections.sort(orderedTypes);
-				ImmutabilityTypes maximalType = orderedTypes.getLast();
+				ImmutabilityTypes maximalType = orderedTypes.get(orderedTypes.size()-1);
 				attributedNode.tag(maximalType.toString());
 			}
 		}

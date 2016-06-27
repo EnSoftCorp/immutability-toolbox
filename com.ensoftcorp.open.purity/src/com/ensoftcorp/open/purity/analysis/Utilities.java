@@ -3,7 +3,6 @@ package com.ensoftcorp.open.purity.analysis;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Set;
-import java.util.TreeSet;
 
 import com.ensoftcorp.atlas.core.db.graph.Edge;
 import com.ensoftcorp.atlas.core.db.graph.Graph;
@@ -205,24 +204,26 @@ public class Utilities {
 		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Removing dummy return assignments...");
 		// edges connected to the dummy nodes will be removed once the nodes are removed
 		Q dummyNodes = Common.universe().nodesTaggedWithAny(DUMMY_RETURN_NODE, DUMMY_ASSIGNMENT_NODE);
-		TreeSet<Node> dummyNodesToRemove = new TreeSet<Node>();
+		AtlasHashSet<Node> dummyNodesToRemove = new AtlasHashSet<Node>();
 		for(Node dummyNode : dummyNodes.eval().nodes()){
 			dummyNodesToRemove.add(dummyNode);
 		}
 		while(!dummyNodesToRemove.isEmpty()){
-			Node dummyNode = dummyNodesToRemove.pollFirst();
+			Node dummyNode = dummyNodesToRemove.getFirst();
+			dummyNodesToRemove.remove(dummyNode);
 			Graph.U.delete(dummyNode);
 		}
 		
 		// these edges were likely added to compensate in irregularities in the graph
 		// lets remove them now if we added any
 		Q dummyEdges = Common.universe().edgesTaggedWithAny(DUMMY_RETURN_EDGE);
-		TreeSet<Edge> dummyEdgesToRemove = new TreeSet<Edge>();
+		AtlasHashSet<Edge> dummyEdgesToRemove = new AtlasHashSet<Edge>();
 		for(Edge dummyEdge : dummyEdges.eval().edges()){
 			dummyEdgesToRemove.add(dummyEdge);
 		}
 		while(!dummyEdgesToRemove.isEmpty()){
-			Edge dummyEdge = dummyEdgesToRemove.pollFirst();
+			Edge dummyEdge = dummyEdgesToRemove.getFirst();
+			dummyEdgesToRemove.remove(dummyEdge);
 			Graph.U.delete(dummyEdge);
 		}
 	}
@@ -269,12 +270,13 @@ public class Utilities {
 	public static void removeDataFlowDisplayNodeTags() {
 		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Removing data flow display node tags...");
 		AtlasSet<Node> dataFlowDisplayNodes = Common.universe().nodesTaggedWithAny(DATAFLOW_DISPLAY_NODE).eval().nodes();
-		TreeSet<Node> dataFlowDisplayNodesToUntag = new TreeSet<Node>();
+		AtlasHashSet<Node> dataFlowDisplayNodesToUntag = new AtlasHashSet<Node>();
 		for(Node dataFlowDisplayNode : dataFlowDisplayNodes){
 			dataFlowDisplayNodesToUntag.add(dataFlowDisplayNode);
 		}
 		while(!dataFlowDisplayNodes.isEmpty()){
-			Node dataFlowDisplayNode = dataFlowDisplayNodesToUntag.pollFirst();
+			Node dataFlowDisplayNode = dataFlowDisplayNodesToUntag.getFirst();
+			dataFlowDisplayNodesToUntag.remove(dataFlowDisplayNode);
 			dataFlowDisplayNode.tags().remove(DATAFLOW_DISPLAY_NODE);
 		}
 	}
@@ -316,23 +318,25 @@ public class Utilities {
 		
 		// untag class variable assignments
 		AtlasSet<Node> classVariableAssignments = interproceduralDataFlowEdges.predecessors(classVariables).eval().nodes();
-		TreeSet<Node> classVariableAssignmentsToUntag = new TreeSet<Node>();
+		AtlasHashSet<Node> classVariableAssignmentsToUntag = new AtlasHashSet<Node>();
 		for(Node classVariableAssignmentToUntag : classVariableAssignments){
 			classVariableAssignmentsToUntag.add(classVariableAssignmentToUntag);
 		}
 		while(!classVariableAssignmentsToUntag.isEmpty()){
-			Node classVariableAssignmentToUntag = classVariableAssignmentsToUntag.pollFirst();
+			Node classVariableAssignmentToUntag = classVariableAssignmentsToUntag.getFirst();
+			classVariableAssignmentsToUntag.remove(classVariableAssignmentToUntag);
 			classVariableAssignmentToUntag.tags().remove(CLASS_VARIABLE_ASSIGNMENT);
 			classVariableAssignmentToUntag.tags().remove(CLASS_VARIABLE_ACCESS);
 		}
 		// untag class variable values
 		AtlasSet<Node> classVariableValues = interproceduralDataFlowEdges.successors(classVariables).eval().nodes();
-		TreeSet<Node> classVariableValuesToUntag = new TreeSet<Node>();
+		AtlasHashSet<Node> classVariableValuesToUntag = new AtlasHashSet<Node>();
 		for(Node classVariableValueToUntag : classVariableValues){
 			classVariableValuesToUntag.add(classVariableValueToUntag);
 		}
 		while(!classVariableValuesToUntag.isEmpty()){
-			Node classVariableValueToUntag = classVariableValuesToUntag.pollFirst();
+			Node classVariableValueToUntag = classVariableValuesToUntag.getFirst();
+			classVariableValuesToUntag.remove(classVariableValueToUntag);
 			classVariableValueToUntag.tags().remove(CLASS_VARIABLE_VALUE);
 			classVariableValueToUntag.tags().remove(CLASS_VARIABLE_ACCESS);
 		}
@@ -401,14 +405,15 @@ public class Utilities {
 	public static AtlasSet<Node> parseReferences(Node node){
 		if(PurityPreferences.isDebugLoggingEnabled()) Log.info("Parsing reference for " + node.address().toAddressString());
 		AtlasSet<Node> parsedReferences = new AtlasHashSet<Node>();
-		TreeSet<Node> worklist = new TreeSet<Node>();
+		AtlasHashSet<Node> worklist = new AtlasHashSet<Node>();
 		worklist.add(node);
 		
 		Q dataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.DataFlow_Edge);
 		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
 		
 		while(!worklist.isEmpty()){
-			GraphElement reference = worklist.pollFirst();
+			GraphElement reference = worklist.getFirst();
+			worklist.remove(reference);
 			if(reference != null && needsProcessing(reference)){
 				if(reference.taggedWith(XCSG.Cast)){
 					for(Node workItem : dataFlowEdges.predecessors(Common.toQ(reference)).eval().nodes()){
