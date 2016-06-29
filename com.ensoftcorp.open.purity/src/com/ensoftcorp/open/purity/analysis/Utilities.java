@@ -274,7 +274,7 @@ public class Utilities {
 		for(Node dataFlowDisplayNode : dataFlowDisplayNodes){
 			dataFlowDisplayNodesToUntag.add(dataFlowDisplayNode);
 		}
-		while(!dataFlowDisplayNodes.isEmpty()){
+		while(!dataFlowDisplayNodesToUntag.isEmpty()){
 			Node dataFlowDisplayNode = dataFlowDisplayNodesToUntag.getFirst();
 			dataFlowDisplayNodesToUntag.remove(dataFlowDisplayNode);
 			dataFlowDisplayNode.tags().remove(DATAFLOW_DISPLAY_NODE);
