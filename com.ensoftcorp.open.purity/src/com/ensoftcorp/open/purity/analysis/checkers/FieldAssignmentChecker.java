@@ -8,6 +8,7 @@ import java.util.Set;
 
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
+import com.ensoftcorp.open.commons.analysis.utils.StandardQueries;
 import com.ensoftcorp.open.purity.analysis.ImmutabilityTypes;
 import com.ensoftcorp.open.purity.analysis.Utilities;
 import com.ensoftcorp.open.purity.log.Log;
@@ -151,7 +152,7 @@ public class FieldAssignmentChecker {
 					typesChanged = true;
 				}
 				if(container.taggedWith(XCSG.ClassVariable)){
-					if(removeTypes(Utilities.getContainingMethod(x), ImmutabilityTypes.READONLY)){
+					if(removeTypes(StandardQueries.getContainingMethod(x), ImmutabilityTypes.READONLY)){
 						typesChanged = true;
 					}
 				}

@@ -20,6 +20,8 @@ import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
+import com.ensoftcorp.open.commons.analysis.utils.StandardQueries;
+import com.ensoftcorp.open.commons.wishful.StopGap;
 import com.ensoftcorp.open.purity.analysis.checkers.BasicAssignmentChecker;
 import com.ensoftcorp.open.purity.analysis.checkers.CallChecker;
 import com.ensoftcorp.open.purity.analysis.checkers.FieldAssignmentChecker;
@@ -103,8 +105,8 @@ public class PurityAnalysis {
 	 */
 	private static boolean runAnalysis(){
 		// TODO: remove when there are appropriate alternatives
-		Utilities.addClassVariableAccessTags();
-		Utilities.addDataFlowDisplayNodeTags();
+		StopGap.addClassVariableAccessTags();
+		StopGap.addDataFlowDisplayNodeTags();
 		
 		Utilities.addDummyReturnAssignments();
 
@@ -220,8 +222,8 @@ public class PurityAnalysis {
 		Utilities.removeDummyReturnAssignments();
 		
 		// TODO: remove when there are appropriate alternatives
-		Utilities.removeDataFlowDisplayNodeTags();
-		Utilities.removeClassVariableAccessTags();
+		StopGap.removeDataFlowDisplayNodeTags();
+		StopGap.removeClassVariableAccessTags();
 		
 		return isSane;
 	}
@@ -281,7 +283,7 @@ public class PurityAnalysis {
 						Node instanceVariableAssignment = to; // (f=)
 						Node instanceVariableAccessed = instanceVariableAccessedEdges.predecessors(Common.toQ(instanceVariableAssignment)).eval().nodes().getFirst();
 
-						if(instanceVariableAccessed.taggedWith(XCSG.InstanceVariableValue) || instanceVariableAccessed.taggedWith(Utilities.CLASS_VARIABLE_VALUE)){
+						if(instanceVariableAccessed.taggedWith(XCSG.InstanceVariableValue) || instanceVariableAccessed.taggedWith(StopGap.CLASS_VARIABLE_VALUE)){
 							// if a field changes in an object then that object and any container 
 							// objects which contain an object where the field is have also changed
 							// for example z.x.f = y, x is being mutated and so is z
@@ -290,7 +292,7 @@ public class PurityAnalysis {
 									typesChanged = true;
 								}
 								if(container.taggedWith(XCSG.ClassVariable)){
-									if(removeTypes(Utilities.getContainingMethod(instanceVariableAccessed), ImmutabilityTypes.READONLY)){
+									if(removeTypes(StandardQueries.getContainingMethod(instanceVariableAccessed), ImmutabilityTypes.READONLY)){
 										typesChanged = true;
 									}
 								}
@@ -334,10 +336,10 @@ public class PurityAnalysis {
 			
 			// Type Rule 7 - TSREAD
 			// let, x = sf
-			if(from.taggedWith(Utilities.CLASS_VARIABLE_VALUE)){
+			if(from.taggedWith(StopGap.CLASS_VARIABLE_VALUE)){
 				AtlasSet<Node> xReferences = Utilities.parseReferences(to);
 				for(Node x : xReferences){
-					Node m = Utilities.getContainingMethod(to);
+					Node m = StandardQueries.getContainingMethod(to);
 					AtlasSet<Node> sfReferences = Utilities.parseReferences(from);
 					for(Node sf : sfReferences){
 						if(FieldAssignmentChecker.handleStaticFieldRead(x, sf, m)){
@@ -351,10 +353,10 @@ public class PurityAnalysis {
 			
 			// Type Rule 8 - TSWRITE
 			// let, sf = x
-			if(to.taggedWith(Utilities.CLASS_VARIABLE_ASSIGNMENT)){
+			if(to.taggedWith(StopGap.CLASS_VARIABLE_ASSIGNMENT)){
 				AtlasSet<Node> sfReferences = Utilities.parseReferences(to);
 				for(Node sf : sfReferences){
-					Node m = Utilities.getContainingMethod(to);
+					Node m = StandardQueries.getContainingMethod(to);
 					AtlasSet<Node> xReferences = Utilities.parseReferences(from);
 					for(Node x : xReferences){
 						if(FieldAssignmentChecker.handleStaticFieldWrite(sf, x, m)){
@@ -371,7 +373,7 @@ public class PurityAnalysis {
 			if(from.taggedWith(XCSG.DynamicDispatchCallSite)){
 				// Type Rule 5 - TCALL
 				// let, x = y.m(z)
-				Node containingMethod = Utilities.getContainingMethod(to);
+				Node containingMethod = StandardQueries.getContainingMethod(to);
 				AtlasSet<Node> xReferences = Utilities.parseReferences(to);
 				for(Node x : xReferences){
 					Node callsite = from;
