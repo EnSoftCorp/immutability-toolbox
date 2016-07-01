@@ -27,13 +27,6 @@ public class PurityPreferences extends AbstractPreferenceInitializer {
 	}
 	
 	/**
-	 * Enable/disable running sanity checks
-	 */
-	public static final String RUN_SANITY_CHECKS = "RUN_SANITY_CHECKS";
-	public static final Boolean RUN_SANITY_CHECKS_DEFAULT = true;
-	public static boolean runSanityChecksValue = RUN_SANITY_CHECKS_DEFAULT;
-	
-	/**
 	 * Enable/disable general logging to the Atlas log
 	 */
 	public static final String GENERAL_LOGGING = "GENERAL_LOGGING";
@@ -74,6 +67,13 @@ public class PurityPreferences extends AbstractPreferenceInitializer {
 		}
 		return debugLoggingValue;
 	}
+	
+	/**
+	 * Enable/disable running sanity checks
+	 */
+	public static final String RUN_SANITY_CHECKS = "RUN_SANITY_CHECKS";
+	public static final Boolean RUN_SANITY_CHECKS_DEFAULT = true;
+	public static boolean runSanityChecksValue = RUN_SANITY_CHECKS_DEFAULT;
 	
 	public static boolean isRunSanityChecksEnabled(){
 		if(!initialized){
