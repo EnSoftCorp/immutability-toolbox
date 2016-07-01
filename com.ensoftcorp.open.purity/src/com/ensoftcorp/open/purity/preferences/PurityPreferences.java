@@ -75,6 +75,13 @@ public class PurityPreferences extends AbstractPreferenceInitializer {
 		return debugLoggingValue;
 	}
 	
+	public static boolean isRunSanityChecksEnabled(){
+		if(!initialized){
+			loadPreferences();
+		}
+		return runSanityChecksValue;
+	}
+	
 	@Override
 	public void initializeDefaultPreferences() {
 		IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
@@ -83,13 +90,6 @@ public class PurityPreferences extends AbstractPreferenceInitializer {
 		preferences.setDefault(GENERAL_LOGGING, GENERAL_LOGGING_DEFAULT);
 		preferences.setDefault(INFERENCE_RULE_LOGGING, INFERENCE_RULE_LOGGING_DEFAULT);
 		preferences.setDefault(DEBUG_LOGGING, DEBUG_LOGGING_DEFAULT);
-	}
-	
-	public static boolean isRunSanityChecksEnabled(){
-		if(!initialized){
-			loadPreferences();
-		}
-		return runSanityChecksValue;
 	}
 	
 	/**
