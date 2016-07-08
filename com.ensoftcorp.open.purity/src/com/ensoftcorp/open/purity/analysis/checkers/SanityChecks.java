@@ -7,6 +7,7 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement;
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
+import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.purity.analysis.ImmutabilityTypes;
@@ -41,8 +42,59 @@ public class SanityChecks {
 			if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Checking that methods are not tagged with immutability types...");
 			resultsAreSane &= !methodsDoNotHaveImmutabilityTypes();
 		}
+		
+		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Checking all fields are typed...");
+		resultsAreSane &= !allFieldsAreTagged();
+		
+		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Checking all parameters are typed...");
+		resultsAreSane &= !allParametersAreTagged();
+		
+		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Checking all identities are typed...");
+		resultsAreSane &= !allIdentititesAreTagged();
 
 		return resultsAreSane;
+	}
+
+	private static boolean allIdentititesAreTagged() {
+		// each field should be tagged
+		long missingTags = 0;
+		Q identities = Common.universe().nodesTaggedWithAny(XCSG.Identity);
+		for(Node identity : identities.eval().nodes()){
+			if(!(identity.taggedWith(PurityAnalysis.READONLY) || identity.taggedWith(PurityAnalysis.POLYREAD) || identity.taggedWith(PurityAnalysis.MUTABLE))){
+				missingTags++;
+			}
+		}
+		boolean hasMissingTags = missingTags > 0;
+		if(hasMissingTags) Log.warning("There are " + missingTags + " identity that are not tagged.");
+		return hasMissingTags;
+	}
+	
+	private static boolean allParametersAreTagged() {
+		// each field should be tagged
+		long missingTags = 0;
+		Q parameters = Common.universe().nodesTaggedWithAny(XCSG.Parameter);
+		for(Node parameter : parameters.eval().nodes()){
+			if(!(parameter.taggedWith(PurityAnalysis.READONLY) || parameter.taggedWith(PurityAnalysis.POLYREAD) || parameter.taggedWith(PurityAnalysis.MUTABLE))){
+				missingTags++;
+			}
+		}
+		boolean hasMissingTags = missingTags > 0;
+		if(hasMissingTags) Log.warning("There are " + missingTags + " parameters that are not tagged.");
+		return hasMissingTags;
+	}
+	
+	private static boolean allFieldsAreTagged() {
+		// each field should be tagged
+		long missingTags = 0;
+		Q fields = Common.universe().nodesTaggedWithAny(XCSG.Field);
+		for(Node field : fields.eval().nodes()){
+			if(!(field.taggedWith(PurityAnalysis.READONLY) || field.taggedWith(PurityAnalysis.POLYREAD) || field.taggedWith(PurityAnalysis.MUTABLE))){
+				missingTags++;
+			}
+		}
+		boolean hasMissingTags = missingTags > 0;
+		if(hasMissingTags) Log.warning("There are " + missingTags + " fields that are not tagged.");
+		return hasMissingTags;
 	}
 	
 	/**
