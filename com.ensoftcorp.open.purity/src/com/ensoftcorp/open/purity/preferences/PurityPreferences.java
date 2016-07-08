@@ -17,7 +17,7 @@ public class PurityPreferences extends AbstractPreferenceInitializer {
 	 */
 	public static final String PARTIAL_PROGRAM_ANALYSIS = "PARTIAL_PROGRAM_ANALYSIS";
 	public static final Boolean PARTIAL_PROGRAM_ANALYSIS_DEFAULT = false;
-	public static boolean partialProgramAnalysisValue = PARTIAL_PROGRAM_ANALYSIS_DEFAULT;
+	private static boolean partialProgramAnalysisValue = PARTIAL_PROGRAM_ANALYSIS_DEFAULT;
 	
 	public static boolean isPartialProgramAnalysisEnabled(){
 		if(!initialized){
@@ -31,7 +31,7 @@ public class PurityPreferences extends AbstractPreferenceInitializer {
 	 */
 	public static final String GENERAL_LOGGING = "GENERAL_LOGGING";
 	public static final Boolean GENERAL_LOGGING_DEFAULT = true;
-	public static Boolean generalLoggingValue = GENERAL_LOGGING_DEFAULT;
+	private static Boolean generalLoggingValue = GENERAL_LOGGING_DEFAULT;
 	
 	public static boolean isGeneralLoggingEnabled(){
 		if(!initialized){
@@ -45,7 +45,7 @@ public class PurityPreferences extends AbstractPreferenceInitializer {
 	 */
 	public static final String INFERENCE_RULE_LOGGING = "INFERENCE_RULE_LOGGING";
 	public static final Boolean INFERENCE_RULE_LOGGING_DEFAULT = false;
-	public static Boolean inferenceRuleLoggingValue = INFERENCE_RULE_LOGGING_DEFAULT;
+	private static Boolean inferenceRuleLoggingValue = INFERENCE_RULE_LOGGING_DEFAULT;
 	
 	public static boolean isInferenceRuleLoggingEnabled(){
 		if(!initialized){
@@ -59,7 +59,7 @@ public class PurityPreferences extends AbstractPreferenceInitializer {
 	 */
 	public static final String DEBUG_LOGGING = "DEBUG_LOGGING";
 	public static final Boolean DEBUG_LOGGING_DEFAULT = false;
-	public static Boolean debugLoggingValue = DEBUG_LOGGING_DEFAULT;
+	private static Boolean debugLoggingValue = DEBUG_LOGGING_DEFAULT;
 	
 	public static boolean isDebugLoggingEnabled(){
 		if(!initialized){
@@ -73,7 +73,7 @@ public class PurityPreferences extends AbstractPreferenceInitializer {
 	 */
 	public static final String RUN_SANITY_CHECKS = "RUN_SANITY_CHECKS";
 	public static final Boolean RUN_SANITY_CHECKS_DEFAULT = true;
-	public static boolean runSanityChecksValue = RUN_SANITY_CHECKS_DEFAULT;
+	private static boolean runSanityChecksValue = RUN_SANITY_CHECKS_DEFAULT;
 	
 	public static boolean isRunSanityChecksEnabled(){
 		if(!initialized){

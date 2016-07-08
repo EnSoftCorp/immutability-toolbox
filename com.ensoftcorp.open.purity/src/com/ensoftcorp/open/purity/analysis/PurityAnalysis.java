@@ -3,13 +3,22 @@ package com.ensoftcorp.open.purity.analysis;
 import static com.ensoftcorp.open.purity.analysis.Utilities.getTypes;
 import static com.ensoftcorp.open.purity.analysis.Utilities.removeTypes;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Set;
 
+import javax.xml.stream.XMLOutputFactory;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamWriter;
+
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.FileDialog;
 
 import com.ensoftcorp.atlas.core.db.graph.Edge;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement;
@@ -21,6 +30,7 @@ import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.analysis.utils.StandardQueries;
+import com.ensoftcorp.open.commons.utils.DisplayUtils;
 import com.ensoftcorp.open.commons.wishful.StopGap;
 import com.ensoftcorp.open.purity.analysis.checkers.BasicAssignmentChecker;
 import com.ensoftcorp.open.purity.analysis.checkers.CallChecker;
@@ -100,10 +110,40 @@ public class PurityAnalysis {
 		return isSane;
 	}
 
+	private static class FileResult {
+		File file;
+	}
+	
 	/**
 	 * Runs the side effect (purity) analysis
 	 */
 	private static boolean runAnalysis(){
+		final FileResult fileResult = new FileResult();
+		if(PurityPreferences.isPartialProgramAnalysisEnabled()){
+			Display.getDefault().syncExec(new Runnable(){
+				@Override
+				public void run() {
+					FileDialog dialog = new FileDialog(Display.getDefault().getActiveShell(), SWT.SAVE);
+					dialog.setFilterNames(new String[] { "Purity Analysis Results", "All Files (*.*)" });
+					dialog.setFilterExtensions(new String[] { "*.xml", "*.*" });
+					try {
+						String projectName = Common.universe().nodesTaggedWithAny(XCSG.Project).eval().nodes().getFirst().getAttr(XCSG.name).toString();
+						dialog.setFileName(projectName + "-purity.xml");
+					} catch (Exception e){}
+					fileResult.file = new File(dialog.open());
+				}
+			});
+		}
+		File outputFile = fileResult.file;
+		
+		if(PurityPreferences.isPartialProgramAnalysisEnabled()){
+			if(outputFile==null){
+				Log.warning("No output file selected, results will not be serialized to XML file.");
+			} else {
+				Log.info("Results will be serialized to " + outputFile.getAbsolutePath());
+			}
+		}
+		
 		// TODO: remove when there are appropriate alternatives
 		StopGap.addClassVariableAccessTags();
 		StopGap.addDataFlowDisplayNodeTags();
@@ -177,6 +217,32 @@ public class PurityAnalysis {
 				}
 			}
 			if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Converted immutability sets into tags.");
+			
+			// serialize field and method tags
+			if(outputFile != null){
+				if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Serializing field and method tags...");
+				
+				XMLOutputFactory output = XMLOutputFactory.newInstance();
+				try {
+					XMLStreamWriter writer = output.createXMLStreamWriter(new FileOutputStream(outputFile));
+					writer.writeStartDocument();
+					
+					for(Node field : Common.universe().nodesTaggedWithAny(XCSG.Field).nodesTaggedWithAny(READONLY, POLYREAD, MUTABLE).eval().nodes()){
+						serializeField(field, writer);
+					}
+					
+					for(Node method : Common.universe().nodesTaggedWithAny(XCSG.Method).nodesTaggedWithAny(READONLY, POLYREAD, MUTABLE).eval().nodes()){
+						serializeMethod(method, writer);
+					}
+					
+					writer.writeEndDocument();
+					writer.flush();
+				} catch (Exception e){
+					DisplayUtils.showError(e, "Could not serialize results.");
+				}
+				
+				if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Serialized field and method tags...");
+			}
 		} else {
 			// flattens the type hierarchy to the maximal types
 			if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Extracting maximal types...");
@@ -228,6 +294,38 @@ public class PurityAnalysis {
 		return isSane;
 	}
 	
+	private static void serializeField(Node field, XMLStreamWriter writer) throws XMLStreamException {
+		writer.writeStartElement("field");
+		if(field.taggedWith(XCSG.ClassVariable)){
+			writer.writeAttribute("type", XCSG.ClassVariable);
+		} else if(field.taggedWith(XCSG.InstanceVariable)){
+			writer.writeAttribute("type", XCSG.InstanceVariable);
+		}
+		Node parentClass = Common.toQ(field).parent().eval().nodes().getFirst();
+		String qualifiedClassName = StandardQueries.getQualifiedClassName(parentClass);
+		writer.writeAttribute("class", qualifiedClassName);
+		String prefix = "";
+		String immutabilityTags = "";
+		if(field.taggedWith(READONLY)){
+			immutabilityTags += READONLY;
+			prefix = ",";
+		}
+		if(field.taggedWith(POLYREAD)){
+			immutabilityTags += (prefix + POLYREAD);
+			prefix = ",";
+		}
+		if(field.taggedWith(MUTABLE)){
+			immutabilityTags += (prefix + MUTABLE);
+		}
+		writer.writeAttribute("immutability", immutabilityTags);
+		writer.writeEndElement();
+	}
+
+	private static void serializeMethod(Node method, XMLStreamWriter writer) {
+		// TODO Auto-generated method stub
+		
+	}
+
 	/**
 	 * Given a graph element, each inference rule (TNEW, TASSIGN, TWRITE, TREAD, TCALL) is checked
 	 * and unsatisfied qualifier types are removed or reduced (a new type may be added, but it will 
