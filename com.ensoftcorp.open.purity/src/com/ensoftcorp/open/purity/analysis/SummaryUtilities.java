@@ -91,6 +91,10 @@ public class SummaryUtilities {
 		String message = "Imported " + fieldsImported + "/" + fieldsSummarized + " field summaries.";
 		message += "\nImported " + methodsImported + "/" + methodsSummarized + " method summaries.";
 		Log.info("Summary imported.\n" + message);
+		
+		if(fieldsImported == 0 && methodsImported == 0){
+			Log.warning("No matching summaries were imported!");
+		}
 	}
 
 	private static void processEvent(XMLStreamReader xmlr) {

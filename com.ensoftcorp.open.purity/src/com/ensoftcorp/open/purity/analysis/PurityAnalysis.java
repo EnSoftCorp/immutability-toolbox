@@ -227,13 +227,11 @@ public class PurityAnalysis {
 			
 			// serialize field and method tags
 			if(outputFile != null){
-				if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Serializing field and method tags...");
 				try {
 					SummaryUtilities.exportSummary(outputFile);
 				} catch (Exception e){
-					DisplayUtils.showError(e, "Could not serialize results.");
+					DisplayUtils.showError(e, "Could not save summaries.");
 				}
-				if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Serialized field and method tags...");
 			}
 		} else {
 			// flattens the type hierarchy to the maximal types
