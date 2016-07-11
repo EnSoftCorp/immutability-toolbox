@@ -16,17 +16,20 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.XMLStreamWriter;
 
+import org.eclipse.core.runtime.Platform;
+import org.osgi.framework.Version;
+
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
-import com.ensoftcorp.open.commons.analysis.utils.StandardQueries;
+import com.ensoftcorp.open.commons.wishful.StopGap;
 import com.ensoftcorp.open.purity.log.Log;
 import com.ensoftcorp.open.purity.preferences.PurityPreferences;
 
 public class SummaryUtilities {
-
+	
 	private static Field field;
 	
 	private static class Field {
@@ -36,8 +39,9 @@ public class SummaryUtilities {
 			return "Field [type=" + type + ", name=" + name + ", parentClass=" + parentClass
 					+ ", immutabilityQualifiers=" + immutabilityQualifiers + "]";
 		}
-		String name;
+		String pkg;
 		String parentClass;
+		String name;
 		String immutabilityQualifiers;
 	}
 	
@@ -52,9 +56,10 @@ public class SummaryUtilities {
 					+ ", identityImmutabilityQualifiers=" + identityImmutabilityQualifiers
 					+ ", returnImmutabilityQualifiers=" + returnImmutabilityQualifiers + "]";
 		}
-
-		String signature;
+		
 		String parentClass;
+		String pkg;
+		String signature;
 		String immutabilityQualifiers;
 		List<Parameter> parameters = new LinkedList<Parameter>();
 		String identityImmutabilityQualifiers;
@@ -74,6 +79,9 @@ public class SummaryUtilities {
 	private static int fieldsSummarized = 0;
 	private static int methodsImported = 0;
 	private static int methodsSummarized = 0;
+	
+	private static Version atlasVersion = Platform.getBundle("com.ensoftcorp.atlas.core").getVersion();
+	private static Version purityToolboxVersion = Platform.getBundle("com.ensoftcorp.open.purity").getVersion();
 	
 	public static void importSummary(File inputXMLFile) throws FileNotFoundException, XMLStreamException {
 		fieldsImported = 0;
@@ -110,6 +118,8 @@ public class SummaryUtilities {
 							field.type = value;
 						} else if (name.equals("class")) {
 							field.parentClass = value;
+						} else if (name.equals("package")) {
+							field.pkg = value;
 						} else if (name.equals("name")) {
 							field.name = value;
 						} else if (name.equals("immutability")) {
@@ -125,6 +135,8 @@ public class SummaryUtilities {
 							method.type = value;
 						} else if (name.equals("class")) {
 							method.parentClass = value;
+						} else if (name.equals("package")) {
+							method.pkg = value;
 						} else if (name.equals("signature")) {
 							method.signature = value;
 						} else if (name.equals("immutability")) {
@@ -179,15 +191,10 @@ public class SummaryUtilities {
 	}
 	
 	private static void tagMethod(Method method) {
-		AtlasSet<Node> containers = Common.universe().nodesTaggedWithAny(XCSG.Project, XCSG.Package).eval().nodes();
-		String[] qualifiers = method.parentClass.split("\\.");
-		for(int i=0; i<qualifiers.length; i++){
-			// TODO: consider that inner classes may have a $ separator, however so could bytecode
-			containers = Common.toQ(containers).children().selectNode(XCSG.name, qualifiers[i]).eval().nodes();
-		}
-		Q parent = Common.toQ(containers).nodesTaggedWithAny(XCSG.Type);
-		Q methods = parent.children().nodesTaggedWithAny(method.type);
-		methods = methods.selectNode("##signature", method.signature);
+		Q packages = Common.universe().nodesTaggedWithAny(XCSG.Package).selectNode(XCSG.name, method.pkg);
+		Q parents = packages.children().nodesTaggedWithAny(XCSG.Type).selectNode(XCSG.name, method.parentClass);
+		Q methods = parents.children().nodesTaggedWithAny(method.type);
+		methods = methods.selectNode(StopGap.SIGNATURE, method.signature);
 		
 		AtlasSet<Node> methodNodes = methods.eval().nodes();
 		
@@ -229,14 +236,9 @@ public class SummaryUtilities {
 	}
 	
 	private static void tagField(Field field) {
-		AtlasSet<Node> containers = Common.universe().nodesTaggedWithAny(XCSG.Project, XCSG.Package).eval().nodes();
-		String[] qualifiers = field.parentClass.split("\\.");
-		for(int i=0; i<qualifiers.length; i++){
-			// TODO: consider that inner classes may have a $ separator, however so could bytecode
-			containers = Common.toQ(containers).children().selectNode(XCSG.name, qualifiers[i]).eval().nodes();
-		}
-		Q parent = Common.toQ(containers).nodesTaggedWithAny(XCSG.Type);
-		Q fields = parent.children().nodesTaggedWithAny(field.type);
+		Q packages = Common.universe().nodesTaggedWithAny(XCSG.Package).selectNode(XCSG.name, field.pkg);
+		Q parents = packages.children().nodesTaggedWithAny(XCSG.Type).selectNode(XCSG.name, field.parentClass);
+		Q fields = parents.children().nodesTaggedWithAny(field.type);
 		fields = fields.selectNode(XCSG.name, field.name);
 		
 		AtlasSet<Node> fieldNodes = fields.eval().nodes();
@@ -280,6 +282,8 @@ public class SummaryUtilities {
 		writer.writeStartDocument();
 		
 		writer.writeStartElement("purity");
+		writer.writeAttribute("atlas", atlasVersion.getMajor() + "." + atlasVersion.getMinor() + "." + atlasVersion.getMicro());
+		writer.writeAttribute("purity-toolbox", purityToolboxVersion.getMajor() + "." + purityToolboxVersion.getMinor() + "." + purityToolboxVersion.getMicro());
 		
 		for(Node field : Common.universe().nodesTaggedWithAny(XCSG.Field).nodesTaggedWithAny(PurityAnalysis.READONLY, PurityAnalysis.POLYREAD, PurityAnalysis.MUTABLE, PurityAnalysis.UNTYPED).eval().nodes()){
 			serializeField(field, writer);
@@ -312,11 +316,12 @@ public class SummaryUtilities {
 			writer.writeAttribute("type", "unknown");
 		}
 		
+		Node parentClassName = Common.toQ(field).parent().eval().nodes().getFirst();
+		Node pkg = Common.toQ(field).containers().nodesTaggedWithAny(XCSG.Package).eval().nodes().getFirst();
+		writer.writeAttribute("package", pkg.getAttr(XCSG.name).toString());
+		writer.writeAttribute("class", parentClassName.getAttr(XCSG.name).toString());
 		writer.writeAttribute("name", field.getAttr(XCSG.name).toString());
 		
-		Node parentClass = Common.toQ(field).parent().eval().nodes().getFirst();
-		String qualifiedClassName = StandardQueries.getQualifiedClassName(parentClass);
-		writer.writeAttribute("class", qualifiedClassName);
 		String fieldImmutabilityTags = stringifyImmutabilityTags(field);
 		if(fieldImmutabilityTags.equals("")){
 			Log.warning("Missing type qualifier tags on field: " + field.address().toAddressString());
@@ -328,7 +333,7 @@ public class SummaryUtilities {
 	private static void serializeMethod(Node method, XMLStreamWriter writer) throws XMLStreamException {
 		// write method
 		writer.writeStartElement("method");
-		writer.writeAttribute("signature", method.getAttr("##signature").toString());
+		writer.writeAttribute("signature", method.getAttr(StopGap.SIGNATURE).toString());
 		
 		if(method.getAttr(XCSG.name).equals("<clinit>")){
 			writer.writeAttribute("type", "<clinit>");
@@ -345,9 +350,10 @@ public class SummaryUtilities {
 			writer.writeAttribute("type", "unknown");
 		}
 		
-		Node parentClass = Common.toQ(method).parent().eval().nodes().getFirst();
-		String qualifiedClassName = StandardQueries.getQualifiedClassName(parentClass);
-		writer.writeAttribute("class", qualifiedClassName);
+		Node parentClassName = Common.toQ(method).parent().eval().nodes().getFirst();
+		Node pkg = Common.toQ(method).containers().nodesTaggedWithAny(XCSG.Package).eval().nodes().getFirst();
+		writer.writeAttribute("package", pkg.getAttr(XCSG.name).toString());
+		writer.writeAttribute("class", parentClassName.getAttr(XCSG.name).toString());
 		String methodImmutabilityTags = stringifyImmutabilityTags(method);
 		if(methodImmutabilityTags.equals("")){
 			Log.warning("Missing type qualifier tags on method: " + method.address().toAddressString());
