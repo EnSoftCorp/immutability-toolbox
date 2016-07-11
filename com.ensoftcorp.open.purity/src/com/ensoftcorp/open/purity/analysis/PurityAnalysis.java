@@ -1,18 +1,16 @@
 package com.ensoftcorp.open.purity.analysis;
 
-import static com.ensoftcorp.open.purity.analysis.Utilities.getTypes;
-import static com.ensoftcorp.open.purity.analysis.Utilities.removeTypes;
+import static com.ensoftcorp.open.purity.analysis.AnalysisUtilities.getTypes;
+import static com.ensoftcorp.open.purity.analysis.AnalysisUtilities.removeTypes;
 
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.FileNotFoundException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Set;
 
-import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamWriter;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
@@ -96,7 +94,7 @@ public class PurityAnalysis {
 		long stop = System.nanoTime();
 		double runtime = (stop-start)/1000.0/1000.0;
 		if(PurityPreferences.isGeneralLoggingEnabled()) {
-			if(PurityPreferences.isPartialProgramAnalysisEnabled()){
+			if(PurityPreferences.isGenerateSummariesEnabled()){
 				Log.info("Purity analysis completed in " + FORMAT.format(runtime) + " ms\n");
 			} else {
 				long numReadOnly = Common.universe().nodesTaggedWithAny(READONLY).eval().nodes().size();
@@ -111,7 +109,7 @@ public class PurityAnalysis {
 	}
 
 	private static class FileResult {
-		File file;
+		File file = null;
 	}
 	
 	/**
@@ -119,7 +117,26 @@ public class PurityAnalysis {
 	 */
 	private static boolean runAnalysis(){
 		final FileResult fileResult = new FileResult();
-		if(PurityPreferences.isPartialProgramAnalysisEnabled()){
+		if(PurityPreferences.isLoadSummariesEnabled()){
+			Display.getDefault().syncExec(new Runnable(){
+				@Override
+				public void run() {
+					FileDialog dialog = new FileDialog(Display.getDefault().getActiveShell(), SWT.OPEN);
+					dialog.setFilterNames(new String[] { "Purity Analysis Results", "All Files (*.*)" });
+					dialog.setFilterExtensions(new String[] { "*.xml", "*.*" });
+					fileResult.file = new File(dialog.open());
+				}
+			});
+			try {
+				SummaryUtilities.importSummary(fileResult.file);
+			} catch (FileNotFoundException e) {
+				DisplayUtils.showError(e, "Could not find summary file.");
+			} catch (XMLStreamException e) {
+				DisplayUtils.showError(e, "Error parsing summary file.");
+			}
+			fileResult.file = null;
+		}
+		if(PurityPreferences.isGenerateSummariesEnabled()){
 			Display.getDefault().syncExec(new Runnable(){
 				@Override
 				public void run() {
@@ -136,7 +153,7 @@ public class PurityAnalysis {
 		}
 		File outputFile = fileResult.file;
 		
-		if(PurityPreferences.isPartialProgramAnalysisEnabled()){
+		if(PurityPreferences.isGenerateSummariesEnabled()){
 			if(outputFile==null){
 				Log.warning("No output file selected, purity results will not be serialized to XML file.");
 			} else {
@@ -148,7 +165,7 @@ public class PurityAnalysis {
 		StopGap.addClassVariableAccessTags();
 		StopGap.addDataFlowDisplayNodeTags();
 		
-		Utilities.addDummyReturnAssignments();
+		AnalysisUtilities.addDummyReturnAssignments();
 
 		AtlasHashSet<Node> worklist = new AtlasHashSet<Node>();
 
@@ -202,7 +219,7 @@ public class PurityAnalysis {
 			}
 		}
 		
-		if(PurityPreferences.isPartialProgramAnalysisEnabled()){
+		if(PurityPreferences.isGenerateSummariesEnabled()){
 			// serialize immutability sets to in Atlas tags
 			if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Converting immutability sets into tags...");
 			convertImmutabilityTypesToTags();
@@ -211,30 +228,11 @@ public class PurityAnalysis {
 			// serialize field and method tags
 			if(outputFile != null){
 				if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Serializing field and method tags...");
-				
-				XMLOutputFactory output = XMLOutputFactory.newInstance();
 				try {
-					XMLStreamWriter writer = output.createXMLStreamWriter(new FileOutputStream(outputFile));
-					writer.writeStartDocument();
-					
-					writer.writeStartElement("purity");
-					
-					for(Node field : Common.universe().nodesTaggedWithAny(XCSG.Field).nodesTaggedWithAny(READONLY, POLYREAD, MUTABLE, UNTYPED).eval().nodes()){
-						serializeField(field, writer);
-					}
-					
-					for(Node method : Common.universe().nodesTaggedWithAny(XCSG.Method).nodesTaggedWithAny(READONLY, POLYREAD, MUTABLE, UNTYPED).eval().nodes()){
-						serializeMethod(method, writer);
-					}
-					
-					writer.writeEndElement();
-					
-					writer.writeEndDocument();
-					writer.flush();
+					SummaryUtilities.exportSummary(outputFile);
 				} catch (Exception e){
 					DisplayUtils.showError(e, "Could not serialize results.");
 				}
-				
 				if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Serialized field and method tags...");
 			}
 		} else {
@@ -268,7 +266,7 @@ public class PurityAnalysis {
 		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Performing cleanup...");
 
 		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Removing Immutability Qualifier Sets...");
-		AtlasSet<Node> attributedNodes = Common.universe().selectNode(Utilities.IMMUTABILITY_QUALIFIERS).eval().nodes();
+		AtlasSet<Node> attributedNodes = Common.universe().selectNode(AnalysisUtilities.IMMUTABILITY_QUALIFIERS).eval().nodes();
 		AtlasHashSet<Node> attributedNodesToUnattribute = new AtlasHashSet<Node>();
 		for(Node attributedNode : attributedNodes){
 			attributedNodesToUnattribute.add(attributedNode);
@@ -276,127 +274,16 @@ public class PurityAnalysis {
 		while(!attributedNodesToUnattribute.isEmpty()){
 			Node attributedNode = attributedNodesToUnattribute.getFirst();
 			attributedNodesToUnattribute.remove(attributedNode);
-			attributedNode.removeAttr(Utilities.IMMUTABILITY_QUALIFIERS);
+			attributedNode.removeAttr(AnalysisUtilities.IMMUTABILITY_QUALIFIERS);
 		}
 		
-		Utilities.removeDummyReturnAssignments();
+		AnalysisUtilities.removeDummyReturnAssignments();
 		
 		// TODO: remove when there are appropriate alternatives
 		StopGap.removeDataFlowDisplayNodeTags();
 		StopGap.removeClassVariableAccessTags();
 		
 		return isSane;
-	}
-	
-	private static void serializeField(Node field, XMLStreamWriter writer) throws XMLStreamException {
-		writer.writeStartElement("field");
-		if(field.taggedWith(XCSG.ClassVariable)){
-			writer.writeAttribute("type", XCSG.ClassVariable);
-		} else if(field.taggedWith(XCSG.InstanceVariable)){
-			writer.writeAttribute("type", XCSG.InstanceVariable);
-		} else {
-			Log.warning("Unknown field type for field: " + field.address().toAddressString());
-			writer.writeAttribute("type", "unknown");
-		}
-		
-		Node parentClass = Common.toQ(field).parent().eval().nodes().getFirst();
-		String qualifiedClassName = StandardQueries.getQualifiedClassName(parentClass);
-		writer.writeAttribute("class", qualifiedClassName);
-		String fieldImmutabilityTags = stringifyImmutabilityTags(field);
-		if(fieldImmutabilityTags.equals("")){
-			Log.warning("Missing type qualifier tags on field: " + field.address().toAddressString());
-		}
-		writer.writeAttribute("immutability", fieldImmutabilityTags);
-		writer.writeEndElement();
-	}
-
-	private static void serializeMethod(Node method, XMLStreamWriter writer) throws XMLStreamException {
-		// write method
-		writer.writeStartElement("method");
-		writer.writeAttribute("signature", method.getAttr("##signature").toString());
-		
-		if(method.getAttr(XCSG.name).equals("<clinit>")){
-			writer.writeAttribute("type", "<clinit>");
-		} else if(method.getAttr(XCSG.name).equals("<init>")){
-			writer.writeAttribute("type", "<init>");
-		} else if(method.taggedWith(XCSG.Constructor)){
-			writer.writeAttribute("type", XCSG.Constructor);
-		} else if(method.taggedWith(XCSG.ClassMethod)){
-			writer.writeAttribute("type", XCSG.ClassMethod);
-		} else if(method.taggedWith(XCSG.InstanceMethod)){
-			writer.writeAttribute("type", XCSG.InstanceMethod);
-		} else {
-			Log.warning("Unknown method type for method: " + method.address().toAddressString());
-			writer.writeAttribute("type", "unknown");
-		}
-		
-		Node parentClass = Common.toQ(method).parent().eval().nodes().getFirst();
-		String qualifiedClassName = StandardQueries.getQualifiedClassName(parentClass);
-		writer.writeAttribute("class", qualifiedClassName);
-		String methodImmutabilityTags = stringifyImmutabilityTags(method);
-		if(methodImmutabilityTags.equals("")){
-			Log.warning("Missing type qualifier tags on method: " + method.address().toAddressString());
-		}
-		writer.writeAttribute("immutability", methodImmutabilityTags);
-		
-		// write this node (if one exists)
-		Node thisNode = Common.toQ(method).children().nodesTaggedWithAll(XCSG.Identity).eval().nodes().getFirst();
-		if(thisNode != null){
-			writer.writeStartElement("this");
-			String thisImmutabilityTags = stringifyImmutabilityTags(thisNode);
-			if(thisImmutabilityTags.equals("")){
-				Log.warning("Missing type qualifier tags on this node: " + thisNode.address().toAddressString());
-			}
-			writer.writeAttribute("immutability", thisImmutabilityTags);
-			writer.writeEndElement();
-		}
-		
-		// write parameters
-		for(Node parameter : Common.toQ(method).children().nodesTaggedWithAll(XCSG.Parameter).eval().nodes()){
-			writer.writeStartElement("parameter");
-			writer.writeAttribute("index", parameter.getAttr(XCSG.parameterIndex).toString());
-			String parameterImmutabilityTags = stringifyImmutabilityTags(method);
-			if(parameterImmutabilityTags.equals("")){
-				Log.warning("Missing type qualifier tags on parameter: " + parameter.address().toAddressString());
-			}
-			writer.writeAttribute("immutability", parameterImmutabilityTags);
-			writer.writeEndElement();
-		}
-		
-		// write return node (if one exists)
-		Node returnNode = Common.toQ(method).children().nodesTaggedWithAll(XCSG.ReturnValue).eval().nodes().getFirst();
-		if(returnNode != null && !returnNode.taggedWith(Utilities.DUMMY_RETURN_NODE)){
-			writer.writeStartElement("return");
-			String returnImmutabilityTags = stringifyImmutabilityTags(returnNode);
-			if(returnImmutabilityTags.equals("")){
-				Log.warning("Missing type qualifier tags on return node: " + returnNode.address().toAddressString());
-			}
-			writer.writeAttribute("immutability", returnImmutabilityTags);
-			writer.writeEndElement();	
-		}
-		
-		writer.writeEndElement();
-	}
-
-	private static String stringifyImmutabilityTags(Node node) {
-		String prefix = "";
-		String immutabilityTags = "";
-		if(node.taggedWith(READONLY)){
-			immutabilityTags += READONLY;
-			prefix = ",";
-		}
-		if(node.taggedWith(POLYREAD)){
-			immutabilityTags += (prefix + POLYREAD);
-			prefix = ",";
-		}
-		if(node.taggedWith(MUTABLE)){
-			immutabilityTags += (prefix + MUTABLE);
-			prefix = ",";
-		}
-		if(node.taggedWith(UNTYPED)){
-			immutabilityTags += (prefix + UNTYPED);
-		}
-		return immutabilityTags;
 	}
 
 	/**
@@ -425,7 +312,7 @@ public class PurityAnalysis {
 			Node from = edge.getNode(EdgeDirection.FROM);
 			boolean involvesField = false;
 			
-			AtlasSet<Node> toReferences = Utilities.parseReferences(to);
+			AtlasSet<Node> toReferences = AnalysisUtilities.parseReferences(to);
 			for(Node toReference : toReferences){
 				if(toReference.taggedWith(XCSG.ArrayComponents)){
 					// an assignment to an array mutates the array
@@ -433,8 +320,8 @@ public class PurityAnalysis {
 					Q arrayIdentityForEdges = Common.universe().edgesTaggedWithAny(XCSG.ArrayIdentityFor);
 					Q arrayWrite = interproceduralDataFlowEdges.predecessors(Common.toQ(arrayComponents));
 					for(Node arrayIdentity : arrayIdentityForEdges.predecessors(arrayWrite).eval().nodes()){
-						for(Node arrayReference : Utilities.parseReferences(arrayIdentity)){
-							if(Utilities.removeTypes(arrayReference, ImmutabilityTypes.READONLY)){
+						for(Node arrayReference : AnalysisUtilities.parseReferences(arrayIdentity)){
+							if(AnalysisUtilities.removeTypes(arrayReference, ImmutabilityTypes.READONLY)){
 								typesChanged = true;
 							}
 						}
@@ -446,9 +333,9 @@ public class PurityAnalysis {
 			if(to.taggedWith(XCSG.InstanceVariableAssignment)){
 				// Type Rule 3 - TWRITE
 				// let, x.f = y
-				AtlasSet<Node> yReferences = Utilities.parseReferences(from);
+				AtlasSet<Node> yReferences = AnalysisUtilities.parseReferences(from);
 				for(Node y : yReferences){
-					AtlasSet<Node> fReferences = Utilities.parseReferences(to);
+					AtlasSet<Node> fReferences = AnalysisUtilities.parseReferences(to);
 					for(Node f : fReferences){
 						// Reference (x) -InstanceVariableAccessed-> InstanceVariableAssignment (f=)
 						Node instanceVariableAssignment = to; // (f=)
@@ -458,7 +345,7 @@ public class PurityAnalysis {
 							// if a field changes in an object then that object and any container 
 							// objects which contain an object where the field is have also changed
 							// for example z.x.f = y, x is being mutated and so is z
-							for(Node container : Utilities.getAccessedContainers(instanceVariableAccessed)){
+							for(Node container : AnalysisUtilities.getAccessedContainers(instanceVariableAccessed)){
 								if(removeTypes(container, ImmutabilityTypes.READONLY)){
 									typesChanged = true;
 								}
@@ -470,7 +357,7 @@ public class PurityAnalysis {
 							}
 						}
 						
-						AtlasSet<Node> xReferences = Utilities.parseReferences(instanceVariableAccessed);
+						AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(instanceVariableAccessed);
 						for(Node x : xReferences){
 							if(FieldAssignmentChecker.handleFieldWrite(x, f, y)){
 								typesChanged = true;
@@ -486,14 +373,14 @@ public class PurityAnalysis {
 			if(from.taggedWith(XCSG.InstanceVariableValue)){
 				// Type Rule 4 - TREAD
 				// let, x = y.f
-				AtlasSet<Node> xReferences = Utilities.parseReferences(to);
+				AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(to);
 				for(Node x : xReferences){
-					AtlasSet<Node> fReferences = Utilities.parseReferences(from);
+					AtlasSet<Node> fReferences = AnalysisUtilities.parseReferences(from);
 					for(Node f : fReferences){
 						// Reference (y) -InstanceVariableAccessed-> InstanceVariableValue (.f)
 						Node instanceVariableValue = from; // (.f)
 						Node instanceVariableAccessed = instanceVariableAccessedEdges.predecessors(Common.toQ(instanceVariableValue)).eval().nodes().getFirst();
-						AtlasSet<Node> yReferences = Utilities.parseReferences(instanceVariableAccessed);
+						AtlasSet<Node> yReferences = AnalysisUtilities.parseReferences(instanceVariableAccessed);
 						for(Node y : yReferences){
 							if(FieldAssignmentChecker.handleFieldRead(x, y, f)){
 								typesChanged = true;
@@ -508,10 +395,10 @@ public class PurityAnalysis {
 			// Type Rule 7 - TSREAD
 			// let, x = sf
 			if(from.taggedWith(StopGap.CLASS_VARIABLE_VALUE)){
-				AtlasSet<Node> xReferences = Utilities.parseReferences(to);
+				AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(to);
 				for(Node x : xReferences){
 					Node m = StandardQueries.getContainingMethod(to);
-					AtlasSet<Node> sfReferences = Utilities.parseReferences(from);
+					AtlasSet<Node> sfReferences = AnalysisUtilities.parseReferences(from);
 					for(Node sf : sfReferences){
 						if(FieldAssignmentChecker.handleStaticFieldRead(x, sf, m)){
 							typesChanged = true;
@@ -525,10 +412,10 @@ public class PurityAnalysis {
 			// Type Rule 8 - TSWRITE
 			// let, sf = x
 			if(to.taggedWith(StopGap.CLASS_VARIABLE_ASSIGNMENT)){
-				AtlasSet<Node> sfReferences = Utilities.parseReferences(to);
+				AtlasSet<Node> sfReferences = AnalysisUtilities.parseReferences(to);
 				for(Node sf : sfReferences){
 					Node m = StandardQueries.getContainingMethod(to);
-					AtlasSet<Node> xReferences = Utilities.parseReferences(from);
+					AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(from);
 					for(Node x : xReferences){
 						if(FieldAssignmentChecker.handleStaticFieldWrite(sf, x, m)){
 							typesChanged = true;
@@ -545,7 +432,7 @@ public class PurityAnalysis {
 				// Type Rule 5 - TCALL
 				// let, x = y.m(z)
 				Node containingMethod = StandardQueries.getContainingMethod(to);
-				AtlasSet<Node> xReferences = Utilities.parseReferences(to);
+				AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(to);
 				for(Node x : xReferences){
 					Node callsite = from;
 					
@@ -589,7 +476,7 @@ public class PurityAnalysis {
 					for(Node identityPass : identityPassReferences){
 						// Receiver (receiver) -LocalDataFlow-> IdentityPass (.this)
 						Node reciever = localDataFlowEdges.predecessors(Common.toQ(identityPass)).eval().nodes().getFirst();
-						AtlasSet<Node> yReferences = Utilities.parseReferences(reciever);
+						AtlasSet<Node> yReferences = AnalysisUtilities.parseReferences(reciever);
 						for(Node y : yReferences){
 							// ReturnValue (ret) -InterproceduralDataFlow-> CallSite (m)
 							Node ret = interproceduralDataFlowEdges.predecessors(Common.toQ(callsite)).eval().nodes().getFirst();
@@ -630,11 +517,11 @@ public class PurityAnalysis {
 				
 				// Type Rule 8 - TSCALL
 				// let, x = m(z)
-				AtlasSet<Node> xReferences = Utilities.parseReferences(to);
+				AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(to);
 				for(Node x : xReferences){
 					Node callsite = from;
 
-					Node method = Utilities.getInvokedMethodSignature(callsite);
+					Node method = AnalysisUtilities.getInvokedMethodSignature(callsite);
 
 					// ReturnValue (ret) -InterproceduralDataFlow-> CallSite (m)
 					Node ret = interproceduralDataFlowEdges.predecessors(Common.toQ(callsite)).eval().nodes().getFirst();
@@ -662,9 +549,9 @@ public class PurityAnalysis {
 			// Type Rule 2 - TASSIGN
 			// let x = y
 			if(!involvesField && !involvesCallsite){
-				AtlasSet<Node> xReferences = Utilities.parseReferences(to);
+				AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(to);
 				for(Node x : xReferences){
-					AtlasSet<Node> yReferences = Utilities.parseReferences(from);;
+					AtlasSet<Node> yReferences = AnalysisUtilities.parseReferences(from);;
 					for(Node y : yReferences){
 						if(BasicAssignmentChecker.handleAssignment(x, y)){
 							typesChanged = true;
@@ -692,7 +579,7 @@ public class PurityAnalysis {
 	 * Converts the immutability types to tags for partial program analysis
 	 */
 	private static void convertImmutabilityTypesToTags(){
-		Q typesToExtract = Common.universe().selectNode(Utilities.IMMUTABILITY_QUALIFIERS);
+		Q typesToExtract = Common.universe().selectNode(AnalysisUtilities.IMMUTABILITY_QUALIFIERS);
 		AtlasSet<Node> attributedNodes = Common.resolve(new NullProgressMonitor(), typesToExtract.eval()).nodes();
 		for(GraphElement attributedNode : attributedNodes){
 			Set<ImmutabilityTypes> types = getTypes(attributedNode);
@@ -707,7 +594,7 @@ public class PurityAnalysis {
 		
 		AtlasSet<Node> itemsToTrack = getUntrackedItems(attributedNodes);
 		for(GraphElement untouchedTrackedItem : itemsToTrack){
-			Set<ImmutabilityTypes> defaultTypes = Utilities.getDefaultTypes(untouchedTrackedItem);
+			Set<ImmutabilityTypes> defaultTypes = AnalysisUtilities.getDefaultTypes(untouchedTrackedItem);
 			for(ImmutabilityTypes type : defaultTypes){
 				untouchedTrackedItem.tag(type.toString());
 			}
@@ -735,7 +622,7 @@ public class PurityAnalysis {
 	 */
 	private static void extractMaximalTypes(){
 		Q methods = Common.universe().nodesTaggedWithAny(XCSG.Method);
-		Q typesToExtract = Common.universe().selectNode(Utilities.IMMUTABILITY_QUALIFIERS).difference(methods);
+		Q typesToExtract = Common.universe().selectNode(AnalysisUtilities.IMMUTABILITY_QUALIFIERS).difference(methods);
 		AtlasSet<Node> attributedNodes = Common.resolve(new NullProgressMonitor(), typesToExtract.eval()).nodes();
 		for(Node attributedNode : attributedNodes){
 			Set<ImmutabilityTypes> types = getTypes(attributedNode);

@@ -1,7 +1,7 @@
 package com.ensoftcorp.open.purity.analysis.checkers;
 
-import static com.ensoftcorp.open.purity.analysis.Utilities.getTypes;
-import static com.ensoftcorp.open.purity.analysis.Utilities.removeTypes;
+import static com.ensoftcorp.open.purity.analysis.AnalysisUtilities.getTypes;
+import static com.ensoftcorp.open.purity.analysis.AnalysisUtilities.removeTypes;
 
 import java.util.EnumSet;
 import java.util.Set;

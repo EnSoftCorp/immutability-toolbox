@@ -1,7 +1,7 @@
 package com.ensoftcorp.open.purity.analysis.checkers;
 
-import static com.ensoftcorp.open.purity.analysis.Utilities.getTypes;
-import static com.ensoftcorp.open.purity.analysis.Utilities.removeTypes;
+import static com.ensoftcorp.open.purity.analysis.AnalysisUtilities.getTypes;
+import static com.ensoftcorp.open.purity.analysis.AnalysisUtilities.removeTypes;
 
 import java.util.EnumSet;
 import java.util.Set;
@@ -17,7 +17,7 @@ import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.analysis.utils.StandardQueries;
 import com.ensoftcorp.open.commons.wishful.StopGap;
 import com.ensoftcorp.open.purity.analysis.ImmutabilityTypes;
-import com.ensoftcorp.open.purity.analysis.Utilities;
+import com.ensoftcorp.open.purity.analysis.AnalysisUtilities;
 import com.ensoftcorp.open.purity.log.Log;
 import com.ensoftcorp.open.purity.preferences.PurityPreferences;
 
@@ -59,7 +59,7 @@ public class CallChecker {
 			Q returnValues = localDataFlowEdges.predecessors(Common.toQ(ret));
 			Q fieldValues = localDataFlowEdges.predecessors(returnValues).nodesTaggedWithAny(XCSG.InstanceVariableValue, StopGap.CLASS_VARIABLE_VALUE);
 			for(Node fieldValue : fieldValues.eval().nodes()){
-				for(Node container : Utilities.getAccessedContainers(fieldValue)){
+				for(Node container : AnalysisUtilities.getAccessedContainers(fieldValue)){
 					if(removeTypes(container, ImmutabilityTypes.READONLY)){
 						typesChanged = true;
 					}
@@ -368,7 +368,7 @@ public class CallChecker {
 			Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
 			Q fields = interproceduralDataFlowEdges.predecessors(fieldValues);
 			for(Node field : fields.eval().nodes()){
-				for(Node container : Utilities.getAccessedContainers(field)){
+				for(Node container : AnalysisUtilities.getAccessedContainers(field)){
 					if(removeTypes(container, ImmutabilityTypes.READONLY)){
 						typesChanged = true;
 					}

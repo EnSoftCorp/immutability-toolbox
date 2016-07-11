@@ -12,7 +12,7 @@ import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.purity.analysis.ImmutabilityTypes;
 import com.ensoftcorp.open.purity.analysis.PurityAnalysis;
-import com.ensoftcorp.open.purity.analysis.Utilities;
+import com.ensoftcorp.open.purity.analysis.AnalysisUtilities;
 import com.ensoftcorp.open.purity.log.Log;
 import com.ensoftcorp.open.purity.preferences.PurityPreferences;
 
@@ -35,7 +35,7 @@ public class SanityChecks {
 //		if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Checking that known readonly types are typed as readonly...");
 //		resultsAreSane &= !defaultReadonlyTypesAreReadonly();
 		
-		if(!PurityPreferences.isPartialProgramAnalysisEnabled()){
+		if(!PurityPreferences.isGenerateSummariesEnabled()){
 			if(PurityPreferences.isGeneralLoggingEnabled()) Log.info("Checking for double tagged immutability types...");
 			resultsAreSane &= !isDoubleTagged();
 			
@@ -173,7 +173,7 @@ public class SanityChecks {
 	private static boolean gainedTypes(String... tags) {
 		int unexpectedTypes = 0;
 		for(GraphElement ge : Common.resolve(new NullProgressMonitor(), Common.universe().nodesTaggedWithAny(tags).eval()).nodes()){
-			Set<ImmutabilityTypes> defaultTypes = Utilities.getDefaultTypes(ge);
+			Set<ImmutabilityTypes> defaultTypes = AnalysisUtilities.getDefaultTypes(ge);
 			if(ge.taggedWith(PurityAnalysis.READONLY) && !defaultTypes.contains(ImmutabilityTypes.READONLY)){
 				if(PurityPreferences.isDebugLoggingEnabled()) Log.warning("GraphElement " + ge.address().toAddressString() + " is tagged as READONLY but READONLY is not a valid default for this element.");
 				unexpectedTypes++;

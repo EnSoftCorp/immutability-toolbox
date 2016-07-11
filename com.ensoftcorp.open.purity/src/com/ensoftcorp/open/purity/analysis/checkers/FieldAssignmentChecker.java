@@ -1,7 +1,7 @@
 package com.ensoftcorp.open.purity.analysis.checkers;
 
-import static com.ensoftcorp.open.purity.analysis.Utilities.getTypes;
-import static com.ensoftcorp.open.purity.analysis.Utilities.removeTypes;
+import static com.ensoftcorp.open.purity.analysis.AnalysisUtilities.getTypes;
+import static com.ensoftcorp.open.purity.analysis.AnalysisUtilities.removeTypes;
 
 import java.util.EnumSet;
 import java.util.Set;
@@ -10,7 +10,7 @@ import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.analysis.utils.StandardQueries;
 import com.ensoftcorp.open.purity.analysis.ImmutabilityTypes;
-import com.ensoftcorp.open.purity.analysis.Utilities;
+import com.ensoftcorp.open.purity.analysis.AnalysisUtilities;
 import com.ensoftcorp.open.purity.log.Log;
 import com.ensoftcorp.open.purity.preferences.PurityPreferences;
 
@@ -147,7 +147,7 @@ public class FieldAssignmentChecker {
 			if(removeTypes(f, ImmutabilityTypes.READONLY)){
 				typesChanged = true;
 			}
-			for(Node container : Utilities.getAccessedContainers(y)){
+			for(Node container : AnalysisUtilities.getAccessedContainers(y)){
 				if(removeTypes(container, ImmutabilityTypes.READONLY)){
 					typesChanged = true;
 				}

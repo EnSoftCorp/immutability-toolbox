@@ -16,7 +16,7 @@ import com.ensoftcorp.open.commons.wishful.StopGap;
 import com.ensoftcorp.open.purity.log.Log;
 import com.ensoftcorp.open.purity.preferences.PurityPreferences;
 
-public class Utilities {
+public class AnalysisUtilities {
 	
 //	// caching for some common graph types
 //	private static boolean cacheInitialized = false;
@@ -307,7 +307,7 @@ public class Utilities {
 				
 				if(reference.taggedWith(XCSG.CallSite)){
 					// parse return, a callsite on a callsite must be a callsite on the resulting object from the first callsite
-					Node method = Utilities.getInvokedMethodSignature(reference);
+					Node method = AnalysisUtilities.getInvokedMethodSignature(reference);
 					worklist.add(Common.toQ(method).children().nodesTaggedWithAny(XCSG.ReturnValue).eval().nodes().getFirst());
 					continue;
 				}
