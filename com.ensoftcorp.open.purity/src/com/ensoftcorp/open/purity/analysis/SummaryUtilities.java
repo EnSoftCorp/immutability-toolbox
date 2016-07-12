@@ -34,44 +34,46 @@ public class SummaryUtilities {
 	
 	private static class Field {
 		String type;
-		@Override
-		public String toString() {
-			return "Field [type=" + type + ", name=" + name + ", parentClass=" + parentClass
-					+ ", immutabilityQualifiers=" + immutabilityQualifiers + "]";
-		}
 		String pkg;
 		String parentClass;
 		String name;
 		String immutabilityQualifiers;
+		
+		@Override
+		public String toString() {
+			return "Field [type=" + type + ", package=" + pkg + ", class=" + parentClass + ", name=" + name
+					+ ", immutabilityQualifiers=" + immutabilityQualifiers + "]";
+		}
 	}
 	
 	private static Method method;
 	
 	private static class Method {
 		String type;
-		@Override
-		public String toString() {
-			return "Method [type=" + type + ", signature=" + signature + ", parentClass=" + parentClass
-					+ ", immutabilityQualifiers=" + immutabilityQualifiers + ", parameters=" + parameters
-					+ ", identityImmutabilityQualifiers=" + identityImmutabilityQualifiers
-					+ ", returnImmutabilityQualifiers=" + returnImmutabilityQualifiers + "]";
-		}
-		
-		String parentClass;
 		String pkg;
+		String parentClass;
 		String signature;
 		String immutabilityQualifiers;
 		List<Parameter> parameters = new LinkedList<Parameter>();
 		String identityImmutabilityQualifiers;
 		String returnImmutabilityQualifiers;
 		
+		@Override
+		public String toString() {
+			return "Method [type=" + type + ", package=" + pkg + ", class=" + parentClass + ", signature=" + signature
+					+ ", immutabilityQualifiers=" + immutabilityQualifiers + ", parameters=" + parameters
+					+ ", identityImmutabilityQualifiers=" + identityImmutabilityQualifiers
+					+ ", returnImmutabilityQualifiers=" + returnImmutabilityQualifiers + "]";
+		}
+		
 		private static class Parameter {
 			int index;
+			String immutabilityQualifiers;
+			
 			@Override
 			public String toString() {
 				return "Parameter [index=" + index + ", immutabilityQualifiers=" + immutabilityQualifiers + "]";
 			}
-			String immutabilityQualifiers;
 		}
 	}
 	
@@ -192,7 +194,7 @@ public class SummaryUtilities {
 	
 	private static void tagMethod(Method method) {
 		Q packages = Common.universe().nodesTaggedWithAny(XCSG.Package).selectNode(XCSG.name, method.pkg);
-		Q parents = packages.children().nodesTaggedWithAny(XCSG.Type).selectNode(XCSG.name, method.parentClass);
+		Q parents = packages.contained().nodesTaggedWithAny(XCSG.Type).selectNode(XCSG.name, method.parentClass);
 		Q methods = parents.children().nodesTaggedWithAny(method.type);
 		methods = methods.selectNode(StopGap.SIGNATURE, method.signature);
 		
@@ -237,7 +239,7 @@ public class SummaryUtilities {
 	
 	private static void tagField(Field field) {
 		Q packages = Common.universe().nodesTaggedWithAny(XCSG.Package).selectNode(XCSG.name, field.pkg);
-		Q parents = packages.children().nodesTaggedWithAny(XCSG.Type).selectNode(XCSG.name, field.parentClass);
+		Q parents = packages.contained().nodesTaggedWithAny(XCSG.Type).selectNode(XCSG.name, field.parentClass);
 		Q fields = parents.children().nodesTaggedWithAny(field.type);
 		fields = fields.selectNode(XCSG.name, field.name);
 		
@@ -335,11 +337,7 @@ public class SummaryUtilities {
 		writer.writeStartElement("method");
 		writer.writeAttribute("signature", method.getAttr(StopGap.SIGNATURE).toString());
 		
-		if(method.getAttr(XCSG.name).equals("<clinit>")){
-			writer.writeAttribute("type", "<clinit>");
-		} else if(method.getAttr(XCSG.name).equals("<init>")){
-			writer.writeAttribute("type", "<init>");
-		} else if(method.taggedWith(XCSG.Constructor)){
+		if(method.taggedWith(XCSG.Constructor)){
 			writer.writeAttribute("type", XCSG.Constructor);
 		} else if(method.taggedWith(XCSG.ClassMethod)){
 			writer.writeAttribute("type", XCSG.ClassMethod);
