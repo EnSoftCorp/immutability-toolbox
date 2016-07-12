@@ -7,7 +7,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.dialogs.PreferencesUtil;
 
 /**
- * A menu selection handler for running the purity analysis
+ * A menu handler for configuring the purity analysis preferences
  * 
  * @author Ben Holland
  */
