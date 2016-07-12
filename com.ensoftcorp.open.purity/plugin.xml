@@ -55,7 +55,7 @@
       <page
             class="com.ensoftcorp.open.purity.ui.PurityPreferencesPage"
             id="com.ensoftcorp.open.purity.ui.preferences"
-            name="Purity Toolbox">
+            name="Purity Analysis">
       </page>
    </extension>
 
