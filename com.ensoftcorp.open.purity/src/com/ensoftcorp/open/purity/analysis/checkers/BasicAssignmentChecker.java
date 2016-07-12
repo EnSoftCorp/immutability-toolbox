@@ -79,6 +79,7 @@ public class BasicAssignmentChecker {
 		if(removeTypes(y, yTypesToRemove)){
 			typesChanged = true;
 		}
+		
 		return typesChanged;
 	}
 	

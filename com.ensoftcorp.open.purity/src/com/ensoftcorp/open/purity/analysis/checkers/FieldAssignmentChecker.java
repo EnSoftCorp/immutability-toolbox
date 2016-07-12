@@ -257,6 +257,10 @@ public class FieldAssignmentChecker {
 		if(removeTypes(m, ImmutabilityTypes.READONLY)){
 			typesChanged = true;
 		}
+		
+		if(BasicAssignmentChecker.handleAssignment(sf, x)){
+			typesChanged = true;
+		}
 
 		return typesChanged;
 	}
@@ -315,6 +319,10 @@ public class FieldAssignmentChecker {
 			}
 		}
 		if(removeTypes(m, mStaticTypesToRemove)){
+			typesChanged = true;
+		}
+		
+		if(BasicAssignmentChecker.handleAssignment(x, sf)){
 			typesChanged = true;
 		}
 		
