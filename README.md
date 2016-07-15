@@ -1,8 +1,8 @@
-# Purity Toolbox
-A toolbox for computing reference immutability (method purity and side-effects) summaries.
+# Immutability Toolbox
+A toolbox for computing reference immutability and method purity/side-effect summaries.
 
 ## Overview
-This toolbox provides an Atlas native implementation of the context-sensitive method purity and side-effect analysis proposed and discussed in the following resources.
+This toolbox applies a type checking technique proposed in the following resources to implement an Atlas native implementation of a context-sensitive reference immutability and method purity/side-effect analysis.
 
 - [ReIm & ReImInfer: Checking and Inference of Reference Immutability and Method Purity](https://huangw5.github.io/docs/oopsla12.pdf)
 - [ReImInfer: Method Purity Inference for Java](https://huangw5.github.io/docs/fse-tool12.pdf)
