@@ -231,6 +231,7 @@ public class ImmutabilityAnalysis {
 				try {
 					SummaryUtilities.exportSummary(outputFile);
 				} catch (Exception e){
+					Log.error("Could not save summaries.", e);
 					DisplayUtils.showError(e, "Could not save summaries.");
 				}
 			}

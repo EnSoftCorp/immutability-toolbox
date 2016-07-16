@@ -289,11 +289,13 @@ public class SummaryUtilities {
 		
 		for(Node field : Common.universe().nodesTaggedWithAny(XCSG.Field).nodesTaggedWithAny(ImmutabilityAnalysis.READONLY, ImmutabilityAnalysis.POLYREAD, ImmutabilityAnalysis.MUTABLE, ImmutabilityAnalysis.UNTYPED).eval().nodes()){
 			serializeField(field, writer);
+			writer.flush();
 			fieldsSummarized++;
 		}
 		
 		for(Node method : Common.universe().nodesTaggedWithAny(XCSG.Method).nodesTaggedWithAny(ImmutabilityAnalysis.READONLY, ImmutabilityAnalysis.POLYREAD, ImmutabilityAnalysis.MUTABLE, ImmutabilityAnalysis.UNTYPED).eval().nodes()){
 			serializeMethod(method, writer);
+			writer.flush();
 			methodsSummarized++;
 		}
 		
@@ -301,6 +303,7 @@ public class SummaryUtilities {
 		
 		writer.writeEndDocument();
 		writer.flush();
+		writer.close();
 		
 		String message = "Summarized: " + fieldsSummarized + " fields, " + methodsSummarized + " methods.";
 		Log.info("Summary exported.\n" + message);
