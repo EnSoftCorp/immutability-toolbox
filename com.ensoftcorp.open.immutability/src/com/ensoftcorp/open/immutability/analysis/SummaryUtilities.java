@@ -177,11 +177,11 @@ public class SummaryUtilities {
 				break;
 			case XMLStreamConstants.END_ELEMENT:
 				String endElementName = xmlr.getLocalName();
-				if(endElementName.equals("field")){
+				if(endElementName.equals("field") && field != null){
 					fieldsSummarized++;
 					tagField(field);
 					field = null;
-				} else if(endElementName.equals("method")){
+				} else if(endElementName.equals("method") && method != null){
 					methodsSummarized++;
 					tagMethod(method);
 					method = null;
