@@ -1,5 +1,10 @@
 package com.ensoftcorp.open.immutability.handlers;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+
+import javax.xml.stream.XMLStreamException;
+
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -7,7 +12,12 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.FileDialog;
 
+import com.ensoftcorp.open.commons.utils.DisplayUtils;
+import com.ensoftcorp.open.immutability.analysis.SummaryUtilities;
 import com.ensoftcorp.open.immutability.log.Log;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
 
@@ -32,11 +42,36 @@ public class ImportSummaryHandler extends AbstractHandler {
 		public ImportSummaryJob() {
 			super("Importing Summary...");
 		}
+		
+		private static class FileResult {
+			File file = null;
+		}
 
 		@Override
 		protected IStatus run(IProgressMonitor monitor) {
-			// TODO: implement
-			if(ImmutabilityPreferences.isGeneralLoggingEnabled()) Log.info("Imported Summary.");
+			final FileResult fileResult = new FileResult();
+			Display.getDefault().syncExec(new Runnable(){
+				@Override
+				public void run() {
+					FileDialog dialog = new FileDialog(Display.getDefault().getActiveShell(), SWT.OPEN);
+					dialog.setFilterNames(new String[] { "Immutability Analysis Results", "All Files (*.*)" });
+					dialog.setFilterExtensions(new String[] { "*.xml", "*.*" });
+					fileResult.file = new File(dialog.open());
+				}
+			});
+			File inputFile = fileResult.file;
+			if(inputFile != null){
+				try {
+					SummaryUtilities.importSummary(fileResult.file);
+				} catch (FileNotFoundException e) {
+					DisplayUtils.showError(e, "Could not find summary file.");
+				} catch (XMLStreamException e) {
+					DisplayUtils.showError(e, "Error parsing summary file.");
+				}
+				if(ImmutabilityPreferences.isGeneralLoggingEnabled()) Log.info("Imported Summary.");
+			} else {
+				if(ImmutabilityPreferences.isGeneralLoggingEnabled()) Log.info("No summary file was selected.");
+			}
 			return Status.OK_STATUS;
 		}	
 	}
