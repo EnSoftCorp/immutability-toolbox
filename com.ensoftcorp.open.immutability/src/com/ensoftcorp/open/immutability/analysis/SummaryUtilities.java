@@ -288,13 +288,23 @@ public class SummaryUtilities {
 		writer.writeAttribute("immutability-toolbox", immutabilityToolboxVersion.getMajor() + "." + immutabilityToolboxVersion.getMinor() + "." + immutabilityToolboxVersion.getMicro());
 		
 		for(Node field : Common.universe().nodesTaggedWithAny(XCSG.Field).nodesTaggedWithAny(ImmutabilityAnalysis.READONLY, ImmutabilityAnalysis.POLYREAD, ImmutabilityAnalysis.MUTABLE, ImmutabilityAnalysis.UNTYPED).eval().nodes()){
-			serializeField(field, writer);
+			try {
+				serializeField(field, writer);
+			} catch (Exception e){
+				Log.error("Error serializing field: " + field.address().toAddressString(), e);
+				throw e;
+			}
 			writer.flush();
 			fieldsSummarized++;
 		}
 		
 		for(Node method : Common.universe().nodesTaggedWithAny(XCSG.Method).nodesTaggedWithAny(ImmutabilityAnalysis.READONLY, ImmutabilityAnalysis.POLYREAD, ImmutabilityAnalysis.MUTABLE, ImmutabilityAnalysis.UNTYPED).eval().nodes()){
-			serializeMethod(method, writer);
+			try {
+				serializeMethod(method, writer);
+			} catch (Exception e){
+				Log.error("Error serializing method: " + method.address().toAddressString(), e);
+				throw e;
+			}
 			writer.flush();
 			methodsSummarized++;
 		}
@@ -317,14 +327,24 @@ public class SummaryUtilities {
 		} else if(field.taggedWith(XCSG.InstanceVariable)){
 			writer.writeAttribute("type", XCSG.InstanceVariable);
 		} else {
-			Log.warning("Unknown field type for field: " + field.address().toAddressString());
-			writer.writeAttribute("type", "unknown");
+			Log.warning("Skipping method for unknown field type for field: " + field.address().toAddressString());
+			return;
 		}
 		
-		Node parentClassName = Common.toQ(field).parent().eval().nodes().getFirst();
+		Node parentClass = Common.toQ(field).parent().eval().nodes().getFirst();
+		if(parentClass == null){
+			Log.warning("Skipping filed, because field " + field.address().toAddressString() + " does not have a parent!");
+			return;
+		}
+		
 		Node pkg = Common.toQ(field).containers().nodesTaggedWithAny(XCSG.Package).eval().nodes().getFirst();
+		if(pkg == null){
+			Log.warning("Package for field " + field.address().toAddressString() + " does not exist!");
+			return;
+		}
+		
 		writer.writeAttribute("package", pkg.getAttr(XCSG.name).toString());
-		writer.writeAttribute("class", parentClassName.getAttr(XCSG.name).toString());
+		writer.writeAttribute("class", parentClass.getAttr(XCSG.name).toString());
 		writer.writeAttribute("name", field.getAttr(XCSG.name).toString());
 		
 		String fieldImmutabilityTags = stringifyImmutabilityTags(field);
@@ -347,14 +367,24 @@ public class SummaryUtilities {
 		} else if(method.taggedWith(XCSG.InstanceMethod)){
 			writer.writeAttribute("type", XCSG.InstanceMethod);
 		} else {
-			Log.warning("Unknown method type for method: " + method.address().toAddressString());
-			writer.writeAttribute("type", "unknown");
+			Log.warning("Skipping method, because of unknown method type for method: " + method.address().toAddressString());
+			return;
 		}
 		
-		Node parentClassName = Common.toQ(method).parent().eval().nodes().getFirst();
+		Node parentClass = Common.toQ(method).parent().eval().nodes().getFirst();
+		if(parentClass == null){
+			Log.warning("Skipping method because method " + method.address().toAddressString() + " does not have a parent!");
+			return;
+		}
+		
 		Node pkg = Common.toQ(method).containers().nodesTaggedWithAny(XCSG.Package).eval().nodes().getFirst();
+		if(pkg == null){
+			Log.warning("Skipping, method because package for method " + method.address().toAddressString() + " does not exist!");
+			return;
+		}
+		
 		writer.writeAttribute("package", pkg.getAttr(XCSG.name).toString());
-		writer.writeAttribute("class", parentClassName.getAttr(XCSG.name).toString());
+		writer.writeAttribute("class", parentClass.getAttr(XCSG.name).toString());
 		String methodImmutabilityTags = stringifyImmutabilityTags(method);
 		if(methodImmutabilityTags.equals("")){
 			Log.warning("Missing type qualifier tags on method: " + method.address().toAddressString());
