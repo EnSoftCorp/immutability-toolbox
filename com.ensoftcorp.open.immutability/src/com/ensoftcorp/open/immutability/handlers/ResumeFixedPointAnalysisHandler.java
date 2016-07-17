@@ -8,8 +8,7 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 
-import com.ensoftcorp.open.immutability.log.Log;
-import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
+import com.ensoftcorp.open.commons.utils.DisplayUtils;
 
 /**
  * A menu handler for resuming the analysis
@@ -36,7 +35,8 @@ public class ResumeFixedPointAnalysisHandler extends AbstractHandler {
 		@Override
 		protected IStatus run(IProgressMonitor monitor) {
 			// TODO: implement
-			if(ImmutabilityPreferences.isGeneralLoggingEnabled()) Log.info("Reached Fixed Point.");
+			DisplayUtils.showMessage("Not Implemented");
+//			if(ImmutabilityPreferences.isGeneralLoggingEnabled()) Log.info("Reached Fixed Point.");
 			return Status.OK_STATUS;
 		}	
 	}

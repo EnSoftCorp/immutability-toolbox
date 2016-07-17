@@ -620,7 +620,7 @@ public class ImmutabilityAnalysis {
 	 * Flattens the remaining immutability qualifiers to the maximal type
 	 * and applies the maximal type as a tag
 	 */
-	private static void extractMaximalTypes(){
+	public static void extractMaximalTypes(){
 		Q methods = Common.universe().nodesTaggedWithAny(XCSG.Method);
 		Q typesToExtract = Common.universe().selectNode(AnalysisUtilities.IMMUTABILITY_QUALIFIERS).difference(methods);
 		AtlasSet<Node> attributedNodes = Common.resolve(new NullProgressMonitor(), typesToExtract.eval()).nodes();
@@ -647,7 +647,7 @@ public class ImmutabilityAnalysis {
 	/**
 	 * Tags pure methods with "PURE"
 	 */
-	private static void tagPureMethods(){
+	public static void tagPureMethods(){
 		AtlasSet<Node> methods = Common.universe().nodesTaggedWithAny(XCSG.Method).eval().nodes();
 		for(GraphElement method : methods){
 			if(isPureMethod(method)){
