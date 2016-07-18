@@ -32,6 +32,7 @@ import com.ensoftcorp.open.commons.utils.DisplayUtils;
 import com.ensoftcorp.open.commons.wishful.StopGap;
 import com.ensoftcorp.open.immutability.analysis.checkers.BasicAssignmentChecker;
 import com.ensoftcorp.open.immutability.analysis.checkers.CallChecker;
+import com.ensoftcorp.open.immutability.analysis.checkers.ConstraintSolver;
 import com.ensoftcorp.open.immutability.analysis.checkers.FieldAssignmentChecker;
 import com.ensoftcorp.open.immutability.analysis.checkers.SanityChecks;
 import com.ensoftcorp.open.immutability.log.Log;
@@ -106,6 +107,7 @@ public class ImmutabilityAnalysis {
 				Log.info("Immutability analysis completed in " + FORMAT.format(runtime) + " ms\n" + summary);
 			}
 		}
+		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Constraint Solver Counts: " + ConstraintSolver.constraintOrder.toString());
 		return isSane;
 	}
 

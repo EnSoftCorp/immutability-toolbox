@@ -35,52 +35,54 @@ public class BasicAssignmentChecker {
 		}
 		
 		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()) Log.info("TASSIGN (x=y, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")");
+
+		return ConstraintSolver.satisifyXGreaterThanY(x, y);
 		
-		boolean typesChanged = false;
-		Set<ImmutabilityTypes> xTypes = getTypes(x);
-		Set<ImmutabilityTypes> yTypes = getTypes(y);
+//		boolean typesChanged = false;
+//		Set<ImmutabilityTypes> xTypes = getTypes(x);
+//		Set<ImmutabilityTypes> yTypes = getTypes(y);
 		
-		// process s(x)
-		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process s(x) for constraint qy " + getTypes(y).toString() + " <: qx " + getTypes(x).toString());
-		Set<ImmutabilityTypes> xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-		for(ImmutabilityTypes xType : xTypes){
-			boolean isSatisfied = false;
-			satisfied:
-			for(ImmutabilityTypes yType : yTypes){
-				if(xType.compareTo(yType) >= 0){
-					isSatisfied = true;
-					break satisfied;
-				}
-			}
-			if(!isSatisfied){
-				xTypesToRemove.add(xType);
-			}
-		}
-		if(removeTypes(x, xTypesToRemove)){
-			typesChanged = true;
-		}
-		
-		// process s(y)
-		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process s(y) for constraint qy " + getTypes(y).toString() + " <: qx " + getTypes(x).toString());
-		Set<ImmutabilityTypes> yTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-		for(ImmutabilityTypes yType : yTypes){
-			boolean isSatisfied = false;
-			satisfied:
-			for(ImmutabilityTypes xType : xTypes){
-				if(xType.compareTo(yType) >= 0){
-					isSatisfied = true;
-					break satisfied;
-				}
-			}
-			if(!isSatisfied){
-				yTypesToRemove.add(yType);
-			}
-		}
-		if(removeTypes(y, yTypesToRemove)){
-			typesChanged = true;
-		}
-		
-		return typesChanged;
+//		// process s(x)
+//		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process s(x) for constraint qy " + getTypes(y).toString() + " <: qx " + getTypes(x).toString());
+//		Set<ImmutabilityTypes> xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
+//		for(ImmutabilityTypes xType : xTypes){
+//			boolean isSatisfied = false;
+//			satisfied:
+//			for(ImmutabilityTypes yType : yTypes){
+//				if(xType.compareTo(yType) >= 0){
+//					isSatisfied = true;
+//					break satisfied;
+//				}
+//			}
+//			if(!isSatisfied){
+//				xTypesToRemove.add(xType);
+//			}
+//		}
+//		if(removeTypes(x, xTypesToRemove)){
+//			typesChanged = true;
+//		}
+//		
+//		// process s(y)
+//		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process s(y) for constraint qy " + getTypes(y).toString() + " <: qx " + getTypes(x).toString());
+//		Set<ImmutabilityTypes> yTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
+//		for(ImmutabilityTypes yType : yTypes){
+//			boolean isSatisfied = false;
+//			satisfied:
+//			for(ImmutabilityTypes xType : xTypes){
+//				if(xType.compareTo(yType) >= 0){
+//					isSatisfied = true;
+//					break satisfied;
+//				}
+//			}
+//			if(!isSatisfied){
+//				yTypesToRemove.add(yType);
+//			}
+//		}
+//		if(removeTypes(y, yTypesToRemove)){
+//			typesChanged = true;
+//		}
+//		
+//		return typesChanged;
 	}
 	
 }
