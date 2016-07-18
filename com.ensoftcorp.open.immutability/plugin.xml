@@ -91,6 +91,7 @@
 	               label="Export Summary"
 	               id="com.ensoftcorp.open.immutability.menus.advanced.exportSummaryCommandMenuItem">
 	         </command>
+	         <!-- todo implement
 	         <command
 	               commandId="com.ensoftcorp.open.immutability.menus.advanced.extractMaximalTypesCommand"
 	               label="Extract Maximal Types"
@@ -101,6 +102,7 @@
 	               label="Resume Fixed Point Analysis"
 	               id="com.ensoftcorp.open.immutability.menus.advanced.resumeFixedPointAnalysisCommandMenuItem">
 	         </command>
+	         -->
 	      </menu>
 	   </menuContribution>
 	</extension>
