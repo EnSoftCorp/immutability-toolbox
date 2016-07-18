@@ -104,49 +104,13 @@ public class CallChecker {
 			if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()) Log.info("TCALL (Overridden Method)");
 			
 			// Method (method) -Contains-> ReturnValue (ret)
-			Node overriddenMethodReturn = Common.toQ(overriddenMethod).children().nodesTaggedWithAny(XCSG.ReturnValue).eval().nodes().getFirst();
-			Set<ImmutabilityTypes> overriddenRetTypes = getTypes(overriddenMethodReturn);
+			Node overriddenRet = Common.toQ(overriddenMethod).children().nodesTaggedWithAny(XCSG.ReturnValue).eval().nodes().getFirst();
+			Set<ImmutabilityTypes> overriddenRetTypes = getTypes(overriddenRet);
 			
 			// constraint: overriddenReturn <: return
 			if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Constraint overriddenReturn <: return");
 			
-			// process s(ret)
-			if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process s(ret)");
-			Set<ImmutabilityTypes> retTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-			for(ImmutabilityTypes retType : retTypes){
-				boolean isSatisfied = false;
-				satisfied:
-				for(ImmutabilityTypes overriddenRetType : overriddenRetTypes){
-					if(retType.compareTo(overriddenRetType) >= 0){
-						isSatisfied = true;
-						break satisfied;
-					}
-				}
-				if(!isSatisfied){
-					retTypesToRemove.add(retType);
-				}
-			}
-			if(removeTypes(ret, retTypesToRemove)){
-				typesChanged = true;
-			}
-			
-			// process s(overriddenRet)
-			if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process s(overriddenRet)");
-			EnumSet<ImmutabilityTypes> overriddenRetTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-			for(ImmutabilityTypes overriddenRetType : overriddenRetTypes){
-				boolean isSatisfied = false;
-				satisfied:
-				for(ImmutabilityTypes retType : retTypes){
-					if(retType.compareTo(overriddenRetType) >= 0){
-						isSatisfied = true;
-						break satisfied;
-					}
-				}
-				if(!isSatisfied){
-					overriddenRetTypesToRemove.add(overriddenRetType);
-				}
-			}
-			if(removeTypes(overriddenMethodReturn, overriddenRetTypesToRemove)){
+			if(XGreaterThanYConstraintSolver.satisify(ret, retTypes, overriddenRet, overriddenRetTypes)){
 				typesChanged = true;
 			}
 			
@@ -181,43 +145,7 @@ public class CallChecker {
 						Set<ImmutabilityTypes> pTypes = getTypes(p);
 						Set<ImmutabilityTypes> pOverriddenTypes = getTypes(pOverridden);
 						
-						// process s(p)
-						if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process s(p)");
-						Set<ImmutabilityTypes> pTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-						for(ImmutabilityTypes pType : pTypes){
-							boolean isSatisfied = false;
-							satisfied:
-							for(ImmutabilityTypes pOverriddenType : pOverriddenTypes){
-								if(pOverriddenType.compareTo(pType) >= 0){
-									isSatisfied = true;
-									break satisfied;
-								}
-							}
-							if(!isSatisfied){
-								pTypesToRemove.add(pType);
-							}
-						}
-						if(removeTypes(p, pTypesToRemove)){
-							typesChanged = true;
-						}
-						
-						// process s(pOverridden)
-						if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process s(pOverridden)");
-						Set<ImmutabilityTypes> pOverriddenTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-						for(ImmutabilityTypes pOverriddenType : pOverriddenTypes){
-							boolean isSatisfied = false;
-							satisfied:
-							for(ImmutabilityTypes pType : pTypes){
-								if(pOverriddenType.compareTo(pType) >= 0){
-									isSatisfied = true;
-									break satisfied;
-								}
-							}
-							if(!isSatisfied){
-								pOverriddenTypesToRemove.add(pOverriddenType);
-							}
-						}
-						if(removeTypes(pOverridden, pOverriddenTypesToRemove)){
+						if(XGreaterThanYConstraintSolver.satisify(pOverridden, pOverriddenTypes, p, pTypes)){
 							typesChanged = true;
 						}
 					}
