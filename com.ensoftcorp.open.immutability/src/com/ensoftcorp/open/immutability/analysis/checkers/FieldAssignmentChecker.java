@@ -11,6 +11,9 @@ import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.analysis.utils.StandardQueries;
 import com.ensoftcorp.open.immutability.analysis.AnalysisUtilities;
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
+import com.ensoftcorp.open.immutability.analysis.solvers.XAdaptZGreaterThanYConstraintSolver;
+import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanYAdaptZConstraintSolver;
+import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanYConstraintSolver;
 import com.ensoftcorp.open.immutability.log.Log;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
 
@@ -48,72 +51,7 @@ public class FieldAssignmentChecker {
 			}
 		}
 		
-		// process s(x)
-		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process s(x) for constraint qy " + getTypes(y).toString() + " <: qx " + getTypes(x).toString() + " adapt qf " + getTypes(f).toString());
-		Set<ImmutabilityTypes> xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-		for(ImmutabilityTypes xType : xTypes){
-			boolean isSatisfied = false;
-			satisfied:
-			for(ImmutabilityTypes yType : yTypes){
-				for(ImmutabilityTypes fType : fTypes){
-					ImmutabilityTypes xAdaptedF = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, fType);
-					if(xAdaptedF.compareTo(yType) >= 0){
-						isSatisfied = true;
-						break satisfied;
-					}
-				}
-				if(!isSatisfied){
-					xTypesToRemove.add(xType);
-				}
-			}
-		}
-		if(removeTypes(x, xTypesToRemove)){
-			typesChanged = true;
-		}
-		
-		// process s(y)
-		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process s(y) for constraint qy " + getTypes(y).toString() + " <: qx " + getTypes(x).toString() + " adapt qf " + getTypes(f).toString());
-		Set<ImmutabilityTypes> yTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-		for(ImmutabilityTypes yType : yTypes){
-			boolean isSatisfied = false;
-			satisfied:
-			for(ImmutabilityTypes xType : xTypes){
-				for(ImmutabilityTypes fType : fTypes){
-					ImmutabilityTypes xAdaptedF = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, fType);
-					if(xAdaptedF.compareTo(yType) >= 0){
-						isSatisfied = true;
-						break satisfied;
-					}
-				}
-				if(!isSatisfied){
-					yTypesToRemove.add(yType);
-				}
-			}
-		}
-		if(removeTypes(y, yTypesToRemove)){
-			typesChanged = true;
-		}
-
-		// process s(f)
-		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process s(f) for constraint qy " + getTypes(y).toString() + " <: qx " + getTypes(x).toString() + " adapt qf " + getTypes(f).toString());
-		Set<ImmutabilityTypes> fTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-		for(ImmutabilityTypes fType : fTypes){
-			boolean isSatisfied = false;
-			satisfied:
-			for(ImmutabilityTypes xType : xTypes){
-				for(ImmutabilityTypes yType : yTypes){
-					ImmutabilityTypes xAdaptedF = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, fType);
-					if(xAdaptedF.compareTo(yType) >= 0){
-						isSatisfied = true;
-						break satisfied;
-					}
-				}
-				if(!isSatisfied){
-					fTypesToRemove.add(fType);
-				}
-			}
-		}
-		if(removeTypes(f, fTypesToRemove)){
+		if(XAdaptZGreaterThanYConstraintSolver.satisify(x, xTypes, y, yTypes, f, fTypes)){
 			typesChanged = true;
 		}
 		
@@ -135,7 +73,6 @@ public class FieldAssignmentChecker {
 		
 		boolean typesChanged = false;
 		Set<ImmutabilityTypes> xTypes = getTypes(x);
-		
 		
 		boolean xIsPolyreadField = x.taggedWith(XCSG.Field) && (xTypes.contains(ImmutabilityTypes.POLYREAD) && xTypes.size() == 1);
 		boolean xIsMutableReference = !x.taggedWith(XCSG.Field) && (xTypes.contains(ImmutabilityTypes.MUTABLE) && xTypes.size() == 1);
@@ -167,72 +104,7 @@ public class FieldAssignmentChecker {
 		Set<ImmutabilityTypes> fTypes = getTypes(f);
 		Set<ImmutabilityTypes> yTypes = getTypes(y);
 
-		// process s(x)
-		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process s(x) for constraint qy " + getTypes(y).toString() + " adapt qf " + getTypes(f).toString() + " <: qx " + getTypes(x).toString());
-		Set<ImmutabilityTypes> xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-		for(ImmutabilityTypes xType : xTypes){
-			boolean isSatisfied = false;
-			satisfied:
-			for(ImmutabilityTypes yType : yTypes){
-				for(ImmutabilityTypes fType : fTypes){
-					ImmutabilityTypes yAdaptedF = ImmutabilityTypes.getAdaptedFieldViewpoint(yType, fType);
-					if(xType.compareTo(yAdaptedF) >= 0){
-						isSatisfied = true;
-						break satisfied;
-					}
-				}
-			}
-			if(!isSatisfied){
-				xTypesToRemove.add(xType);
-			}
-		}
-		if(removeTypes(x, xTypesToRemove)){
-			typesChanged = true;
-		}
-		
-		// process s(y)
-		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process s(y) for constraint qy " + getTypes(y).toString() + " adapt qf " + getTypes(f).toString() + " <: qx " + getTypes(x).toString());
-		Set<ImmutabilityTypes> yTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-		for(ImmutabilityTypes yType : yTypes){
-			boolean isSatisfied = false;
-			satisfied:
-			for(ImmutabilityTypes xType : xTypes){
-				for(ImmutabilityTypes fType : fTypes){
-					ImmutabilityTypes yAdaptedF = ImmutabilityTypes.getAdaptedFieldViewpoint(yType, fType);
-					if(xType.compareTo(yAdaptedF) >= 0){
-						isSatisfied = true;
-						break satisfied;
-					}
-				}
-			}
-			if(!isSatisfied){
-				yTypesToRemove.add(yType);
-			}
-		}
-		if(removeTypes(y, yTypesToRemove)){
-			typesChanged = true;
-		}
-		
-		// process s(f)
-		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process s(f) for constraint qy " + getTypes(y).toString() + " adapt qf " + getTypes(f).toString() + " <: qx " + getTypes(x).toString());
-		Set<ImmutabilityTypes> fTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-		for(ImmutabilityTypes fType : fTypes){
-			boolean isSatisfied = false;
-			satisfied:
-			for(ImmutabilityTypes xType : xTypes){
-				for(ImmutabilityTypes yType : yTypes){
-					ImmutabilityTypes yAdaptedF = ImmutabilityTypes.getAdaptedFieldViewpoint(yType, fType);
-					if(xType.compareTo(yAdaptedF) >= 0){
-						isSatisfied = true;
-						break satisfied;
-					}
-				}
-			}
-			if(!isSatisfied){
-				fTypesToRemove.add(fType);
-			}
-		}
-		if(removeTypes(f, fTypesToRemove)){
+		if(XGreaterThanYAdaptZConstraintSolver.satisify(x, xTypes, y, yTypes, f, fTypes)){
 			typesChanged = true;
 		}
 		
@@ -282,43 +154,7 @@ public class FieldAssignmentChecker {
 		Set<ImmutabilityTypes> xTypes = getTypes(x);
 		Set<ImmutabilityTypes> mStaticTypes = getTypes(m);
 		
-		// process s(x)
-		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process s(x) for constraint qm " + getTypes(m).toString() + " <: qx " + getTypes(x).toString());
-		Set<ImmutabilityTypes> xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-		for(ImmutabilityTypes xType : xTypes){
-			boolean isSatisfied = false;
-			satisfied:
-			for(ImmutabilityTypes mStaticType : mStaticTypes){
-				if(xType.compareTo(mStaticType) >= 0){
-					isSatisfied = true;
-					break satisfied;
-				}
-			}
-			if(!isSatisfied){
-				xTypesToRemove.add(xType);
-			}
-		}
-		if(removeTypes(x, xTypesToRemove)){
-			typesChanged = true;
-		}
-		
-		// process s(m)
-		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process s(m) for constraint qm " + getTypes(m).toString() + " <: qx " + getTypes(x).toString());
-		Set<ImmutabilityTypes> mStaticTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-		for(ImmutabilityTypes mStaticType : mStaticTypes){
-			boolean isSatisfied = false;
-			satisfied:
-			for(ImmutabilityTypes xType : xTypes){
-				if(xType.compareTo(mStaticType) >= 0){
-					isSatisfied = true;
-					break satisfied;
-				}
-			}
-			if(!isSatisfied){
-				mStaticTypesToRemove.add(mStaticType);
-			}
-		}
-		if(removeTypes(m, mStaticTypesToRemove)){
+		if(XGreaterThanYConstraintSolver.satisify(x, xTypes, m, mStaticTypes)){
 			typesChanged = true;
 		}
 		

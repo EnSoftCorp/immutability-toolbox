@@ -1,4 +1,4 @@
-package com.ensoftcorp.open.immutability.analysis.checkers;
+package com.ensoftcorp.open.immutability.analysis.codegen;
 
 import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.getTypes;
 import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.removeTypes;
@@ -12,7 +12,7 @@ import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
 import com.ensoftcorp.open.immutability.log.Log;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
 
-public class ConstraintSolverGenerator {
+public class XGreaterThanYConstraintSolverGenerator {
 
 	// all possible sets, 3 choose 3, 3 choose 2, and 3 choose 1
 	private static final EnumSet<ImmutabilityTypes> SET1 = EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY);
@@ -33,14 +33,12 @@ public class ConstraintSolverGenerator {
 		sets.add(SET5);
 		sets.add(SET6);
 		sets.add(SET7);
-		
-		// generate lookup table for x :> y
-		
+
 		int[] allSets = new int[]{1,2,3,4,5,6,7};
 		
 		for(int x : allSets){
 			for(int y : allSets){
-				String result = basicAssignmentResult(sets.get(x-1), sets.get(y-1));
+				String result = getResult(sets.get(x-1), sets.get(y-1));
 				if(!result.equals("")){
 					System.out.println("if(xTypes.equals(SET" + x + ")){");
 					System.out.println("if(yTypes.equals(SET" + y + ")){");
@@ -53,7 +51,9 @@ public class ConstraintSolverGenerator {
 		System.out.println("return false;");
 	}
 	
-	private static String basicAssignmentResult(EnumSet<ImmutabilityTypes> xTypes, EnumSet<ImmutabilityTypes> yTypes) {
+	private static int counter = 1;
+	
+	private static String getResult(EnumSet<ImmutabilityTypes> xTypes, EnumSet<ImmutabilityTypes> yTypes) {
 		// process s(x)
 		Set<ImmutabilityTypes> xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes xType : xTypes){
@@ -87,15 +87,19 @@ public class ConstraintSolverGenerator {
 		}
 		
 		if(xTypesToRemove.isEmpty() && yTypesToRemove.isEmpty()){
-			return "";
+			String prefix = "if(ImmutabilityPreferences.isConstraintProfilingEnabled()) incrementCounter(" + counter++ + ");\n";
+			return prefix + "return false;";
 		} else {
 			if(xTypesToRemove.isEmpty()){
-				return "return removeTypes(y, EnumSet.of(" + getSetString(yTypesToRemove) + "));";
+				String prefix = "if(ImmutabilityPreferences.isConstraintProfilingEnabled()) incrementCounter(" + counter++ + ");\n";
+				return prefix + "return removeTypes(y, EnumSet.of(" + getSetString(yTypesToRemove) + "));";
 			}
 			if(yTypesToRemove.isEmpty()){
-				return "return removeTypes(x, EnumSet.of(" + getSetString(xTypesToRemove) + "));";
+				String prefix = "if(ImmutabilityPreferences.isConstraintProfilingEnabled()) incrementCounter(" + counter++ + ");\n";
+				return prefix + "return removeTypes(x, EnumSet.of(" + getSetString(xTypesToRemove) + "));";
 			}
 			String result = "";
+			result += "if(ImmutabilityPreferences.isConstraintProfilingEnabled()) incrementCounter(" + counter++ + ");\n";
 			result += "boolean xTypesChanged = removeTypes(x, EnumSet.of(" + getSetString(xTypesToRemove) + "));\n";
 			result += "boolean yTypesChanged = removeTypes(y, EnumSet.of(" + getSetString(yTypesToRemove) + "));\n";
 			result += "return xTypesChanged || yTypesChanged;";
@@ -111,74 +115,6 @@ public class ConstraintSolverGenerator {
 			prefix = ", ";
 		}
 		return result;
-	}
-
-	public static Set<Set<EnumSet<ImmutabilityTypes>>> getPossibilities(){
-		EnumSet<ImmutabilityTypes> set;
-		
-		Set<EnumSet<ImmutabilityTypes>> choose3 = new HashSet<EnumSet<ImmutabilityTypes>>();
-		set = EnumSet.noneOf(ImmutabilityTypes.class);
-		set.add(ImmutabilityTypes.READONLY);
-		set.add(ImmutabilityTypes.POLYREAD);
-		set.add(ImmutabilityTypes.MUTABLE);
-		choose3.add(set);
-		
-		Set<EnumSet<ImmutabilityTypes>> choose2 = new HashSet<EnumSet<ImmutabilityTypes>>();
-		set = EnumSet.noneOf(ImmutabilityTypes.class);
-		set.add(ImmutabilityTypes.READONLY);
-		set.add(ImmutabilityTypes.POLYREAD);
-		choose2.add(set);
-		set = EnumSet.noneOf(ImmutabilityTypes.class);
-		set.add(ImmutabilityTypes.READONLY);
-		set.add(ImmutabilityTypes.MUTABLE);
-		choose2.add(set);
-		set = EnumSet.noneOf(ImmutabilityTypes.class);
-		set.add(ImmutabilityTypes.POLYREAD);
-		set.add(ImmutabilityTypes.MUTABLE);
-		choose2.add(set);
-		
-		Set<EnumSet<ImmutabilityTypes>> choose1 = new HashSet<EnumSet<ImmutabilityTypes>>();
-		set = EnumSet.noneOf(ImmutabilityTypes.class);
-		set.add(ImmutabilityTypes.READONLY);
-		choose1.add(set);
-		set = EnumSet.noneOf(ImmutabilityTypes.class);
-		set.add(ImmutabilityTypes.POLYREAD);
-		choose1.add(set);
-		set = EnumSet.noneOf(ImmutabilityTypes.class);
-		set.add(ImmutabilityTypes.MUTABLE);
-		choose1.add(set);
-
-		Set<Set<EnumSet<ImmutabilityTypes>>> possibilities = new HashSet<Set<EnumSet<ImmutabilityTypes>>>();
-		possibilities.add(choose3);
-		possibilities.add(choose2);
-		possibilities.add(choose1);
-		
-		return possibilities;
-	}
-	
-	private static void permute(ImmutabilityTypes[] arr, ImmutabilityTypes[] tmp, int start, int end, int index, int r) {
-		if(index == r){
-			String prefix = "";
-			for (int j = 0; j < r; j++){
-				System.out.print(prefix + "ImmutabilityTypes." + tmp[j].toString());
-				prefix = ", ";
-			}
-			System.out.println("");
-			return;
-		}
-		for(int i = start; i <= end && end - i + 1 >= r - index; i++){
-			tmp[index] = arr[i];
-			permute(arr, tmp, i + 1, end, index + 1, r);
-		}
-	}
-	
-//	int n = 3;
-//	for(int r=3; r>0; r--){
-//		System.out.println(n + " choose " + r);
-//		nChooseR(3, r, ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.MUTABLE);
-//	}
-	private static void nChooseR(int n, int r, ImmutabilityTypes... arr){
-        permute(arr, new ImmutabilityTypes[r], 0, n-1, 0, r);
 	}
 	
 }

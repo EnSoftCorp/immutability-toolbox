@@ -97,12 +97,27 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 		return runSanityChecksValue;
 	}
 	
+	/**
+	 * Enable/disable constraint profiling
+	 */
+	public static final String CONSTRAINT_PROFILING = "CONSTRAINT_PROFILING";
+	public static final Boolean CONSTRAINT_PROFILING_DEFAULT = true;
+	private static boolean constraintProfilingValue = CONSTRAINT_PROFILING_DEFAULT;
+	
+	public static boolean isConstraintProfilingEnabled(){
+		if(!initialized){
+			loadPreferences();
+		}
+		return constraintProfilingValue;
+	}
+	
 	@Override
 	public void initializeDefaultPreferences() {
 		IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
 		preferences.setDefault(GENERATE_SUMMARIES, GENERATE_SUMMARIES_DEFAULT);
 		preferences.setDefault(LOAD_SUMMARIES, LOAD_SUMMARIES_DEFAULT);
 		preferences.setDefault(RUN_SANITY_CHECKS, RUN_SANITY_CHECKS_DEFAULT);
+		preferences.setDefault(CONSTRAINT_PROFILING, CONSTRAINT_PROFILING_DEFAULT);
 		preferences.setDefault(GENERAL_LOGGING, GENERAL_LOGGING_DEFAULT);
 		preferences.setDefault(INFERENCE_RULE_LOGGING, INFERENCE_RULE_LOGGING_DEFAULT);
 		preferences.setDefault(DEBUG_LOGGING, DEBUG_LOGGING_DEFAULT);
@@ -115,6 +130,7 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 		try {
 			IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
 			runSanityChecksValue = preferences.getBoolean(RUN_SANITY_CHECKS);
+			constraintProfilingValue = preferences.getBoolean(CONSTRAINT_PROFILING);
 			generateSummariesValue = preferences.getBoolean(GENERATE_SUMMARIES);
 			loadSummariesValue = preferences.getBoolean(LOAD_SUMMARIES);
 			generalLoggingValue = preferences.getBoolean(GENERAL_LOGGING);
