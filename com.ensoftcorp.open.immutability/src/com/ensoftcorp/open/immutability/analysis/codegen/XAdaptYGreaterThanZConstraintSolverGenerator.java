@@ -12,7 +12,7 @@ import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
 import com.ensoftcorp.open.immutability.log.Log;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
 
-public class XAdaptZGreaterThanYConstraintSolverGenerator {
+public class XAdaptYGreaterThanZConstraintSolverGenerator {
 
 	// all possible sets, 3 choose 3, 3 choose 2, and 3 choose 1
 	private static final EnumSet<ImmutabilityTypes> SET1 = EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY);
@@ -65,8 +65,8 @@ public class XAdaptZGreaterThanYConstraintSolverGenerator {
 			satisfied:
 			for(ImmutabilityTypes yType : yTypes){
 				for(ImmutabilityTypes zType : zTypes){
-					ImmutabilityTypes xAdaptedZ = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, zType);
-					if(xAdaptedZ.compareTo(yType) >= 0){
+					ImmutabilityTypes xAdaptedY = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, yType);
+					if(xAdaptedY.compareTo(zType) >= 0){
 						isSatisfied = true;
 						break satisfied;
 					}
@@ -84,8 +84,8 @@ public class XAdaptZGreaterThanYConstraintSolverGenerator {
 			satisfied:
 			for(ImmutabilityTypes xType : xTypes){
 				for(ImmutabilityTypes zType : zTypes){
-					ImmutabilityTypes xAdaptedZ = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, zType);
-					if(xAdaptedZ.compareTo(yType) >= 0){
+					ImmutabilityTypes xAdaptedY = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, yType);
+					if(xAdaptedY.compareTo(zType) >= 0){
 						isSatisfied = true;
 						break satisfied;
 					}
@@ -103,8 +103,8 @@ public class XAdaptZGreaterThanYConstraintSolverGenerator {
 			satisfied:
 			for(ImmutabilityTypes xType : xTypes){
 				for(ImmutabilityTypes yType : yTypes){
-					ImmutabilityTypes xAdaptedZ = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, zType);
-					if(xAdaptedZ.compareTo(yType) >= 0){
+					ImmutabilityTypes xAdaptedY = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, yType);
+					if(xAdaptedY.compareTo(zType) >= 0){
 						isSatisfied = true;
 						break satisfied;
 					}

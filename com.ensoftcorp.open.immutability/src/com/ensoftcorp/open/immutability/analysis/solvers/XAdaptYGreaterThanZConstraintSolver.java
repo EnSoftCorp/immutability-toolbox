@@ -12,7 +12,7 @@ import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
 
-public class XAdaptZGreaterThanYConstraintSolver {
+public class XAdaptYGreaterThanZConstraintSolver {
 
 	// TODO: Remove after profiling is done, use these numbers to fine tune the
 	// constraint check orderings
@@ -58,7 +58,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(2);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -67,7 +69,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(3);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					return false;
 				}
 			}
 		}
@@ -85,7 +87,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(5);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -94,7 +98,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(6);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -103,7 +109,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(7);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					return false;
 				}
 			}
 		}
@@ -112,7 +118,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(8);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					return false;
 				}
 			}
 		}
@@ -121,7 +127,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(9);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -130,10 +138,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(10);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -142,7 +147,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(11);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return false;
 				}
 			}
 		}
@@ -151,7 +156,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(12);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -161,9 +168,8 @@ public class XAdaptZGreaterThanYConstraintSolver {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(13);
 					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -172,10 +178,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(14);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -184,7 +187,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(15);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -193,7 +196,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(16);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -202,7 +208,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(17);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
 				}
 			}
 		}
@@ -211,7 +217,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(18);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -220,7 +226,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(19);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -229,7 +238,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(20);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -238,7 +250,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(21);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return false;
 				}
 			}
 		}
@@ -256,7 +268,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(23);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -265,7 +279,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(24);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
+					return false;
 				}
 			}
 		}
@@ -283,7 +297,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(26);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -292,7 +308,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(27);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -301,7 +319,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(28);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
+					return false;
 				}
 			}
 		}
@@ -310,7 +328,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(29);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					return false;
 				}
 			}
 		}
@@ -319,7 +337,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(30);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return false;
 				}
 			}
 		}
@@ -328,10 +346,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(31);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -340,7 +355,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(32);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return false;
 				}
 			}
 		}
@@ -358,10 +373,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(34);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -370,10 +382,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(35);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -382,7 +391,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(36);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -391,7 +400,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(37);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -400,10 +412,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(38);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
 				}
 			}
 		}
@@ -412,7 +421,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(39);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -421,7 +430,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(40);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -442,10 +454,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(42);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -454,7 +463,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(43);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -463,7 +472,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(44);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -472,7 +484,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(45);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
 				}
 			}
 		}
@@ -481,7 +493,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(46);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -490,7 +502,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(47);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -499,7 +514,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(48);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -526,7 +544,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(51);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -535,7 +555,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(52);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
+					return false;
 				}
 			}
 		}
@@ -553,7 +573,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(54);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -562,7 +584,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(55);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -571,7 +595,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(56);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					return false;
 				}
 			}
 		}
@@ -580,7 +604,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(57);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return false;
 				}
 			}
 		}
@@ -598,9 +622,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(59);
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -609,7 +631,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(60);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return false;
 				}
 			}
 		}
@@ -618,7 +640,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(61);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -627,7 +651,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(62);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
+					return false;
 				}
 			}
 		}
@@ -636,10 +660,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(63);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -648,7 +669,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(64);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -657,7 +678,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(65);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -675,7 +699,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(67);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -684,7 +708,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(68);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -693,7 +720,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(69);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -702,7 +731,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(70);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return false;
 				}
 			}
 		}
@@ -720,7 +749,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(72);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -729,7 +760,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(73);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
+					return false;
 				}
 			}
 		}
@@ -747,7 +778,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(75);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -756,7 +789,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(76);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -765,7 +800,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(77);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
+					return false;
 				}
 			}
 		}
@@ -774,7 +809,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(78);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					return false;
 				}
 			}
 		}
@@ -783,7 +818,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(79);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return false;
 				}
 			}
 		}
@@ -792,10 +827,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(80);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -804,7 +836,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(81);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return false;
 				}
 			}
 		}
@@ -822,10 +854,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(83);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -834,10 +863,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(84);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -846,7 +872,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(85);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -855,7 +881,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(86);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -864,7 +890,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(87);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return false;
 				}
 			}
 		}
@@ -873,7 +899,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(88);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -882,7 +908,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(89);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -900,10 +929,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(91);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -912,7 +938,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(92);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -921,7 +947,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(93);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -930,7 +959,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(94);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
 				}
 			}
 		}
@@ -939,7 +968,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(95);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -948,7 +977,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(96);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -957,7 +989,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(97);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -984,7 +1019,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(100);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -993,7 +1030,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(101);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					return false;
 				}
 			}
 		}
@@ -1011,7 +1048,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(103);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -1020,7 +1059,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(104);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -1029,7 +1070,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(105);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					return false;
 				}
 			}
 		}
@@ -1038,7 +1079,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(106);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					return false;
 				}
 			}
 		}
@@ -1047,7 +1088,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(107);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -1056,10 +1099,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(108);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -1068,7 +1108,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(109);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return false;
 				}
 			}
 		}
@@ -1077,7 +1117,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(110);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -1087,9 +1129,8 @@ public class XAdaptZGreaterThanYConstraintSolver {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(111);
 					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -1098,10 +1139,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(112);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -1110,7 +1148,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(113);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -1119,7 +1157,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(114);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -1128,7 +1169,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(115);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
 				}
 			}
 		}
@@ -1137,7 +1178,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(116);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -1146,7 +1187,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(117);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -1155,7 +1199,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(118);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -1164,7 +1211,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(119);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return false;
 				}
 			}
 		}
@@ -1182,7 +1229,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(121);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -1191,7 +1240,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(122);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
+					return false;
 				}
 			}
 		}
@@ -1209,7 +1258,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(124);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -1218,7 +1269,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(125);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -1227,7 +1280,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(126);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
+					return false;
 				}
 			}
 		}
@@ -1236,7 +1289,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(127);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					return false;
 				}
 			}
 		}
@@ -1245,7 +1298,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(128);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return false;
 				}
 			}
 		}
@@ -1254,10 +1307,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(129);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -1266,7 +1316,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(130);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return false;
 				}
 			}
 		}
@@ -1284,10 +1334,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(132);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -1296,10 +1343,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(133);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -1308,7 +1352,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(134);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -1317,7 +1361,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(135);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -1326,10 +1373,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(136);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
 				}
 			}
 		}
@@ -1338,7 +1382,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(137);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -1347,7 +1391,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(138);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -1368,10 +1415,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(140);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -1380,7 +1424,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(141);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -1389,7 +1433,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(142);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -1398,7 +1445,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(143);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
 				}
 			}
 		}
@@ -1407,7 +1454,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(144);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -1416,7 +1463,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(145);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -1425,7 +1475,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(146);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -1452,7 +1505,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(149);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -1461,7 +1516,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(150);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					return false;
 				}
 			}
 		}
@@ -1479,7 +1534,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(152);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -1488,7 +1545,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(153);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -1497,7 +1556,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(154);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					return false;
 				}
 			}
 		}
@@ -1506,7 +1565,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(155);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					return false;
 				}
 			}
 		}
@@ -1515,7 +1574,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(156);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -1524,10 +1585,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(157);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -1536,7 +1594,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(158);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return false;
 				}
 			}
 		}
@@ -1545,7 +1603,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(159);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -1555,9 +1615,8 @@ public class XAdaptZGreaterThanYConstraintSolver {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(160);
 					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -1566,10 +1625,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(161);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -1578,7 +1634,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(162);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -1587,7 +1643,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(163);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -1596,7 +1655,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(164);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
 				}
 			}
 		}
@@ -1605,7 +1664,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(165);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -1614,7 +1673,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(166);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -1623,7 +1685,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(167);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -1632,7 +1697,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(168);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return false;
 				}
 			}
 		}
@@ -1650,7 +1715,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(170);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -1659,7 +1726,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(171);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
+					return false;
 				}
 			}
 		}
@@ -1677,7 +1744,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(173);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -1686,7 +1755,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(174);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -1695,7 +1766,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(175);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
+					return false;
 				}
 			}
 		}
@@ -1704,7 +1775,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(176);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					return false;
 				}
 			}
 		}
@@ -1713,7 +1784,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(177);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return false;
 				}
 			}
 		}
@@ -1722,10 +1793,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(178);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -1734,7 +1802,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(179);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return false;
 				}
 			}
 		}
@@ -1752,10 +1820,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(181);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -1764,10 +1829,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(182);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -1776,7 +1838,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(183);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -1785,7 +1847,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(184);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -1794,10 +1859,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(185);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
 				}
 			}
 		}
@@ -1806,7 +1868,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(186);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -1815,7 +1877,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(187);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -1836,10 +1901,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(189);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -1848,7 +1910,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(190);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -1857,7 +1919,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(191);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -1866,7 +1931,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(192);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
 				}
 			}
 		}
@@ -1875,7 +1940,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(193);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -1884,7 +1949,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(194);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -1893,7 +1961,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(195);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -1920,7 +1991,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(198);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -1947,7 +2020,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(201);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -1956,7 +2031,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(202);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -1965,7 +2042,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(203);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					return false;
 				}
 			}
 		}
@@ -1974,7 +2051,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(204);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return false;
 				}
 			}
 		}
@@ -1992,7 +2069,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(206);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return false;
 				}
 			}
 		}
@@ -2001,7 +2078,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(207);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return false;
 				}
 			}
 		}
@@ -2028,10 +2105,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(210);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -2049,7 +2123,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(212);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -2076,7 +2152,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(215);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -2085,7 +2163,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(216);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -2094,7 +2174,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(217);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return false;
 				}
 			}
 		}
@@ -2112,7 +2192,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(219);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -2139,7 +2221,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(222);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -2148,7 +2232,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(223);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -2157,7 +2243,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(224);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
+					return false;
 				}
 			}
 		}
@@ -2166,7 +2252,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(225);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return false;
 				}
 			}
 		}
@@ -2184,7 +2270,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(227);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return false;
 				}
 			}
 		}
@@ -2193,7 +2279,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(228);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return false;
 				}
 			}
 		}
@@ -2220,10 +2306,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(231);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -2232,7 +2315,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(232);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return false;
 				}
 			}
 		}
@@ -2250,7 +2333,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(234);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return false;
 				}
 			}
 		}
@@ -2259,7 +2342,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(235);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return false;
 				}
 			}
 		}
@@ -2286,10 +2369,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(238);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -2298,7 +2378,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(239);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -2307,7 +2387,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(240);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -2316,7 +2399,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(241);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
 				}
 			}
 		}
@@ -2325,7 +2408,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(242);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -2334,7 +2417,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(243);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -2343,7 +2429,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(244);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -2370,7 +2459,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(247);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -2379,7 +2470,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(248);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
+					return false;
 				}
 			}
 		}
@@ -2397,7 +2488,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(250);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -2406,7 +2499,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(251);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -2415,7 +2510,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(252);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					return false;
 				}
 			}
 		}
@@ -2424,7 +2519,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(253);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return false;
 				}
 			}
 		}
@@ -2442,9 +2537,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(255);
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -2453,7 +2546,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(256);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return false;
 				}
 			}
 		}
@@ -2462,7 +2555,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(257);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -2471,7 +2566,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(258);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
+					return false;
 				}
 			}
 		}
@@ -2480,10 +2575,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(259);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -2492,7 +2584,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(260);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -2501,7 +2593,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(261);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -2519,7 +2614,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(263);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -2528,7 +2623,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(264);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -2537,7 +2635,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(265);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -2546,7 +2646,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(266);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return false;
 				}
 			}
 		}
@@ -2564,7 +2664,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(268);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -2573,7 +2675,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(269);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
+					return false;
 				}
 			}
 		}
@@ -2591,7 +2693,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(271);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -2600,7 +2704,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(272);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -2609,7 +2715,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(273);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
+					return false;
 				}
 			}
 		}
@@ -2618,7 +2724,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(274);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					return false;
 				}
 			}
 		}
@@ -2627,7 +2733,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(275);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return false;
 				}
 			}
 		}
@@ -2636,10 +2742,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(276);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -2648,7 +2751,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(277);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return false;
 				}
 			}
 		}
@@ -2666,10 +2769,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(279);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -2678,10 +2778,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(280);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -2690,7 +2787,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(281);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -2699,7 +2796,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(282);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -2708,7 +2805,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(283);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return false;
 				}
 			}
 		}
@@ -2717,7 +2814,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(284);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -2726,7 +2823,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(285);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -2744,10 +2844,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(287);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -2756,7 +2853,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(288);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -2765,7 +2862,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(289);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -2774,7 +2874,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(290);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
 				}
 			}
 		}
@@ -2783,7 +2883,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(291);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -2792,7 +2892,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(292);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -2801,7 +2904,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(293);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -2828,7 +2934,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(296);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -2837,7 +2945,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(297);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					return false;
 				}
 			}
 		}
@@ -2855,7 +2963,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(299);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -2864,7 +2974,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(300);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -2873,7 +2985,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(301);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					return false;
 				}
 			}
 		}
@@ -2882,7 +2994,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(302);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					return false;
 				}
 			}
 		}
@@ -2891,7 +3003,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(303);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -2900,10 +3014,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(304);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -2912,7 +3023,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(305);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return false;
 				}
 			}
 		}
@@ -2921,7 +3032,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(306);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -2931,9 +3044,8 @@ public class XAdaptZGreaterThanYConstraintSolver {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(307);
 					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -2942,10 +3054,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(308);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -2954,7 +3063,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(309);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -2963,7 +3072,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(310);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -2972,7 +3084,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(311);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
 				}
 			}
 		}
@@ -2981,7 +3093,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(312);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -2990,7 +3102,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(313);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -2999,7 +3114,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(314);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -3008,7 +3126,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(315);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return false;
 				}
 			}
 		}
@@ -3026,7 +3144,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(317);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -3035,7 +3155,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(318);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
+					return false;
 				}
 			}
 		}
@@ -3053,7 +3173,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(320);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -3062,7 +3184,9 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(321);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return xTypesChanged || yTypesChanged;
 				}
 			}
 		}
@@ -3071,7 +3195,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(322);
-					return removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
+					return false;
 				}
 			}
 		}
@@ -3080,7 +3204,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(323);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					return false;
 				}
 			}
 		}
@@ -3089,7 +3213,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(324);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return false;
 				}
 			}
 		}
@@ -3098,10 +3222,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(325);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -3110,7 +3231,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(326);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return false;
 				}
 			}
 		}
@@ -3128,10 +3249,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(328);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -3140,10 +3258,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(329);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -3152,7 +3267,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(330);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -3161,7 +3276,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(331);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -3170,10 +3288,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(332);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
 				}
 			}
 		}
@@ -3182,7 +3297,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(333);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -3191,7 +3306,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(334);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -3212,10 +3330,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET7)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(336);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
+					return false;
 				}
 			}
 		}
@@ -3224,7 +3339,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET1)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(337);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -3233,7 +3348,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET2)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(338);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -3242,7 +3360,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET3)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(339);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
 				}
 			}
 		}
@@ -3251,7 +3369,7 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET4)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(340);
-					return false;
+					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 				}
 			}
 		}
@@ -3260,7 +3378,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET5)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(341);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}
@@ -3269,7 +3390,10 @@ public class XAdaptZGreaterThanYConstraintSolver {
 				if (zTypes.equals(SET6)) {
 					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
 						incrementCounter(342);
-					return false;
+					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+					return xTypesChanged || yTypesChanged || zTypesChanged;
 				}
 			}
 		}

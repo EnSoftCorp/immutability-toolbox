@@ -11,7 +11,7 @@ import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.analysis.utils.StandardQueries;
 import com.ensoftcorp.open.immutability.analysis.AnalysisUtilities;
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
-import com.ensoftcorp.open.immutability.analysis.solvers.XAdaptZGreaterThanYConstraintSolver;
+import com.ensoftcorp.open.immutability.analysis.solvers.XAdaptYGreaterThanZConstraintSolver;
 import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanYAdaptZConstraintSolver;
 import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanYConstraintSolver;
 import com.ensoftcorp.open.immutability.log.Log;
@@ -51,7 +51,8 @@ public class FieldAssignmentChecker {
 			}
 		}
 		
-		if(XAdaptZGreaterThanYConstraintSolver.satisify(x, xTypes, y, yTypes, f, fTypes)){
+		// qy <: qx adapt qf
+		if(XAdaptYGreaterThanZConstraintSolver.satisify(x, xTypes, f, fTypes, y, yTypes)){
 			typesChanged = true;
 		}
 		

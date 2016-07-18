@@ -34,7 +34,7 @@ import com.ensoftcorp.open.immutability.analysis.checkers.BasicAssignmentChecker
 import com.ensoftcorp.open.immutability.analysis.checkers.CallChecker;
 import com.ensoftcorp.open.immutability.analysis.checkers.FieldAssignmentChecker;
 import com.ensoftcorp.open.immutability.analysis.checkers.SanityChecks;
-import com.ensoftcorp.open.immutability.analysis.solvers.XAdaptZGreaterThanYConstraintSolver;
+import com.ensoftcorp.open.immutability.analysis.solvers.XAdaptYGreaterThanZConstraintSolver;
 import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanYAdaptZConstraintSolver;
 import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanYConstraintSolver;
 import com.ensoftcorp.open.immutability.log.Log;
@@ -113,7 +113,7 @@ public class ImmutabilityAnalysis {
 			Log.info("Constraint Solver Profiling Completed"
 					+ "\nXGreaterThanYConstraintSolver: " + XGreaterThanYConstraintSolver.constraintCounts.toString() 
 					+ "\nXGreaterThanYAdaptZConstraintSolver: " + XGreaterThanYAdaptZConstraintSolver.constraintCounts.toString() 
-					+ "\nXAdaptZGreaterThanYConstraintSolver: " + XAdaptZGreaterThanYConstraintSolver.constraintCounts.toString());
+					+ "\nXAdaptZGreaterThanYConstraintSolver: " + XAdaptYGreaterThanZConstraintSolver.constraintCounts.toString());
 		}
 		return isSane;
 	}

@@ -18,7 +18,8 @@ import com.ensoftcorp.open.commons.analysis.utils.StandardQueries;
 import com.ensoftcorp.open.commons.wishful.StopGap;
 import com.ensoftcorp.open.immutability.analysis.AnalysisUtilities;
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
-import com.ensoftcorp.open.immutability.analysis.solvers.XAdaptZGreaterThanYConstraintSolver;
+import com.ensoftcorp.open.immutability.analysis.solvers.XAdaptYGreaterThanZConstraintSolver;
+import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanYAdaptZConstraintSolver;
 import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanYConstraintSolver;
 import com.ensoftcorp.open.immutability.log.Log;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
@@ -84,7 +85,7 @@ public class CallChecker {
 		
 		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Constraint qy <: qx adapt qthis");
 		
-		if(XAdaptZGreaterThanYConstraintSolver.satisify(x, xTypes, y, yTypes, identity, identityTypes)){
+		if(XAdaptYGreaterThanZConstraintSolver.satisify(x, xTypes, identity, identityTypes, y, yTypes)){
 			typesChanged = true;
 		}
 		
@@ -490,47 +491,10 @@ public class CallChecker {
 		Set<ImmutabilityTypes> xTypes = getTypes(x);
 		Set<ImmutabilityTypes> retTypes = getTypes(ret);
 		
-		// process s(x)
-		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process s(x)");
-		Set<ImmutabilityTypes> xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-		for(ImmutabilityTypes xType : xTypes){
-			boolean isSatisfied = false;
-			satisfied:
-			for(ImmutabilityTypes retType : retTypes){
-				ImmutabilityTypes xAdaptedRet = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, retType);
-				if(xType.compareTo(xAdaptedRet) >= 0){
-					isSatisfied = true;
-					break satisfied;
-				}
-			}
-			if(!isSatisfied){
-				xTypesToRemove.add(xType);
-			}
-		}
-		if(removeTypes(x, xTypesToRemove)){
+		if(XGreaterThanYAdaptZConstraintSolver.satisify(x,  xTypes, x, xTypes, ret, retTypes)){
 			typesChanged = true;
 		}
-		
-		// process s(ret)
-		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process s(ret)");
-		Set<ImmutabilityTypes> retTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-		for(ImmutabilityTypes retType : retTypes){
-			boolean isSatisfied = false;
-			satisfied:
-			for(ImmutabilityTypes xType : xTypes){
-				ImmutabilityTypes xAdaptedRet = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, retType);
-				if(xType.compareTo(xAdaptedRet) >= 0){
-					isSatisfied = true;
-					break satisfied;
-				}
-			}
-			if(!isSatisfied){
-				retTypesToRemove.add(retType);
-			}
-		}
-		if(removeTypes(ret, retTypesToRemove)){
-			typesChanged = true;
-		}
+
 		return typesChanged;
 	}
 	
