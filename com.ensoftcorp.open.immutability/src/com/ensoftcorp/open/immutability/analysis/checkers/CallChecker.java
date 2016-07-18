@@ -18,6 +18,8 @@ import com.ensoftcorp.open.commons.analysis.utils.StandardQueries;
 import com.ensoftcorp.open.commons.wishful.StopGap;
 import com.ensoftcorp.open.immutability.analysis.AnalysisUtilities;
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
+import com.ensoftcorp.open.immutability.analysis.solvers.XAdaptZGreaterThanYConstraintSolver;
+import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanYConstraintSolver;
 import com.ensoftcorp.open.immutability.log.Log;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
 
@@ -82,72 +84,7 @@ public class CallChecker {
 		
 		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Constraint qy <: qx adapt qthis");
 		
-		// process s(y)
-		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process s(y)");
-		Set<ImmutabilityTypes> yTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-		for(ImmutabilityTypes yType : yTypes){
-			boolean isSatisfied = false;
-			satisfied:
-			for(ImmutabilityTypes xType : xTypes){
-				for(ImmutabilityTypes identityType : identityTypes){
-					ImmutabilityTypes xAdaptedThis = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, identityType);
-					if(xAdaptedThis.compareTo(yType) >= 0){
-						isSatisfied = true;
-						break satisfied;
-					}
-				}
-			}
-			if(!isSatisfied){
-				yTypesToRemove.add(yType);
-			}
-		}
-		if(removeTypes(y, yTypesToRemove)){
-			typesChanged = true;
-		}
-		
-		// process s(x)
-		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process s(x)");
-		Set<ImmutabilityTypes> xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-		for(ImmutabilityTypes xType : xTypes){
-			boolean isSatisfied = false;
-			satisfied:
-			for(ImmutabilityTypes yType : yTypes){
-				for(ImmutabilityTypes identityType : identityTypes){
-					ImmutabilityTypes xAdaptedThis = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, identityType);
-					if(xAdaptedThis.compareTo(yType) >= 0){
-						isSatisfied = true;
-						break satisfied;
-					}
-				}
-			}
-			if(!isSatisfied){
-				xTypesToRemove.add(xType);
-			}
-		}
-		if(removeTypes(x, xTypesToRemove)){
-			typesChanged = true;
-		}
-		
-		// process s(identity)
-		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process s(identity)");
-		Set<ImmutabilityTypes> identityTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-		for(ImmutabilityTypes identityType : identityTypes){
-			boolean isSatisfied = false;
-			satisfied:
-			for(ImmutabilityTypes xType : xTypes){
-				for(ImmutabilityTypes yType : yTypes){
-					ImmutabilityTypes xAdaptedThis = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, identityType);
-					if(xAdaptedThis.compareTo(yType) >= 0){
-						isSatisfied = true;
-						break satisfied;
-					}
-				}
-			}
-			if(!isSatisfied){
-				identityTypesToRemove.add(identityType);
-			}
-		}
-		if(removeTypes(identity, identityTypesToRemove)){
+		if(XAdaptZGreaterThanYConstraintSolver.satisify(x, xTypes, y, yTypes, identity, identityTypes)){
 			typesChanged = true;
 		}
 		
@@ -219,43 +156,7 @@ public class CallChecker {
 			// constraint: this <: overriddenThis 
 			if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Constraint this <: overriddenThis");
 			
-			// process s(this)
-			if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process s(this)");
-			identityTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-			for(ImmutabilityTypes identityType : identityTypes){
-				boolean isSatisfied = false;
-				satisfied:
-				for(ImmutabilityTypes overriddenIdentityType : overriddenIdentityTypes){
-					if(overriddenIdentityType.compareTo(identityType) >= 0){
-						isSatisfied = true;
-						break satisfied;
-					}
-				}
-				if(!isSatisfied){
-					identityTypesToRemove.add(identityType);
-				}
-			}
-			if(removeTypes(identity, identityTypesToRemove)){
-				typesChanged = true;
-			}
-			
-			// process s(overriddenRet)
-			if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process s(overriddenRet)");
-			EnumSet<ImmutabilityTypes> overriddenIdentityTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-			for(ImmutabilityTypes overriddenIdentityType : overriddenIdentityTypes){
-				boolean isSatisfied = false;
-				satisfied:
-				for(ImmutabilityTypes identityType : identityTypes){
-					if(overriddenIdentityType.compareTo(identityType) >= 0){
-						isSatisfied = true;
-						break satisfied;
-					}
-				}
-				if(!isSatisfied){
-					overriddenIdentityTypesToRemove.add(overriddenIdentityType);
-				}
-			}
-			if(removeTypes(overriddenMethodIdentity, overriddenIdentityTypesToRemove)){
+			if(XGreaterThanYConstraintSolver.satisify(overriddenMethodIdentity, overriddenIdentityTypes, identity, identityTypes)){
 				typesChanged = true;
 			}
 
