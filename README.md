@@ -1,5 +1,5 @@
 # Immutability Toolbox
-A toolbox for computing reference immutability and method purity/side-effect summaries.
+A toolbox for object immutability and side effect analysis.
 
 ## Overview
 This toolbox applies a type checking technique proposed in the following resources to implement an Atlas native implementation of a context-sensitive reference immutability and method purity/side-effect analysis.
