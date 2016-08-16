@@ -6,8 +6,10 @@ layout: default
 The Immutability Toolbox project contains logic for performing object immutability analysis and method side effect analysis on whole or partial programs. The implementation is based off of previous work by Wei Huang et al. described in their [OOPSLA 2012 paper](https://huangw5.github.io/docs/oopsla12.pdf).
 
 ## Features
-- Context-sensitive object immutability analysis classifies objects as READONLY, POLYREAD, or MUTABLE
+- Context-sensitive object immutability analysis classifies and tags references as READONLY, POLYREAD, or MUTABLE to indicate the immutability of the referenced object
 - Support for incremental and partial program analysis
+- Scalable approach tested on the full JDK
+- Fast hand-optimized constraint solver
 
 ## Getting Started
 Ready to get started?
