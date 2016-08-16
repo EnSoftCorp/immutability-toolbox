@@ -7,6 +7,7 @@ The Immutability Toolbox project contains logic for performing object immutabili
 
 ## Features
 - Context-sensitive object immutability analysis classifies and tags references as READONLY, POLYREAD, or MUTABLE to indicate the immutability of the referenced object
+- Support for calculating and tagging method purity (side effect analysis)
 - Support for incremental and partial program analysis
 - Scalable approach tested on the full JDK
 - Fast hand-optimized constraint solver
