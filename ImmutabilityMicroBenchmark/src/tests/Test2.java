@@ -1,4 +1,6 @@
 package tests;
+import annotations.immutability.IMPURE;
+import annotations.immutability.POLYREAD;
 import objects.Date;
 
 
@@ -11,9 +13,10 @@ public class Test2 {
 		System.out.println(test2.y.thing.majig);
 	}
 	
-	// polyread
+	@POLYREAD
 	Date y = new Date();
 	
+	@IMPURE
 	public void foo(Date x){
 		// parameter x cannot be mutable
 		// no longer have a reference to parameter x

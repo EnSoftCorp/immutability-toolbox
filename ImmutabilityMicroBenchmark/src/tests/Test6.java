@@ -1,28 +1,28 @@
 package tests;
 
+import annotations.TestCase;
+import annotations.immutability.MUTABLE;
+import annotations.immutability.POLYREAD;
+import annotations.immutability.READONLY;
 import objects.Date;
 
-/** 
- * Tests TCALL, specifically the immutability of the 
- * receiver "this" node on the method
- * 
- * @author Ganesh Santhanam
- */
+@TestCase(description = "Tests TCALL, specifically the immutability of the receiver \"this\" node on the method")
 public class Test6 {
 
 	// polyread because bar2 passes an alias to a to foo2
 	// where it is mutated
+	@POLYREAD
 	Date a = new Date();
 
 	// foo1 mutates first parameter but not second  
-	public int foo1(Date param1, Date param2) {
+	public int foo1(@MUTABLE Date param1, @READONLY Date param2) {
 		Date b = param1;
 		b.hour = 1;
 		return 0;
 	}
 
 	// foo2 mutates second parameter but not first
-	public int foo2(Date param1, Date param2) {
+	public int foo2(@READONLY Date param1, @MUTABLE Date param2) {
 		Date b = param2;
 		b.hour = 1;
 		return 0;
