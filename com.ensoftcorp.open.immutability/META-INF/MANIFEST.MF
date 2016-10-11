@@ -7,7 +7,8 @@ Bundle-Activator: com.ensoftcorp.open.immutability.Activator
 Bundle-Vendor: EnSoft Corp.
 Require-Bundle: org.eclipse.debug.ui,
  com.ensoftcorp.atlas.ui;bundle-version="3.0.10",
- com.ensoftcorp.open.commons;bundle-version="3.0.10"
+ com.ensoftcorp.open.commons;bundle-version="3.0.10",
+ com.ensoftcorp.open.jimple.commons;bundle-version="3.0.11"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ActivationPolicy: lazy
 Export-Package: com.ensoftcorp.open.immutability.preferences

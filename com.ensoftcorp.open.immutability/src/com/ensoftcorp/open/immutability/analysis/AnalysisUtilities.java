@@ -15,6 +15,7 @@ import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.wishful.StopGap;
 import com.ensoftcorp.open.immutability.log.Log;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
+import com.ensoftcorp.open.jimple.commons.wishful.JimpleStopGap;
 
 public class AnalysisUtilities {
 	
@@ -298,8 +299,8 @@ public class AnalysisUtilities {
 					continue;
 				}
 				
-				if(reference.taggedWith(StopGap.DATAFLOW_DISPLAY_NODE)){
-					for(Node workItem : StopGap.getDisplayNodeReferences(reference)){
+				if(reference.taggedWith(JimpleStopGap.DATAFLOW_DISPLAY_NODE)){
+					for(Node workItem : JimpleStopGap.getDisplayNodeReferences(reference)){
 						worklist.add(workItem);
 					}
 					continue;
@@ -313,7 +314,7 @@ public class AnalysisUtilities {
 				}
 				
 				// get the field for instance and class variable assignments
-				if(reference.taggedWith(XCSG.InstanceVariableAssignment) || reference.taggedWith(StopGap.CLASS_VARIABLE_ASSIGNMENT)){
+				if(reference.taggedWith(XCSG.InstanceVariableAssignment) || reference.taggedWith(JimpleStopGap.CLASS_VARIABLE_ASSIGNMENT)){
 					for(Node workItem : interproceduralDataFlowEdges.successors(Common.toQ(reference)).eval().nodes()){
 						worklist.add(workItem);
 					}
@@ -321,7 +322,7 @@ public class AnalysisUtilities {
 				}
 				
 				// get the field for instance and class variable values
-				if(reference.taggedWith(XCSG.InstanceVariableValue) || reference.taggedWith(StopGap.CLASS_VARIABLE_VALUE)){
+				if(reference.taggedWith(XCSG.InstanceVariableValue) || reference.taggedWith(JimpleStopGap.CLASS_VARIABLE_VALUE)){
 					for(Node workItem : interproceduralDataFlowEdges.predecessors(Common.toQ(reference)).eval().nodes()){
 						worklist.add(workItem);
 					}
@@ -364,7 +365,7 @@ public class AnalysisUtilities {
 	}
 	
 	private static boolean needsProcessing(GraphElement ge){
-		if(ge.taggedWith(StopGap.DATAFLOW_DISPLAY_NODE)){
+		if(ge.taggedWith(JimpleStopGap.DATAFLOW_DISPLAY_NODE)){
 			return true;
 		}
 		
@@ -376,7 +377,7 @@ public class AnalysisUtilities {
 			return true;
 		}
 		
-		if(ge.taggedWith(XCSG.InstanceVariableAccess) || ge.taggedWith(StopGap.CLASS_VARIABLE_ACCESS)){
+		if(ge.taggedWith(XCSG.InstanceVariableAccess) || ge.taggedWith(JimpleStopGap.CLASS_VARIABLE_ACCESS)){
 			return true;
 		}
 		
@@ -389,7 +390,7 @@ public class AnalysisUtilities {
 	
 	public static boolean isTypable(GraphElement ge){
 		// invalid types
-		if(ge.taggedWith(XCSG.InstanceVariableAccess) || ge.taggedWith(StopGap.CLASS_VARIABLE_ACCESS)){
+		if(ge.taggedWith(XCSG.InstanceVariableAccess) || ge.taggedWith(JimpleStopGap.CLASS_VARIABLE_ACCESS)){
 			return false;
 		}
 		
@@ -456,7 +457,7 @@ public class AnalysisUtilities {
 		}
 		
 		if(ge.taggedWith(XCSG.Assignment)){
-			if(!ge.taggedWith(XCSG.InstanceVariableAssignment) && !ge.taggedWith(StopGap.CLASS_VARIABLE_ASSIGNMENT)){
+			if(!ge.taggedWith(XCSG.InstanceVariableAssignment) && !ge.taggedWith(JimpleStopGap.CLASS_VARIABLE_ASSIGNMENT)){
 				return true;
 			}
 		}
@@ -561,7 +562,7 @@ public class AnalysisUtilities {
 			qualifiers.add(ImmutabilityTypes.READONLY);
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		} else if(ge.taggedWith(XCSG.Assignment)){
-			if(!ge.taggedWith(XCSG.InstanceVariableAssignment) && !ge.taggedWith(StopGap.CLASS_VARIABLE_ASSIGNMENT)){
+			if(!ge.taggedWith(XCSG.InstanceVariableAssignment) && !ge.taggedWith(JimpleStopGap.CLASS_VARIABLE_ASSIGNMENT)){
 				// could be a local reference
 				// Section 2.4 of Reference 1
 				// "All other references are initialized to the maximal
@@ -597,7 +598,7 @@ public class AnalysisUtilities {
 		Q instanceVariableAccessedEdges = Common.universe().edgesTaggedWithAny(XCSG.InstanceVariableAccessed);
 		Q variablesAccessed = instanceVariableAccessedEdges.reverse(Common.toQ(fieldAccess));
 		Q instanceVariablesAccessed = variablesAccessed.nodesTaggedWithAny(XCSG.InstanceVariableAccess);
-		Q classVariablesAccessed = variablesAccessed.nodesTaggedWithAny(StopGap.CLASS_VARIABLE_ACCESS);
+		Q classVariablesAccessed = variablesAccessed.nodesTaggedWithAny(JimpleStopGap.CLASS_VARIABLE_ACCESS);
 		Q localVariables = variablesAccessed.difference(instanceVariablesAccessed, classVariablesAccessed);
 		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
 		Q fieldsAccessed = interproceduralDataFlowEdges.predecessors(instanceVariablesAccessed.union(classVariablesAccessed));

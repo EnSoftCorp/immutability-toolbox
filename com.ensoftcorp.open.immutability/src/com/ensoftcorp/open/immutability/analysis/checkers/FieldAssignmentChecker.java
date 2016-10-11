@@ -3,12 +3,11 @@ package com.ensoftcorp.open.immutability.analysis.checkers;
 import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.getTypes;
 import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.removeTypes;
 
-import java.util.EnumSet;
 import java.util.Set;
 
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
-import com.ensoftcorp.open.commons.analysis.utils.StandardQueries;
+import com.ensoftcorp.open.commons.analysis.StandardQueries;
 import com.ensoftcorp.open.immutability.analysis.AnalysisUtilities;
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
 import com.ensoftcorp.open.immutability.analysis.solvers.XAdaptYGreaterThanZConstraintSolver;

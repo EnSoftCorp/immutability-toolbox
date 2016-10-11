@@ -8,7 +8,7 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 
-import com.ensoftcorp.open.commons.utils.DisplayUtils;
+import com.ensoftcorp.open.commons.utilities.DisplayUtils;
 
 /**
  * A menu handler for re-exporting summaries

@@ -14,8 +14,8 @@ import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
-import com.ensoftcorp.open.commons.analysis.utils.StandardQueries;
-import com.ensoftcorp.open.commons.wishful.StopGap;
+import com.ensoftcorp.open.commons.analysis.StandardQueries;
+import com.ensoftcorp.open.jimple.commons.wishful.JimpleStopGap;
 import com.ensoftcorp.open.immutability.analysis.AnalysisUtilities;
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
 import com.ensoftcorp.open.immutability.analysis.solvers.XAdaptYGreaterThanZConstraintSolver;
@@ -60,7 +60,7 @@ public class CallChecker {
 			// if the return value is a field then the field and its container fields must be mutable as well
 			Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
 			Q returnValues = localDataFlowEdges.predecessors(Common.toQ(ret));
-			Q fieldValues = localDataFlowEdges.predecessors(returnValues).nodesTaggedWithAny(XCSG.InstanceVariableValue, StopGap.CLASS_VARIABLE_VALUE);
+			Q fieldValues = localDataFlowEdges.predecessors(returnValues).nodesTaggedWithAny(XCSG.InstanceVariableValue, JimpleStopGap.CLASS_VARIABLE_VALUE);
 			for(Node fieldValue : fieldValues.eval().nodes()){
 				for(Node container : AnalysisUtilities.getAccessedContainers(fieldValue)){
 					if(removeTypes(container, ImmutabilityTypes.READONLY)){
@@ -194,7 +194,7 @@ public class CallChecker {
 			// if the return value is a field then the field and its container fields must be mutable as well
 			Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
 			Q returnValues = localDataFlowEdges.predecessors(Common.toQ(ret));
-			Q fieldValues = localDataFlowEdges.predecessors(returnValues).nodesTaggedWithAny(XCSG.InstanceVariableValue, StopGap.CLASS_VARIABLE_VALUE);
+			Q fieldValues = localDataFlowEdges.predecessors(returnValues).nodesTaggedWithAny(XCSG.InstanceVariableValue, JimpleStopGap.CLASS_VARIABLE_VALUE);
 			Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
 			Q fields = interproceduralDataFlowEdges.predecessors(fieldValues);
 			for(Node field : fields.eval().nodes()){

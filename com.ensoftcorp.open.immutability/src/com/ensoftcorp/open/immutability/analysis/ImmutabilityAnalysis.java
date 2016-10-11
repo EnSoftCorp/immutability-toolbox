@@ -27,8 +27,8 @@ import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
-import com.ensoftcorp.open.commons.analysis.utils.StandardQueries;
-import com.ensoftcorp.open.commons.utils.DisplayUtils;
+import com.ensoftcorp.open.commons.analysis.StandardQueries;
+import com.ensoftcorp.open.commons.utilities.DisplayUtils;
 import com.ensoftcorp.open.commons.wishful.StopGap;
 import com.ensoftcorp.open.immutability.analysis.checkers.BasicAssignmentChecker;
 import com.ensoftcorp.open.immutability.analysis.checkers.CallChecker;
@@ -39,6 +39,7 @@ import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanYAdaptZCons
 import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanYConstraintSolver;
 import com.ensoftcorp.open.immutability.log.Log;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
+import com.ensoftcorp.open.jimple.commons.wishful.JimpleStopGap;
 
 /**
  * An Atlas native implementation a context-sensitive reference immutability analysis
@@ -172,8 +173,8 @@ public class ImmutabilityAnalysis {
 		}
 		
 		// TODO: remove when there are appropriate alternatives
-		StopGap.addClassVariableAccessTags();
-		StopGap.addDataFlowDisplayNodeTags();
+		JimpleStopGap.addClassVariableAccessTags();
+		JimpleStopGap.addDataFlowDisplayNodeTags();
 		
 		AnalysisUtilities.addDummyReturnAssignments();
 
@@ -289,8 +290,8 @@ public class ImmutabilityAnalysis {
 		AnalysisUtilities.removeDummyReturnAssignments();
 		
 		// TODO: remove when there are appropriate alternatives
-		StopGap.removeDataFlowDisplayNodeTags();
-		StopGap.removeClassVariableAccessTags();
+		JimpleStopGap.removeDataFlowDisplayNodeTags();
+		JimpleStopGap.removeClassVariableAccessTags();
 		
 		return isSane;
 	}
@@ -350,7 +351,7 @@ public class ImmutabilityAnalysis {
 						Node instanceVariableAssignment = to; // (f=)
 						Node instanceVariableAccessed = instanceVariableAccessedEdges.predecessors(Common.toQ(instanceVariableAssignment)).eval().nodes().getFirst();
 
-						if(instanceVariableAccessed.taggedWith(XCSG.InstanceVariableValue) || instanceVariableAccessed.taggedWith(StopGap.CLASS_VARIABLE_VALUE)){
+						if(instanceVariableAccessed.taggedWith(XCSG.InstanceVariableValue) || instanceVariableAccessed.taggedWith(JimpleStopGap.CLASS_VARIABLE_VALUE)){
 							// if a field changes in an object then that object and any container 
 							// objects which contain an object where the field is have also changed
 							// for example z.x.f = y, x is being mutated and so is z
@@ -403,7 +404,7 @@ public class ImmutabilityAnalysis {
 			
 			// Type Rule 7 - TSREAD
 			// let, x = sf
-			if(from.taggedWith(StopGap.CLASS_VARIABLE_VALUE)){
+			if(from.taggedWith(JimpleStopGap.CLASS_VARIABLE_VALUE)){
 				AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(to);
 				for(Node x : xReferences){
 					Node m = StandardQueries.getContainingMethod(to);
@@ -420,7 +421,7 @@ public class ImmutabilityAnalysis {
 			
 			// Type Rule 8 - TSWRITE
 			// let, sf = x
-			if(to.taggedWith(StopGap.CLASS_VARIABLE_ASSIGNMENT)){
+			if(to.taggedWith(JimpleStopGap.CLASS_VARIABLE_ASSIGNMENT)){
 				AtlasSet<Node> sfReferences = AnalysisUtilities.parseReferences(to);
 				for(Node sf : sfReferences){
 					Node m = StandardQueries.getContainingMethod(to);
