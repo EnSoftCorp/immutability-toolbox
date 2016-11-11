@@ -345,6 +345,11 @@ public class AnalysisUtilities {
 					continue;
 				}
 				
+				if(reference.getAttr(XCSG.name).toString().contains("$")){
+					Log.warning("Inner classes are currently unsupported, skipping assignment statement...");
+					continue;
+				}
+				
 				String message = "Unhandled reference type for GraphElement " + node.address().toAddressString() + "\n" + node.toString();
 				RuntimeException e = new RuntimeException(message);
 				Log.error(message, e);
