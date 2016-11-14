@@ -42,13 +42,13 @@ public class XGreaterThanYConstraintSolver {
 	public static boolean satisify(Node x, Node y) {
 		Set<ImmutabilityTypes> xTypes = getTypes(x);
 		if(xTypes.isEmpty()){
-			Log.warning("x [" + x.address().toAddressString() + "] is untyped, constraints cannot be satisfied", new IllegalArgumentException());
+			Log.warning("x [" + x.address().toAddressString() + "] is untyped, constraint 'qx :> qy' cannot be satisfied", new IllegalArgumentException());
 			return false;
 		}
 		
 		Set<ImmutabilityTypes> yTypes = getTypes(y);
 		if(yTypes.isEmpty()){
-			Log.warning("y [" + y.address().toAddressString() + "] is untyped, constraints cannot be satisfied", new IllegalArgumentException());
+			Log.warning("y [" + y.address().toAddressString() + "] is untyped, constraint 'qx :> qy' cannot be satisfied", new IllegalArgumentException());
 			return false;
 		}
 		
