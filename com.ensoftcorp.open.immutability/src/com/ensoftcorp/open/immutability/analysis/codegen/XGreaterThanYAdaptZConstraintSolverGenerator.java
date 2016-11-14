@@ -56,8 +56,10 @@ public class XGreaterThanYAdaptZConstraintSolverGenerator {
 					
 					String result = getResult(sets.get(x-1), sets.get(y-1), sets.get(z-1));
 					if(!result.equals("")){
-						System.out.println("case " + input + ":");
+						System.out.println("case " + input + ":" + " // xTypes=" + xTypes.toString() + ", yTypes=" + yTypes.toString() + ", zTypes=" + zTypes.toString());
 						System.out.println(result);
+					} else {
+						throw new RuntimeException("empty result");
 					}
 				}
 			}

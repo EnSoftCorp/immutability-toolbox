@@ -54,6 +54,8 @@ public class XGreaterThanYConstraintSolverGenerator {
 				if(!result.equals("")){
 					System.out.println("case " + input + ":" + " // xTypes=" + xTypes.toString() + ", yTypes=" + yTypes.toString());
 					System.out.println(result);
+				} else {
+					throw new RuntimeException("empty result");
 				}
 			}
 		}

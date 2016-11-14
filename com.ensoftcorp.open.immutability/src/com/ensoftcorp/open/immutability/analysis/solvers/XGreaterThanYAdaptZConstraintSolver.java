@@ -82,813 +82,810 @@ public class XGreaterThanYAdaptZConstraintSolver {
 		boolean zTypesChanged = false;
 		short input = getCase(xTypes, yTypes, zTypes);
 		switch (input) {
-		case 0:
+		case 0: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
-		case 1:
+		case 1: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[POLYREAD, READONLY]
 			return false;
-		case 2:
+		case 2: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 3:
+		case 3: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
-		case 4:
+		case 4: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[READONLY]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-		case 5:
+		case 5: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[POLYREAD]
 			return false;
-		case 6:
+		case 6: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE]
 			return false;
-		case 8:
+		case 8: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
-		case 9:
+		case 9: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[POLYREAD, READONLY]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-		case 10:
+		case 10: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 11:
+		case 11: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
-		case 12:
+		case 12: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[READONLY]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-		case 13:
+		case 13: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[POLYREAD]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-		case 14:
+		case 14: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE]
 			return false;
-		case 16:
+		case 16: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
-		case 17:
+		case 17: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[POLYREAD, READONLY]
 			return false;
-		case 18:
+		case 18: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 19:
+		case 19: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, READONLY]
 			return false;
-		case 20:
+		case 20: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[READONLY]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-		case 21:
+		case 21: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[POLYREAD]
 			return false;
-		case 22:
+		case 22: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE]
 			return false;
-		case 24:
+		case 24: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
-		case 25:
+		case 25: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[POLYREAD, READONLY]
 			return false;
-		case 26:
+		case 26: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 27:
+		case 27: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
-		case 28:
+		case 28: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[READONLY]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-		case 29:
+		case 29: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[POLYREAD]
 			return false;
-		case 30:
+		case 30: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE]
 			return false;
-		case 32:
+		case 32: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
-		case 33:
+		case 33: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[READONLY], zTypes=[POLYREAD, READONLY]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-		case 34:
+		case 34: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 35:
+		case 35: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
-		case 36:
+		case 36: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[READONLY], zTypes=[READONLY]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-		case 37:
+		case 37: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[READONLY], zTypes=[POLYREAD]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-		case 38:
+		case 38: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[READONLY], zTypes=[MUTABLE]
 			return false;
-		case 40:
+		case 40: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[POLYREAD], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
-		case 41:
+		case 41: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[POLYREAD], zTypes=[POLYREAD, READONLY]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-		case 42:
+		case 42: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[POLYREAD], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 43:
+		case 43: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[POLYREAD], zTypes=[MUTABLE, READONLY]
 			return false;
-		case 44:
+		case 44: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[POLYREAD], zTypes=[READONLY]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-		case 45:
+		case 45: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[POLYREAD], zTypes=[POLYREAD]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-		case 46:
+		case 46: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[POLYREAD], zTypes=[MUTABLE]
 			return false;
-		case 48:
+		case 48: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
-		case 49:
+		case 49: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE], zTypes=[POLYREAD, READONLY]
 			return false;
-		case 50:
+		case 50: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 51:
+		case 51: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE], zTypes=[MUTABLE, READONLY]
 			return false;
-		case 52:
+		case 52: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE], zTypes=[READONLY]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-		case 53:
+		case 53: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE], zTypes=[POLYREAD]
 			return false;
-		case 54:
+		case 54: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE], zTypes=[MUTABLE]
 			return false;
-		case 64:
+		case 64: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
-		case 65:
+		case 65: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[POLYREAD, READONLY]
 			return false;
-		case 66:
+		case 66: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 67:
+		case 67: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
-		case 68:
+		case 68: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[READONLY]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-		case 69:
+		case 69: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[POLYREAD]
 			return false;
-		case 70:
+		case 70: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE]
 			return false;
-		case 72:
+		case 72: // xTypes=[POLYREAD, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
-		case 73:
+		case 73: // xTypes=[POLYREAD, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[POLYREAD, READONLY]
 			return false;
-		case 74:
+		case 74: // xTypes=[POLYREAD, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 75:
+		case 75: // xTypes=[POLYREAD, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
-		case 76:
+		case 76: // xTypes=[POLYREAD, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[READONLY]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-		case 77:
+		case 77: // xTypes=[POLYREAD, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[POLYREAD]
 			return false;
-		case 78:
+		case 78: // xTypes=[POLYREAD, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE]
 			return false;
-		case 80:
+		case 80: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
-		case 81:
+		case 81: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[POLYREAD, READONLY]
 			return false;
-		case 82:
+		case 82: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 83:
+		case 83: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, READONLY]
 			return false;
-		case 84:
+		case 84: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[READONLY]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-		case 85:
+		case 85: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[POLYREAD]
 			return false;
-		case 86:
+		case 86: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE]
 			return false;
-		case 88:
+		case 88: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
-		case 89:
+		case 89: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[POLYREAD, READONLY]
 			return false;
-		case 90:
+		case 90: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 91:
+		case 91: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
-		case 92:
+		case 92: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[READONLY]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-		case 93:
+		case 93: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[POLYREAD]
 			return false;
-		case 94:
+		case 94: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE]
 			return false;
-		case 96:
+		case 96: // xTypes=[POLYREAD, READONLY], yTypes=[READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
-		case 97:
+		case 97: // xTypes=[POLYREAD, READONLY], yTypes=[READONLY], zTypes=[POLYREAD, READONLY]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-		case 98:
+		case 98: // xTypes=[POLYREAD, READONLY], yTypes=[READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 99:
+		case 99: // xTypes=[POLYREAD, READONLY], yTypes=[READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
-		case 100:
+		case 100: // xTypes=[POLYREAD, READONLY], yTypes=[READONLY], zTypes=[READONLY]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-		case 101:
+		case 101: // xTypes=[POLYREAD, READONLY], yTypes=[READONLY], zTypes=[POLYREAD]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-		case 102:
+		case 102: // xTypes=[POLYREAD, READONLY], yTypes=[READONLY], zTypes=[MUTABLE]
 			return false;
-		case 104:
+		case 104: // xTypes=[POLYREAD, READONLY], yTypes=[POLYREAD], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
-		case 105:
+		case 105: // xTypes=[POLYREAD, READONLY], yTypes=[POLYREAD], zTypes=[POLYREAD, READONLY]
 			return false;
-		case 106:
+		case 106: // xTypes=[POLYREAD, READONLY], yTypes=[POLYREAD], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 107:
+		case 107: // xTypes=[POLYREAD, READONLY], yTypes=[POLYREAD], zTypes=[MUTABLE, READONLY]
 			return false;
-		case 108:
+		case 108: // xTypes=[POLYREAD, READONLY], yTypes=[POLYREAD], zTypes=[READONLY]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-		case 109:
+		case 109: // xTypes=[POLYREAD, READONLY], yTypes=[POLYREAD], zTypes=[POLYREAD]
 			return false;
-		case 110:
+		case 110: // xTypes=[POLYREAD, READONLY], yTypes=[POLYREAD], zTypes=[MUTABLE]
 			return false;
-		case 112:
+		case 112: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
-		case 113:
+		case 113: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE], zTypes=[POLYREAD, READONLY]
 			return false;
-		case 114:
+		case 114: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 115:
+		case 115: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE], zTypes=[MUTABLE, READONLY]
 			return false;
-		case 116:
+		case 116: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE], zTypes=[READONLY]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-		case 117:
+		case 117: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE], zTypes=[POLYREAD]
 			return false;
-		case 118:
+		case 118: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE], zTypes=[MUTABLE]
 			return false;
-		case 128:
+		case 128: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 129:
+		case 129: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[POLYREAD, READONLY]
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return yTypesChanged || zTypesChanged;
-		case 130:
+		case 130: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 131:
+		case 131: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 132:
+		case 132: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[READONLY]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 133:
+		case 133: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[POLYREAD]
 			return removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 134:
+		case 134: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE]
 			return false;
-		case 136:
+		case 136: // xTypes=[MUTABLE, POLYREAD], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 137:
+		case 137: // xTypes=[MUTABLE, POLYREAD], yTypes=[POLYREAD, READONLY], zTypes=[POLYREAD, READONLY]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 138:
+		case 138: // xTypes=[MUTABLE, POLYREAD], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 139:
+		case 139: // xTypes=[MUTABLE, POLYREAD], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 140:
+		case 140: // xTypes=[MUTABLE, POLYREAD], yTypes=[POLYREAD, READONLY], zTypes=[READONLY]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 141:
+		case 141: // xTypes=[MUTABLE, POLYREAD], yTypes=[POLYREAD, READONLY], zTypes=[POLYREAD]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged;
-		case 142:
+		case 142: // xTypes=[MUTABLE, POLYREAD], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE]
 			return false;
-		case 144:
+		case 144: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 145:
+		case 145: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, POLYREAD], zTypes=[POLYREAD, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 146:
+		case 146: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 147:
+		case 147: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 148:
+		case 148: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, POLYREAD], zTypes=[READONLY]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 149:
+		case 149: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, POLYREAD], zTypes=[POLYREAD]
 			return false;
-		case 150:
+		case 150: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE]
 			return false;
-		case 152:
+		case 152: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 153:
+		case 153: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, READONLY], zTypes=[POLYREAD, READONLY]
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return yTypesChanged || zTypesChanged;
-		case 154:
+		case 154: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 155:
+		case 155: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 156:
+		case 156: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, READONLY], zTypes=[READONLY]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 157:
+		case 157: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, READONLY], zTypes=[POLYREAD]
 			return removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 158:
+		case 158: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE]
 			return false;
-		case 160:
+		case 160: // xTypes=[MUTABLE, POLYREAD], yTypes=[READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-		case 161:
+		case 161: // xTypes=[MUTABLE, POLYREAD], yTypes=[READONLY], zTypes=[POLYREAD, READONLY]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 162:
+		case 162: // xTypes=[MUTABLE, POLYREAD], yTypes=[READONLY], zTypes=[MUTABLE, POLYREAD]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-		case 163:
+		case 163: // xTypes=[MUTABLE, POLYREAD], yTypes=[READONLY], zTypes=[MUTABLE, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 164:
+		case 164: // xTypes=[MUTABLE, POLYREAD], yTypes=[READONLY], zTypes=[READONLY]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 165:
+		case 165: // xTypes=[MUTABLE, POLYREAD], yTypes=[READONLY], zTypes=[POLYREAD]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 166:
+		case 166: // xTypes=[MUTABLE, POLYREAD], yTypes=[READONLY], zTypes=[MUTABLE]
 			return false;
-		case 168:
+		case 168: // xTypes=[MUTABLE, POLYREAD], yTypes=[POLYREAD], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 169:
+		case 169: // xTypes=[MUTABLE, POLYREAD], yTypes=[POLYREAD], zTypes=[POLYREAD, READONLY]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return xTypesChanged || zTypesChanged;
-		case 170:
+		case 170: // xTypes=[MUTABLE, POLYREAD], yTypes=[POLYREAD], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 171:
+		case 171: // xTypes=[MUTABLE, POLYREAD], yTypes=[POLYREAD], zTypes=[MUTABLE, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 172:
+		case 172: // xTypes=[MUTABLE, POLYREAD], yTypes=[POLYREAD], zTypes=[READONLY]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 173:
+		case 173: // xTypes=[MUTABLE, POLYREAD], yTypes=[POLYREAD], zTypes=[POLYREAD]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-		case 174:
+		case 174: // xTypes=[MUTABLE, POLYREAD], yTypes=[POLYREAD], zTypes=[MUTABLE]
 			return false;
-		case 176:
+		case 176: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 177:
+		case 177: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE], zTypes=[POLYREAD, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 178:
+		case 178: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 179:
+		case 179: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE], zTypes=[MUTABLE, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 180:
+		case 180: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE], zTypes=[READONLY]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 181:
+		case 181: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE], zTypes=[POLYREAD]
 			return false;
-		case 182:
+		case 182: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE], zTypes=[MUTABLE]
 			return false;
-		case 192:
+		case 192: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
-		case 193:
+		case 193: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[POLYREAD, READONLY]
 			return false;
-		case 194:
+		case 194: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 195:
+		case 195: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
-		case 196:
+		case 196: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[READONLY]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-		case 197:
+		case 197: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[POLYREAD]
 			return false;
-		case 198:
+		case 198: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE]
 			return false;
-		case 200:
+		case 200: // xTypes=[MUTABLE, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
-		case 201:
+		case 201: // xTypes=[MUTABLE, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[POLYREAD, READONLY]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-		case 202:
+		case 202: // xTypes=[MUTABLE, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 203:
+		case 203: // xTypes=[MUTABLE, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
-		case 204:
+		case 204: // xTypes=[MUTABLE, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[READONLY]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-		case 205:
+		case 205: // xTypes=[MUTABLE, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[POLYREAD]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-		case 206:
+		case 206: // xTypes=[MUTABLE, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE]
 			return false;
-		case 208:
+		case 208: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
-		case 209:
+		case 209: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[POLYREAD, READONLY]
 			return false;
-		case 210:
+		case 210: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 211:
+		case 211: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, READONLY]
 			return false;
-		case 212:
+		case 212: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[READONLY]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-		case 213:
+		case 213: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[POLYREAD]
 			return false;
-		case 214:
+		case 214: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE]
 			return false;
-		case 216:
+		case 216: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
-		case 217:
+		case 217: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[POLYREAD, READONLY]
 			return false;
-		case 218:
+		case 218: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 219:
+		case 219: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
-		case 220:
+		case 220: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[READONLY]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-		case 221:
+		case 221: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[POLYREAD]
 			return false;
-		case 222:
+		case 222: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE]
 			return false;
-		case 224:
+		case 224: // xTypes=[MUTABLE, READONLY], yTypes=[READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
-		case 225:
+		case 225: // xTypes=[MUTABLE, READONLY], yTypes=[READONLY], zTypes=[POLYREAD, READONLY]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-		case 226:
+		case 226: // xTypes=[MUTABLE, READONLY], yTypes=[READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 227:
+		case 227: // xTypes=[MUTABLE, READONLY], yTypes=[READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
-		case 228:
+		case 228: // xTypes=[MUTABLE, READONLY], yTypes=[READONLY], zTypes=[READONLY]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-		case 229:
+		case 229: // xTypes=[MUTABLE, READONLY], yTypes=[READONLY], zTypes=[POLYREAD]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-		case 230:
+		case 230: // xTypes=[MUTABLE, READONLY], yTypes=[READONLY], zTypes=[MUTABLE]
 			return false;
-		case 232:
+		case 232: // xTypes=[MUTABLE, READONLY], yTypes=[POLYREAD], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
-		case 233:
+		case 233: // xTypes=[MUTABLE, READONLY], yTypes=[POLYREAD], zTypes=[POLYREAD, READONLY]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-		case 234:
+		case 234: // xTypes=[MUTABLE, READONLY], yTypes=[POLYREAD], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 235:
+		case 235: // xTypes=[MUTABLE, READONLY], yTypes=[POLYREAD], zTypes=[MUTABLE, READONLY]
 			return false;
-		case 236:
+		case 236: // xTypes=[MUTABLE, READONLY], yTypes=[POLYREAD], zTypes=[READONLY]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-		case 237:
+		case 237: // xTypes=[MUTABLE, READONLY], yTypes=[POLYREAD], zTypes=[POLYREAD]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-		case 238:
+		case 238: // xTypes=[MUTABLE, READONLY], yTypes=[POLYREAD], zTypes=[MUTABLE]
 			return false;
-		case 240:
+		case 240: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
-		case 241:
+		case 241: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE], zTypes=[POLYREAD, READONLY]
 			return false;
-		case 242:
+		case 242: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 243:
+		case 243: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE], zTypes=[MUTABLE, READONLY]
 			return false;
-		case 244:
+		case 244: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE], zTypes=[READONLY]
 			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-		case 245:
+		case 245: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE], zTypes=[POLYREAD]
 			return false;
-		case 246:
+		case 246: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE], zTypes=[MUTABLE]
 			return false;
-		case 256:
+		case 256: // xTypes=[READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
-		case 257:
+		case 257: // xTypes=[READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[POLYREAD, READONLY]
 			return false;
-		case 258:
+		case 258: // xTypes=[READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 259:
+		case 259: // xTypes=[READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
-		case 260:
+		case 260: // xTypes=[READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[READONLY]
 			return false;
-		case 261:
+		case 261: // xTypes=[READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[POLYREAD]
 			return false;
-		case 262:
+		case 262: // xTypes=[READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE]
 			return false;
-		case 264:
+		case 264: // xTypes=[READONLY], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
-		case 265:
+		case 265: // xTypes=[READONLY], yTypes=[POLYREAD, READONLY], zTypes=[POLYREAD, READONLY]
 			return false;
-		case 266:
+		case 266: // xTypes=[READONLY], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 267:
+		case 267: // xTypes=[READONLY], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
-		case 268:
+		case 268: // xTypes=[READONLY], yTypes=[POLYREAD, READONLY], zTypes=[READONLY]
 			return false;
-		case 269:
+		case 269: // xTypes=[READONLY], yTypes=[POLYREAD, READONLY], zTypes=[POLYREAD]
 			return false;
-		case 270:
+		case 270: // xTypes=[READONLY], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE]
 			return false;
-		case 272:
+		case 272: // xTypes=[READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
-		case 273:
+		case 273: // xTypes=[READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[POLYREAD, READONLY]
 			return false;
-		case 274:
+		case 274: // xTypes=[READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 275:
+		case 275: // xTypes=[READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, READONLY]
 			return false;
-		case 276:
+		case 276: // xTypes=[READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[READONLY]
 			return false;
-		case 277:
+		case 277: // xTypes=[READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[POLYREAD]
 			return false;
-		case 278:
+		case 278: // xTypes=[READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE]
 			return false;
-		case 280:
+		case 280: // xTypes=[READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
-		case 281:
+		case 281: // xTypes=[READONLY], yTypes=[MUTABLE, READONLY], zTypes=[POLYREAD, READONLY]
 			return false;
-		case 282:
+		case 282: // xTypes=[READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 283:
+		case 283: // xTypes=[READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
-		case 284:
+		case 284: // xTypes=[READONLY], yTypes=[MUTABLE, READONLY], zTypes=[READONLY]
 			return false;
-		case 285:
+		case 285: // xTypes=[READONLY], yTypes=[MUTABLE, READONLY], zTypes=[POLYREAD]
 			return false;
-		case 286:
+		case 286: // xTypes=[READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE]
 			return false;
-		case 288:
+		case 288: // xTypes=[READONLY], yTypes=[READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
-		case 289:
+		case 289: // xTypes=[READONLY], yTypes=[READONLY], zTypes=[POLYREAD, READONLY]
 			return false;
-		case 290:
+		case 290: // xTypes=[READONLY], yTypes=[READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 291:
+		case 291: // xTypes=[READONLY], yTypes=[READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
-		case 292:
+		case 292: // xTypes=[READONLY], yTypes=[READONLY], zTypes=[READONLY]
 			return false;
-		case 293:
+		case 293: // xTypes=[READONLY], yTypes=[READONLY], zTypes=[POLYREAD]
 			return false;
-		case 294:
+		case 294: // xTypes=[READONLY], yTypes=[READONLY], zTypes=[MUTABLE]
 			return false;
-		case 296:
+		case 296: // xTypes=[READONLY], yTypes=[POLYREAD], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
-		case 297:
+		case 297: // xTypes=[READONLY], yTypes=[POLYREAD], zTypes=[POLYREAD, READONLY]
 			return false;
-		case 298:
+		case 298: // xTypes=[READONLY], yTypes=[POLYREAD], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 299:
+		case 299: // xTypes=[READONLY], yTypes=[POLYREAD], zTypes=[MUTABLE, READONLY]
 			return false;
-		case 300:
+		case 300: // xTypes=[READONLY], yTypes=[POLYREAD], zTypes=[READONLY]
 			return false;
-		case 301:
+		case 301: // xTypes=[READONLY], yTypes=[POLYREAD], zTypes=[POLYREAD]
 			return false;
-		case 302:
+		case 302: // xTypes=[READONLY], yTypes=[POLYREAD], zTypes=[MUTABLE]
 			return false;
-		case 304:
+		case 304: // xTypes=[READONLY], yTypes=[MUTABLE], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
-		case 305:
+		case 305: // xTypes=[READONLY], yTypes=[MUTABLE], zTypes=[POLYREAD, READONLY]
 			return false;
-		case 306:
+		case 306: // xTypes=[READONLY], yTypes=[MUTABLE], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 307:
+		case 307: // xTypes=[READONLY], yTypes=[MUTABLE], zTypes=[MUTABLE, READONLY]
 			return false;
-		case 308:
+		case 308: // xTypes=[READONLY], yTypes=[MUTABLE], zTypes=[READONLY]
 			return false;
-		case 309:
+		case 309: // xTypes=[READONLY], yTypes=[MUTABLE], zTypes=[POLYREAD]
 			return false;
-		case 310:
+		case 310: // xTypes=[READONLY], yTypes=[MUTABLE], zTypes=[MUTABLE]
 			return false;
-		case 320:
+		case 320: // xTypes=[POLYREAD], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 321:
+		case 321: // xTypes=[POLYREAD], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[POLYREAD, READONLY]
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return yTypesChanged || zTypesChanged;
-		case 322:
+		case 322: // xTypes=[POLYREAD], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 323:
+		case 323: // xTypes=[POLYREAD], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 324:
+		case 324: // xTypes=[POLYREAD], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[READONLY]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 325:
+		case 325: // xTypes=[POLYREAD], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[POLYREAD]
 			return removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 326:
+		case 326: // xTypes=[POLYREAD], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE]
 			return false;
-		case 328:
+		case 328: // xTypes=[POLYREAD], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 329:
+		case 329: // xTypes=[POLYREAD], yTypes=[POLYREAD, READONLY], zTypes=[POLYREAD, READONLY]
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return yTypesChanged || zTypesChanged;
-		case 330:
+		case 330: // xTypes=[POLYREAD], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 331:
+		case 331: // xTypes=[POLYREAD], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 332:
+		case 332: // xTypes=[POLYREAD], yTypes=[POLYREAD, READONLY], zTypes=[READONLY]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 333:
+		case 333: // xTypes=[POLYREAD], yTypes=[POLYREAD, READONLY], zTypes=[POLYREAD]
 			return removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 334:
+		case 334: // xTypes=[POLYREAD], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE]
 			return false;
-		case 336:
+		case 336: // xTypes=[POLYREAD], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 337:
+		case 337: // xTypes=[POLYREAD], yTypes=[MUTABLE, POLYREAD], zTypes=[POLYREAD, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 338:
+		case 338: // xTypes=[POLYREAD], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 339:
+		case 339: // xTypes=[POLYREAD], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 340:
+		case 340: // xTypes=[POLYREAD], yTypes=[MUTABLE, POLYREAD], zTypes=[READONLY]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 341:
+		case 341: // xTypes=[POLYREAD], yTypes=[MUTABLE, POLYREAD], zTypes=[POLYREAD]
 			return false;
-		case 342:
+		case 342: // xTypes=[POLYREAD], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE]
 			return false;
-		case 344:
+		case 344: // xTypes=[POLYREAD], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 345:
+		case 345: // xTypes=[POLYREAD], yTypes=[MUTABLE, READONLY], zTypes=[POLYREAD, READONLY]
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return yTypesChanged || zTypesChanged;
-		case 346:
+		case 346: // xTypes=[POLYREAD], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 347:
+		case 347: // xTypes=[POLYREAD], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 348:
+		case 348: // xTypes=[POLYREAD], yTypes=[MUTABLE, READONLY], zTypes=[READONLY]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 349:
+		case 349: // xTypes=[POLYREAD], yTypes=[MUTABLE, READONLY], zTypes=[POLYREAD]
 			return removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 350:
+		case 350: // xTypes=[POLYREAD], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE]
 			return false;
-		case 352:
+		case 352: // xTypes=[POLYREAD], yTypes=[READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-		case 353:
+		case 353: // xTypes=[POLYREAD], yTypes=[READONLY], zTypes=[POLYREAD, READONLY]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 354:
+		case 354: // xTypes=[POLYREAD], yTypes=[READONLY], zTypes=[MUTABLE, POLYREAD]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-		case 355:
+		case 355: // xTypes=[POLYREAD], yTypes=[READONLY], zTypes=[MUTABLE, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 356:
+		case 356: // xTypes=[POLYREAD], yTypes=[READONLY], zTypes=[READONLY]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 357:
+		case 357: // xTypes=[POLYREAD], yTypes=[READONLY], zTypes=[POLYREAD]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 358:
+		case 358: // xTypes=[POLYREAD], yTypes=[READONLY], zTypes=[MUTABLE]
 			return false;
-		case 360:
+		case 360: // xTypes=[POLYREAD], yTypes=[POLYREAD], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 361:
+		case 361: // xTypes=[POLYREAD], yTypes=[POLYREAD], zTypes=[POLYREAD, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 362:
+		case 362: // xTypes=[POLYREAD], yTypes=[POLYREAD], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 363:
+		case 363: // xTypes=[POLYREAD], yTypes=[POLYREAD], zTypes=[MUTABLE, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 364:
+		case 364: // xTypes=[POLYREAD], yTypes=[POLYREAD], zTypes=[READONLY]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 365:
+		case 365: // xTypes=[POLYREAD], yTypes=[POLYREAD], zTypes=[POLYREAD]
 			return false;
-		case 366:
+		case 366: // xTypes=[POLYREAD], yTypes=[POLYREAD], zTypes=[MUTABLE]
 			return false;
-		case 368:
+		case 368: // xTypes=[POLYREAD], yTypes=[MUTABLE], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 369:
+		case 369: // xTypes=[POLYREAD], yTypes=[MUTABLE], zTypes=[POLYREAD, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 370:
+		case 370: // xTypes=[POLYREAD], yTypes=[MUTABLE], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 371:
+		case 371: // xTypes=[POLYREAD], yTypes=[MUTABLE], zTypes=[MUTABLE, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 372:
+		case 372: // xTypes=[POLYREAD], yTypes=[MUTABLE], zTypes=[READONLY]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 373:
+		case 373: // xTypes=[POLYREAD], yTypes=[MUTABLE], zTypes=[POLYREAD]
 			return false;
-		case 374:
+		case 374: // xTypes=[POLYREAD], yTypes=[MUTABLE], zTypes=[MUTABLE]
 			return false;
-		case 384:
+		case 384: // xTypes=[MUTABLE], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 385:
+		case 385: // xTypes=[MUTABLE], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[POLYREAD, READONLY]
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return yTypesChanged || zTypesChanged;
-		case 386:
+		case 386: // xTypes=[MUTABLE], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 387:
+		case 387: // xTypes=[MUTABLE], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 388:
+		case 388: // xTypes=[MUTABLE], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[READONLY]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			yTypesChanged = removeTypes(y,
-					EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 389:
+		case 389: // xTypes=[MUTABLE], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[POLYREAD]
 			return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-		case 390:
+		case 390: // xTypes=[MUTABLE], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE]
 			return false;
-		case 392:
+		case 392: // xTypes=[MUTABLE], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-		case 393:
+		case 393: // xTypes=[MUTABLE], yTypes=[POLYREAD, READONLY], zTypes=[POLYREAD, READONLY]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 394:
+		case 394: // xTypes=[MUTABLE], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-		case 395:
+		case 395: // xTypes=[MUTABLE], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 396:
+		case 396: // xTypes=[MUTABLE], yTypes=[POLYREAD, READONLY], zTypes=[READONLY]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 397:
+		case 397: // xTypes=[MUTABLE], yTypes=[POLYREAD, READONLY], zTypes=[POLYREAD]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 398:
+		case 398: // xTypes=[MUTABLE], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE]
 			return false;
-		case 400:
+		case 400: // xTypes=[MUTABLE], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 401:
+		case 401: // xTypes=[MUTABLE], yTypes=[MUTABLE, POLYREAD], zTypes=[POLYREAD, READONLY]
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return yTypesChanged || zTypesChanged;
-		case 402:
+		case 402: // xTypes=[MUTABLE], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 403:
+		case 403: // xTypes=[MUTABLE], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 404:
+		case 404: // xTypes=[MUTABLE], yTypes=[MUTABLE, POLYREAD], zTypes=[READONLY]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 405:
+		case 405: // xTypes=[MUTABLE], yTypes=[MUTABLE, POLYREAD], zTypes=[POLYREAD]
 			return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-		case 406:
+		case 406: // xTypes=[MUTABLE], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE]
 			return false;
-		case 408:
+		case 408: // xTypes=[MUTABLE], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 409:
+		case 409: // xTypes=[MUTABLE], yTypes=[MUTABLE, READONLY], zTypes=[POLYREAD, READONLY]
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return yTypesChanged || zTypesChanged;
-		case 410:
+		case 410: // xTypes=[MUTABLE], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 411:
+		case 411: // xTypes=[MUTABLE], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 412:
+		case 412: // xTypes=[MUTABLE], yTypes=[MUTABLE, READONLY], zTypes=[READONLY]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 413:
+		case 413: // xTypes=[MUTABLE], yTypes=[MUTABLE, READONLY], zTypes=[POLYREAD]
 			return removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 414:
+		case 414: // xTypes=[MUTABLE], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE]
 			return false;
-		case 416:
+		case 416: // xTypes=[MUTABLE], yTypes=[READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-		case 417:
+		case 417: // xTypes=[MUTABLE], yTypes=[READONLY], zTypes=[POLYREAD, READONLY]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 418:
+		case 418: // xTypes=[MUTABLE], yTypes=[READONLY], zTypes=[MUTABLE, POLYREAD]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-		case 419:
+		case 419: // xTypes=[MUTABLE], yTypes=[READONLY], zTypes=[MUTABLE, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 420:
+		case 420: // xTypes=[MUTABLE], yTypes=[READONLY], zTypes=[READONLY]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 421:
+		case 421: // xTypes=[MUTABLE], yTypes=[READONLY], zTypes=[POLYREAD]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.READONLY));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 422:
+		case 422: // xTypes=[MUTABLE], yTypes=[READONLY], zTypes=[MUTABLE]
 			return false;
-		case 424:
+		case 424: // xTypes=[MUTABLE], yTypes=[POLYREAD], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-		case 425:
+		case 425: // xTypes=[MUTABLE], yTypes=[POLYREAD], zTypes=[POLYREAD, READONLY]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 426:
+		case 426: // xTypes=[MUTABLE], yTypes=[POLYREAD], zTypes=[MUTABLE, POLYREAD]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-		case 427:
+		case 427: // xTypes=[MUTABLE], yTypes=[POLYREAD], zTypes=[MUTABLE, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 428:
+		case 428: // xTypes=[MUTABLE], yTypes=[POLYREAD], zTypes=[READONLY]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 429:
+		case 429: // xTypes=[MUTABLE], yTypes=[POLYREAD], zTypes=[POLYREAD]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 430:
+		case 430: // xTypes=[MUTABLE], yTypes=[POLYREAD], zTypes=[MUTABLE]
 			return false;
-		case 432:
+		case 432: // xTypes=[MUTABLE], yTypes=[MUTABLE], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 433:
+		case 433: // xTypes=[MUTABLE], yTypes=[MUTABLE], zTypes=[POLYREAD, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 434:
+		case 434: // xTypes=[MUTABLE], yTypes=[MUTABLE], zTypes=[MUTABLE, POLYREAD]
 			return false;
-		case 435:
+		case 435: // xTypes=[MUTABLE], yTypes=[MUTABLE], zTypes=[MUTABLE, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-		case 436:
+		case 436: // xTypes=[MUTABLE], yTypes=[MUTABLE], zTypes=[READONLY]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 437:
+		case 437: // xTypes=[MUTABLE], yTypes=[MUTABLE], zTypes=[POLYREAD]
 			return false;
-		case 438:
+		case 438: // xTypes=[MUTABLE], yTypes=[MUTABLE], zTypes=[MUTABLE]
 			return false;
 		default:
-			throw new IllegalArgumentException("Unhandled case: xTypes=" + xTypes.toString() 
-				+ ", yTypes=" + yTypes.toString() 
-				+ ", zTypes=" + zTypes.toString());
+			throw new IllegalArgumentException("Unhandled case: xTypes=" + xTypes.toString() + ", yTypes=" + yTypes.toString() + ", zTypes=" + zTypes.toString());
 		}
 	}
 
