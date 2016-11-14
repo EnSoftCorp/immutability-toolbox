@@ -42,13 +42,13 @@ public class XGreaterThanYConstraintSolver {
 	public static boolean satisify(Node x, Node y) {
 		Set<ImmutabilityTypes> xTypes = getTypes(x);
 		if(xTypes.isEmpty()){
-			Log.warning("x [" + x.address().toAddressString() + "] is untyped, constraints cannot be satisfied");
+			Log.warning("x [" + x.address().toAddressString() + "] is untyped, constraints cannot be satisfied", new IllegalArgumentException());
 			return false;
 		}
 		
 		Set<ImmutabilityTypes> yTypes = getTypes(y);
 		if(yTypes.isEmpty()){
-			Log.warning("y [" + y.address().toAddressString() + "] is untyped, constraints cannot be satisfied");
+			Log.warning("y [" + y.address().toAddressString() + "] is untyped, constraints cannot be satisfied", new IllegalArgumentException());
 			return false;
 		}
 		
@@ -82,7 +82,7 @@ public class XGreaterThanYConstraintSolver {
 		return input;
 	}
 
-	public static boolean satisify(Node x, Set<ImmutabilityTypes> xTypes, Node y, Set<ImmutabilityTypes> yTypes) {
+	private static boolean satisify(Node x, Set<ImmutabilityTypes> xTypes, Node y, Set<ImmutabilityTypes> yTypes) {
 		boolean xTypesChanged = false;
 		boolean yTypesChanged = false;
 		short input = getCase(xTypes, yTypes);
@@ -198,7 +198,7 @@ public class XGreaterThanYConstraintSolver {
 		case 54: // xTypes=[MUTABLE], yTypes=[MUTABLE]
 			return false;
 		default:
-			throw new IllegalArgumentException("Unhandled case: xTypes=" + xTypes.toString() + ", yTypes=" + yTypes.toString());
+			throw new IllegalArgumentException("XGreaterThanYConstraintSolver Unhandled Case: xTypes=" + xTypes.toString() + ", yTypes=" + yTypes.toString());
 		}
 	}
 

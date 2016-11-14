@@ -35,19 +35,19 @@ public class XAdaptYGreaterThanZConstraintSolver {
 	public static boolean satisify(Node x, Node y, Node z) {
 		Set<ImmutabilityTypes> xTypes = getTypes(x);
 		if(xTypes.isEmpty()){
-			Log.warning("x [" + x.address().toAddressString() + "] is untyped, constraints cannot be satisfied");
+			Log.warning("x [" + x.address().toAddressString() + "] is untyped, constraints cannot be satisfied", new IllegalArgumentException());
 			return false;
 		}
 		
 		Set<ImmutabilityTypes> yTypes = getTypes(y);
 		if(yTypes.isEmpty()){
-			Log.warning("y [" + y.address().toAddressString() + "] is untyped, constraints cannot be satisfied");
+			Log.warning("y [" + y.address().toAddressString() + "] is untyped, constraints cannot be satisfied", new IllegalArgumentException());
 			return false;
 		}
 		
 		Set<ImmutabilityTypes> zTypes = getTypes(z);
 		if(zTypes.isEmpty()){
-			Log.warning("z [" + z.address().toAddressString() + "] is untyped, constraints cannot be satisfied");
+			Log.warning("z [" + z.address().toAddressString() + "] is untyped, constraints cannot be satisfied", new IllegalArgumentException());
 			return false;
 		}
 		
@@ -92,7 +92,7 @@ public class XAdaptYGreaterThanZConstraintSolver {
 		return input;
 	}
 
-	public static boolean satisify(Node x, Set<ImmutabilityTypes> xTypes, Node y, Set<ImmutabilityTypes> yTypes, Node z, Set<ImmutabilityTypes> zTypes) {
+	private static boolean satisify(Node x, Set<ImmutabilityTypes> xTypes, Node y, Set<ImmutabilityTypes> yTypes, Node z, Set<ImmutabilityTypes> zTypes) {
 		boolean xTypesChanged = false;
 		boolean yTypesChanged = false;
 		boolean zTypesChanged = false;
@@ -1060,7 +1060,7 @@ public class XAdaptYGreaterThanZConstraintSolver {
 		case 438: // xTypes=[MUTABLE], yTypes=[MUTABLE], zTypes=[MUTABLE]
 			return false;
 		default:
-			throw new IllegalArgumentException("Unhandled case: xTypes=" + xTypes.toString() + ", yTypes=" + yTypes.toString() + ", zTypes=" + zTypes.toString());
+			throw new IllegalArgumentException("XAdaptYGreaterThanZConstraintSolver Unhandled Case: xTypes=" + xTypes.toString() + ", yTypes=" + yTypes.toString() + ", zTypes=" + zTypes.toString());
 		}
 	}
 

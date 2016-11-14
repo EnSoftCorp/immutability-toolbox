@@ -39,8 +39,6 @@ public class FieldAssignmentChecker {
 			typesChanged = true;
 		}
 		
-		Set<ImmutabilityTypes> xTypes = getTypes(x);
-		Set<ImmutabilityTypes> fTypes = getTypes(f);
 		Set<ImmutabilityTypes> yTypes = getTypes(y);
 
 		// if y is only mutable then f cannot be readonly
@@ -52,7 +50,7 @@ public class FieldAssignmentChecker {
 		
 		// qy <: qx adapt qf
 		// = qx adapt qf :> qy
-		if(XAdaptYGreaterThanZConstraintSolver.satisify(x, xTypes, f, fTypes, y, yTypes)){
+		if(XAdaptYGreaterThanZConstraintSolver.satisify(x, f, y)){
 			typesChanged = true;
 		}
 		
@@ -101,13 +99,10 @@ public class FieldAssignmentChecker {
 			// the remaining constraints are too strong for multiple fields
 			return typesChanged;
 		}
-		
-		Set<ImmutabilityTypes> fTypes = getTypes(f);
-		Set<ImmutabilityTypes> yTypes = getTypes(y);
 
 		// qy adapt qf <: qx
 		// = qx :> qy adapt qf
-		if(XGreaterThanYAdaptZConstraintSolver.satisify(x, xTypes, y, yTypes, f, fTypes)){
+		if(XGreaterThanYAdaptZConstraintSolver.satisify(x, y, f)){
 			typesChanged = true;
 		}
 		
@@ -154,10 +149,7 @@ public class FieldAssignmentChecker {
 		
 		boolean typesChanged = false;
 		
-		Set<ImmutabilityTypes> xTypes = getTypes(x);
-		Set<ImmutabilityTypes> mStaticTypes = getTypes(m);
-		
-		if(XGreaterThanYConstraintSolver.satisify(x, xTypes, m, mStaticTypes)){
+		if(XGreaterThanYConstraintSolver.satisify(x, m)){
 			typesChanged = true;
 		}
 		

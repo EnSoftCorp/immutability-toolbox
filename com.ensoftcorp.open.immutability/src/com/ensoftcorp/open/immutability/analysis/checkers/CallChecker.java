@@ -41,9 +41,6 @@ public class CallChecker {
 		
 		boolean typesChanged = false;
 		Set<ImmutabilityTypes> xTypes = getTypes(x);
-		Set<ImmutabilityTypes> yTypes = getTypes(y);
-		Set<ImmutabilityTypes> identityTypes = getTypes(identity);
-		Set<ImmutabilityTypes> retTypes = getTypes(ret);
 		
 		boolean isPolyreadField = x.taggedWith(XCSG.Field) && (xTypes.contains(ImmutabilityTypes.POLYREAD) && xTypes.size() == 1);
 		boolean isMutableReference = !x.taggedWith(XCSG.Field) && (xTypes.contains(ImmutabilityTypes.MUTABLE) && xTypes.size() == 1);
@@ -84,7 +81,7 @@ public class CallChecker {
 		
 		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Constraint qy <: qx adapt qthis");
 		
-		if(XAdaptYGreaterThanZConstraintSolver.satisify(x, xTypes, identity, identityTypes, y, yTypes)){
+		if(XAdaptYGreaterThanZConstraintSolver.satisify(x, identity, y)){
 			typesChanged = true;
 		}
 		
@@ -104,23 +101,21 @@ public class CallChecker {
 			
 			// Method (method) -Contains-> ReturnValue (ret)
 			Node overriddenRet = Common.toQ(overriddenMethod).children().nodesTaggedWithAny(XCSG.ReturnValue).eval().nodes().getFirst();
-			Set<ImmutabilityTypes> overriddenRetTypes = getTypes(overriddenRet);
 			
 			// constraint: overriddenReturn <: return
 			if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Constraint overriddenReturn <: return");
 			
-			if(XGreaterThanYConstraintSolver.satisify(ret, retTypes, overriddenRet, overriddenRetTypes)){
+			if(XGreaterThanYConstraintSolver.satisify(ret, overriddenRet)){
 				typesChanged = true;
 			}
 			
 			// Method (method) -Contains-> Identity
 			Node overriddenMethodIdentity = Common.toQ(overriddenMethod).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
-			Set<ImmutabilityTypes> overriddenIdentityTypes = getTypes(overriddenMethodIdentity);
 
 			// constraint: this <: overriddenThis 
 			if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Constraint this <: overriddenThis");
 			
-			if(XGreaterThanYConstraintSolver.satisify(overriddenMethodIdentity, overriddenIdentityTypes, identity, identityTypes)){
+			if(XGreaterThanYConstraintSolver.satisify(overriddenMethodIdentity, identity)){
 				typesChanged = true;
 			}
 
@@ -140,11 +135,8 @@ public class CallChecker {
 					for(int i=0; i<numOverriddenParams; i++){
 						Node p = Common.toQ(parameters).selectNode(XCSG.parameterIndex, i).eval().nodes().getFirst();
 						Node pOverridden = Common.toQ(overriddenMethodParameters).selectNode(XCSG.parameterIndex, i).eval().nodes().getFirst();
-						
-						Set<ImmutabilityTypes> pTypes = getTypes(p);
-						Set<ImmutabilityTypes> pOverriddenTypes = getTypes(pOverridden);
-						
-						if(XGreaterThanYConstraintSolver.satisify(pOverridden, pOverriddenTypes, p, pTypes)){
+
+						if(XGreaterThanYConstraintSolver.satisify(pOverridden, p)){
 							typesChanged = true;
 						}
 					}
@@ -235,19 +227,10 @@ public class CallChecker {
 
 	private static boolean processStaticDispatchConstraints(Node x, Node method, Node containingMethod) {
 		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Static Dispatch Constraint qm' <: qx adapt qm");
-		boolean typesChanged = false;
-		
-		Set<ImmutabilityTypes> xTypes = getTypes(x);
-		Set<ImmutabilityTypes> mTypes = getTypes(method);
-		Set<ImmutabilityTypes> mContainerTypes = getTypes(containingMethod);
-		
+
 		// qm' <: qx adapt qm
 		// = qx adapt qm :> qm'
-		if(XAdaptYGreaterThanZConstraintSolver.satisify(x, xTypes, method, mTypes, containingMethod, mContainerTypes)){
-			typesChanged = true;
-		}
-
-		return typesChanged;
+		return XAdaptYGreaterThanZConstraintSolver.satisify(x, method, containingMethod);
 	}
 	
 	/**
@@ -260,18 +243,15 @@ public class CallChecker {
 		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Constraint qz <: qx adapt qp");
 
 		boolean typesChanged = false;
-		Set<ImmutabilityTypes> xTypes = getTypes(x);
 		
 		// for each z,p pair process s(x), s(z), and s(p)
 		for(GraphElement parametersPassedEdge : parametersPassedEdges){
 			Node z = parametersPassedEdge.getNode(EdgeDirection.FROM);
 			Node p = parametersPassedEdge.getNode(EdgeDirection.TO);
-			Set<ImmutabilityTypes> zTypes = getTypes(z);
-			Set<ImmutabilityTypes> pTypes = getTypes(p);
 			
 			// qz <: qx adapt qp
 			// = qx adapt qp :> qz
-			if(XAdaptYGreaterThanZConstraintSolver.satisify(x, xTypes, p, pTypes, z, zTypes)){
+			if(XAdaptYGreaterThanZConstraintSolver.satisify(x, p, z)){
 				typesChanged = true;
 			}
 		}
@@ -288,18 +268,10 @@ public class CallChecker {
 	private static boolean processReturnAssignmentConstraints(Node x, Node ret) {
 		
 		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Constraint qx adapt qret <: qx");
-		
-		boolean typesChanged = false;
-		Set<ImmutabilityTypes> xTypes = getTypes(x);
-		Set<ImmutabilityTypes> retTypes = getTypes(ret);
-		
+
 		// qx adapt qret <: qx
 		// = qx :> qx adapt qret
-		if(XGreaterThanYAdaptZConstraintSolver.satisify(x,  xTypes, x, xTypes, ret, retTypes)){
-			typesChanged = true;
-		}
-
-		return typesChanged;
+		return XGreaterThanYAdaptZConstraintSolver.satisify(x, x, ret);
 	}
 	
 }
