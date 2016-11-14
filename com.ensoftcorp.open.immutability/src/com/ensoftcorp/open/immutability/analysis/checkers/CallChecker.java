@@ -3,7 +3,6 @@ package com.ensoftcorp.open.immutability.analysis.checkers;
 import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.getTypes;
 import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.removeTypes;
 
-import java.util.EnumSet;
 import java.util.Set;
 
 import com.ensoftcorp.atlas.core.db.graph.Edge;
@@ -242,75 +241,12 @@ public class CallChecker {
 		Set<ImmutabilityTypes> mTypes = getTypes(method);
 		Set<ImmutabilityTypes> mContainerTypes = getTypes(containingMethod);
 		
-		// process s(x)
-		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process s(x)");
-		Set<ImmutabilityTypes> xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-		for(ImmutabilityTypes xType : xTypes){
-			boolean isSatisfied = false;
-			satisfied:
-			for(ImmutabilityTypes mType : mTypes){
-				for(ImmutabilityTypes mContainerType : mContainerTypes){
-					ImmutabilityTypes xAdaptedM = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, mType);
-					if(xAdaptedM.compareTo(mContainerType) >= 0){
-						isSatisfied = true;
-						break satisfied;
-					}
-				}
-			}
-			if(!isSatisfied){
-				xTypesToRemove.add(xType);
-			}
-		}
-		if(removeTypes(x, xTypesToRemove)){
+		// qm' <: qx adapt qm
+		// = qx adapt qm :> qm'
+		if(XAdaptYGreaterThanZConstraintSolver.satisify(x, xTypes, method, mTypes, containingMethod, mContainerTypes)){
 			typesChanged = true;
 		}
-		
-		// process s(m)
-		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process s(m)");
-		Set<ImmutabilityTypes> mTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-		for(ImmutabilityTypes mType : mTypes){
-			boolean isSatisfied = false;
-			satisfied:
-			for(ImmutabilityTypes xType : xTypes){
-				for(ImmutabilityTypes mContainerType : mContainerTypes){
-					ImmutabilityTypes xAdaptedM = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, mType);
-					if(xAdaptedM.compareTo(mContainerType) >= 0){
-						isSatisfied = true;
-						break satisfied;
-					}
-				}
-			}
-			if(!isSatisfied){
-				mTypesToRemove.add(mType);
-			}
-		}
-		if(removeTypes(method, mTypesToRemove)){
-			typesChanged = true;
-		}
-		
-		// process s(m')
-		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process s(m')");
-		Set<ImmutabilityTypes> mContainerTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-		for(ImmutabilityTypes mContainerType : mContainerTypes){
-			boolean isSatisfied = false;
-			satisfied:
-			for(ImmutabilityTypes xType : xTypes){
-				for(ImmutabilityTypes mType : mTypes){
-					ImmutabilityTypes xAdaptedM = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, mType);
-					if(xAdaptedM.compareTo(mContainerType) >= 0){
-						isSatisfied = true;
-						break satisfied;
-					}
-				}
-			}
-			if(!isSatisfied){
-				mContainerTypesToRemove.add(mContainerType);
-			}
-		}
-		if(removeTypes(containingMethod, mContainerTypesToRemove)){
-			typesChanged = true;
-		}
-		
+
 		return typesChanged;
 	}
 	
@@ -333,75 +269,13 @@ public class CallChecker {
 			Set<ImmutabilityTypes> zTypes = getTypes(z);
 			Set<ImmutabilityTypes> pTypes = getTypes(p);
 			
-			// process s(x)
-			if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process s(x)");
-			Set<ImmutabilityTypes> xTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-			for(ImmutabilityTypes xType : xTypes){
-				boolean isSatisfied = false;
-				satisfied:
-				for(ImmutabilityTypes zType : zTypes){
-					for(ImmutabilityTypes pType : pTypes){
-						ImmutabilityTypes xAdaptedP = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, pType);
-						if(xAdaptedP.compareTo(zType) >= 0){
-							isSatisfied = true;
-							break satisfied;
-						}
-					}
-				}
-				if(!isSatisfied){
-					xTypesToRemove.add(xType);
-				}
-			}
-			if(removeTypes(x, xTypesToRemove)){
-				typesChanged = true;
-			}
-			
-			// process s(z)
-			if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process s(z)");
-			Set<ImmutabilityTypes> zTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-			for(ImmutabilityTypes zType : zTypes){
-				boolean isSatisfied = false;
-				satisfied:
-				for(ImmutabilityTypes xType : xTypes){
-					for(ImmutabilityTypes pType : pTypes){
-						ImmutabilityTypes xAdaptedP = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, pType);
-						if(xAdaptedP.compareTo(zType) >= 0){
-							isSatisfied = true;
-							break satisfied;
-						}
-					}
-				}
-				if(!isSatisfied){
-					zTypesToRemove.add(zType);
-				}
-			}
-			if(removeTypes(z, zTypesToRemove)){
-				typesChanged = true;
-			}
-			
-			// process s(p)
-			if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process s(p)");
-			Set<ImmutabilityTypes> pTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-			for(ImmutabilityTypes pType : pTypes){
-				boolean isSatisfied = false;
-				satisfied:
-				for(ImmutabilityTypes xType : xTypes){
-					for(ImmutabilityTypes zType : zTypes){
-						ImmutabilityTypes xAdaptedP = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, pType);
-						if(xAdaptedP.compareTo(zType) >= 0){
-							isSatisfied = true;
-							break satisfied;
-						}
-					}
-				}
-				if(!isSatisfied){
-					pTypesToRemove.add(pType);
-				}
-			}
-			if(removeTypes(p, pTypesToRemove)){
+			// qz <: qx adapt qp
+			// = qx adapt qp :> qz
+			if(XAdaptYGreaterThanZConstraintSolver.satisify(x, xTypes, p, pTypes, z, zTypes)){
 				typesChanged = true;
 			}
 		}
+		
 		return typesChanged;
 	}
 	
@@ -419,6 +293,8 @@ public class CallChecker {
 		Set<ImmutabilityTypes> xTypes = getTypes(x);
 		Set<ImmutabilityTypes> retTypes = getTypes(ret);
 		
+		// qx adapt qret <: qx
+		// = qx :> qx adapt qret
 		if(XGreaterThanYAdaptZConstraintSolver.satisify(x,  xTypes, x, xTypes, ret, retTypes)){
 			typesChanged = true;
 		}

@@ -51,6 +51,7 @@ public class FieldAssignmentChecker {
 		}
 		
 		// qy <: qx adapt qf
+		// = qx adapt qf :> qy
 		if(XAdaptYGreaterThanZConstraintSolver.satisify(x, xTypes, f, fTypes, y, yTypes)){
 			typesChanged = true;
 		}
@@ -104,6 +105,8 @@ public class FieldAssignmentChecker {
 		Set<ImmutabilityTypes> fTypes = getTypes(f);
 		Set<ImmutabilityTypes> yTypes = getTypes(y);
 
+		// qy adapt qf <: qx
+		// = qx :> qy adapt qf
 		if(XGreaterThanYAdaptZConstraintSolver.satisify(x, xTypes, y, yTypes, f, fTypes)){
 			typesChanged = true;
 		}
