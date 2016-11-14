@@ -1,7 +1,5 @@
 package com.ensoftcorp.open.immutability.analysis;
 
-import com.ensoftcorp.open.commons.analysis.SetDefinitions;
-
 /**
  * Encodes the immutability qualifications as types 
  * 

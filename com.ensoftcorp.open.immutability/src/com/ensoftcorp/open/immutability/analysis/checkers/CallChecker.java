@@ -15,7 +15,6 @@ import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.analysis.StandardQueries;
-import com.ensoftcorp.open.jimple.commons.wishful.JimpleStopGap;
 import com.ensoftcorp.open.immutability.analysis.AnalysisUtilities;
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
 import com.ensoftcorp.open.immutability.analysis.solvers.XAdaptYGreaterThanZConstraintSolver;
@@ -23,6 +22,7 @@ import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanYAdaptZCons
 import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanYConstraintSolver;
 import com.ensoftcorp.open.immutability.log.Log;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
+import com.ensoftcorp.open.jimple.commons.wishful.JimpleStopGap;
 
 public class CallChecker {
 

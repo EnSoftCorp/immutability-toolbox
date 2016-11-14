@@ -5,36 +5,31 @@ import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.remove
 
 import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.Set;
 
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
-import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
 
 public class XAdaptYGreaterThanZConstraintSolver {
 
-	// TODO: Remove after profiling is done, use these numbers to fine tune the
-	// constraint check orderings
-	public static HashMap<Integer, Integer> constraintCounts = new HashMap<Integer, Integer>();
-
-	private static void incrementCounter(Integer check) {
-		Integer count = 0;
-		if (constraintCounts.containsKey(check)) {
-			count = constraintCounts.get(check);
-		}
-		count++;
-		constraintCounts.put(check, count);
-	}
-
 	// all possible sets, 3 choose 3, 3 choose 2, and 3 choose 1
-	private static final EnumSet<ImmutabilityTypes> SET1 = EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY);
-	private static final EnumSet<ImmutabilityTypes> SET2 = EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY);
-	private static final EnumSet<ImmutabilityTypes> SET3 = EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD);
-	private static final EnumSet<ImmutabilityTypes> SET4 = EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY);
-	private static final EnumSet<ImmutabilityTypes> SET5 = EnumSet.of(ImmutabilityTypes.READONLY);
-	private static final EnumSet<ImmutabilityTypes> SET6 = EnumSet.of(ImmutabilityTypes.POLYREAD);
-	private static final EnumSet<ImmutabilityTypes> SET7 = EnumSet.of(ImmutabilityTypes.MUTABLE);
+	private static final ArrayList<EnumSet<ImmutabilityTypes>> sets = new ArrayList<EnumSet<ImmutabilityTypes>>();
+	static {
+		EnumSet<ImmutabilityTypes> SET1 = EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY);
+		EnumSet<ImmutabilityTypes> SET2 = EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY);
+		EnumSet<ImmutabilityTypes> SET3 = EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD);
+		EnumSet<ImmutabilityTypes> SET4 = EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY);
+		EnumSet<ImmutabilityTypes> SET5 = EnumSet.of(ImmutabilityTypes.READONLY);
+		EnumSet<ImmutabilityTypes> SET6 = EnumSet.of(ImmutabilityTypes.POLYREAD);
+		EnumSet<ImmutabilityTypes> SET7 = EnumSet.of(ImmutabilityTypes.MUTABLE);
+		sets.add(SET1);
+		sets.add(SET2);
+		sets.add(SET3);
+		sets.add(SET4);
+		sets.add(SET5);
+		sets.add(SET6);
+		sets.add(SET7);
+	}
 
 	public static boolean satisify(Node x, Node y, Node z) {
 		Set<ImmutabilityTypes> xTypes = getTypes(x);
@@ -43,3370 +38,1016 @@ public class XAdaptYGreaterThanZConstraintSolver {
 		return satisify(x, xTypes, y, yTypes, z, zTypes);
 	}
 
-	public static boolean satisify(Node x, Set<ImmutabilityTypes> xTypes, Node y, Set<ImmutabilityTypes> yTypes, Node z, Set<ImmutabilityTypes> zTypes) {
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(1);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(2);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(3);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(4);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(5);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(6);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(7);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(8);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(9);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(10);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(11);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(12);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(13);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(14);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(15);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(16);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(17);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(18);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(19);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(20);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(21);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(22);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(23);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(24);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(25);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(26);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(27);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(28);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(29);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(30);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(31);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(32);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(33);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(34);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(35);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(36);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(37);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(38);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(39);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(40);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(41);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(42);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(43);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(44);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(45);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(46);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(47);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(48);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET1)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(49);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(50);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(51);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(52);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(53);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(54);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(55);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(56);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(57);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(58);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(59);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(60);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(61);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(62);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(63);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(64);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(65);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(66);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(67);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(68);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(69);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(70);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(71);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(72);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(73);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(74);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(75);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(76);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(77);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(78);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(79);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(80);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(81);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(82);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(83);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(84);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(85);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(86);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(87);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(88);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(89);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(90);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(91);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(92);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(93);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(94);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(95);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(96);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(97);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET2)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(98);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(99);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(100);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(101);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(102);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(103);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(104);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(105);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(106);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(107);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(108);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(109);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(110);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(111);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(112);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(113);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(114);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(115);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(116);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(117);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(118);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(119);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(120);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(121);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(122);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(123);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(124);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(125);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(126);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(127);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(128);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(129);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(130);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(131);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(132);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(133);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(134);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(135);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(136);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(137);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(138);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(139);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(140);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(141);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(142);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(143);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(144);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(145);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(146);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET3)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(147);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(148);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(149);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(150);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(151);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(152);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(153);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(154);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(155);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(156);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(157);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(158);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(159);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(160);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(161);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(162);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(163);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(164);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(165);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(166);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(167);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(168);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(169);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(170);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(171);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(172);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(173);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(174);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(175);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(176);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(177);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(178);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(179);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(180);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(181);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(182);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(183);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(184);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(185);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(186);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(187);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(188);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(189);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(190);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(191);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(192);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(193);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(194);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(195);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET4)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(196);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(197);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(198);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(199);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(200);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(201);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(202);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(203);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(204);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(205);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(206);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(207);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(208);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(209);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(210);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(211);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(212);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(213);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(214);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(215);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(216);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(217);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(218);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(219);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(220);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(221);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(222);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(223);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(224);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(225);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(226);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(227);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(228);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(229);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(230);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(231);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(232);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(233);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(234);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(235);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(236);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(237);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(238);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(239);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(240);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(241);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(242);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(243);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(244);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET5)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(245);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(246);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(247);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(248);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(249);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(250);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(251);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(252);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(253);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(254);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(255);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(256);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(257);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(258);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(259);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(260);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(261);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(262);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(263);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(264);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(265);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(266);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(267);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(268);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(269);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(270);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(271);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(272);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(273);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(274);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(275);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(276);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(277);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(278);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(279);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(280);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(281);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(282);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(283);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(284);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(285);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(286);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(287);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(288);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(289);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(290);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(291);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(292);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(293);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET6)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(294);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(295);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(296);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(297);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(298);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(299);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(300);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET1)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(301);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(302);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(303);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(304);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(305);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(306);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(307);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET2)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(308);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(309);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(310);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(311);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(312);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(313);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(314);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET3)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(315);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(316);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(317);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(318);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(319);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(320);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(321);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					return xTypesChanged || yTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET4)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(322);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(323);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(324);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(325);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(326);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(327);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(328);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET5)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(329);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(330);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(331);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(332);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(333);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(334);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(335);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET6)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(336);
-					return false;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET1)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(337);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET2)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(338);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET3)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(339);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET4)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(340);
-					return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET5)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(341);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET6)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(342);
-					boolean xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-					boolean zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-					return xTypesChanged || yTypesChanged || zTypesChanged;
-				}
-			}
-		}
-		if (xTypes.equals(SET7)) {
-			if (yTypes.equals(SET7)) {
-				if (zTypes.equals(SET7)) {
-					if (ImmutabilityPreferences.isConstraintProfilingEnabled())
-						incrementCounter(343);
-					return false;
-				}
-			}
-		}
-		return false;
+	private static short getCase(Set<ImmutabilityTypes> xTypes, Set<ImmutabilityTypes> yTypes,
+			Set<ImmutabilityTypes> zTypes) {
+		short input = 0;
+
+		int setID = 0;
+		for (EnumSet<ImmutabilityTypes> set : sets) {
+			if (xTypes.equals(set)) {
+				break;
+			} else {
+				setID++;
+			}
+		}
+		input |= setID;
+		input <<= 3;
+
+		setID = 0;
+		for (EnumSet<ImmutabilityTypes> set : sets) {
+			if (yTypes.equals(set)) {
+				break;
+			} else {
+				setID++;
+			}
+		}
+		input |= setID;
+		input <<= 3;
+
+		setID = 0;
+		for (EnumSet<ImmutabilityTypes> set : sets) {
+			if (zTypes.equals(set)) {
+				break;
+			} else {
+				setID++;
+			}
+		}
+		input |= setID;
+
+		return input;
 	}
 
+	public static boolean satisify(Node x, Set<ImmutabilityTypes> xTypes, Node y, Set<ImmutabilityTypes> yTypes, Node z, Set<ImmutabilityTypes> zTypes) {
+		boolean xTypesChanged = false;
+		boolean yTypesChanged = false;
+		boolean zTypesChanged = false;
+		short input = getCase(xTypes, yTypes, zTypes);
+		switch (input) {
+		case 0:
+			return false;
+		case 1:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged;
+		case 2:
+			return false;
+		case 3:
+			return false;
+		case 4:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged;
+		case 5:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged;
+		case 6:
+			return false;
+		case 8:
+			return false;
+		case 9:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged;
+		case 10:
+			return false;
+		case 11:
+			return false;
+		case 12:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged;
+		case 13:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged;
+		case 14:
+			return false;
+		case 16:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+		case 17:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 18:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+		case 19:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+		case 20:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 21:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 22:
+			return false;
+		case 24:
+			return false;
+		case 25:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 26:
+			return false;
+		case 27:
+			return false;
+		case 28:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 29:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 30:
+			return false;
+		case 32:
+			return false;
+		case 33:
+			return false;
+		case 34:
+			return false;
+		case 35:
+			return false;
+		case 36:
+			return false;
+		case 37:
+			return false;
+		case 38:
+			return false;
+		case 40:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+		case 41:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 42:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+		case 43:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+		case 44:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 45:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 46:
+			return false;
+		case 48:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+		case 49:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 50:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+		case 51:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+		case 52:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 53:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 54:
+			return false;
+		case 64:
+			return false;
+		case 65:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 66:
+			return false;
+		case 67:
+			return false;
+		case 68:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged;
+		case 69:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 70:
+			return false;
+		case 72:
+			return false;
+		case 73:
+			return false;
+		case 74:
+			return false;
+		case 75:
+			return false;
+		case 76:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged;
+		case 77:
+			return false;
+		case 78:
+			return false;
+		case 80:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+		case 81:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 82:
+			return false;
+		case 83:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+		case 84:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 85:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 86:
+			return false;
+		case 88:
+			return false;
+		case 89:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 90:
+			return false;
+		case 91:
+			return false;
+		case 92:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 93:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 94:
+			return false;
+		case 96:
+			return false;
+		case 97:
+			return false;
+		case 98:
+			return false;
+		case 99:
+			return false;
+		case 100:
+			return false;
+		case 101:
+			return false;
+		case 102:
+			return false;
+		case 104:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+		case 105:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+		case 106:
+			return false;
+		case 107:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+		case 108:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 109:
+			return false;
+		case 110:
+			return false;
+		case 112:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+		case 113:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 114:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+		case 115:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+		case 116:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 117:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 118:
+			return false;
+		case 128:
+			return false;
+		case 129:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged;
+		case 130:
+			return false;
+		case 131:
+			return false;
+		case 132:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged;
+		case 133:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged;
+		case 134:
+			return false;
+		case 136:
+			return false;
+		case 137:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged;
+		case 138:
+			return false;
+		case 139:
+			return false;
+		case 140:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged;
+		case 141:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged;
+		case 142:
+			return false;
+		case 144:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+		case 145:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 146:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+		case 147:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+		case 148:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 149:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 150:
+			return false;
+		case 152:
+			return false;
+		case 153:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 154:
+			return false;
+		case 155:
+			return false;
+		case 156:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 157:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 158:
+			return false;
+		case 160:
+			return false;
+		case 161:
+			return false;
+		case 162:
+			return false;
+		case 163:
+			return false;
+		case 164:
+			return false;
+		case 165:
+			return false;
+		case 166:
+			return false;
+		case 168:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+		case 169:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 170:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+		case 171:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+		case 172:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 173:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 174:
+			return false;
+		case 176:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+		case 177:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 178:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+		case 179:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+		case 180:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 181:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 182:
+			return false;
+		case 192:
+			return false;
+		case 193:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged;
+		case 194:
+			return false;
+		case 195:
+			return false;
+		case 196:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged;
+		case 197:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged;
+		case 198:
+			return false;
+		case 200:
+			return false;
+		case 201:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged;
+		case 202:
+			return false;
+		case 203:
+			return false;
+		case 204:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged;
+		case 205:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged;
+		case 206:
+			return false;
+		case 208:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+		case 209:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 210:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+		case 211:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+		case 212:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 213:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 214:
+			return false;
+		case 216:
+			return false;
+		case 217:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 218:
+			return false;
+		case 219:
+			return false;
+		case 220:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 221:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 222:
+			return false;
+		case 224:
+			return false;
+		case 225:
+			return false;
+		case 226:
+			return false;
+		case 227:
+			return false;
+		case 228:
+			return false;
+		case 229:
+			return false;
+		case 230:
+			return false;
+		case 232:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+		case 233:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 234:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+		case 235:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+		case 236:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 237:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 238:
+			return false;
+		case 240:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+		case 241:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 242:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+		case 243:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+		case 244:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 245:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 246:
+			return false;
+		case 256:
+			return false;
+		case 257:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 258:
+			return false;
+		case 259:
+			return false;
+		case 260:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 261:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 262:
+			return false;
+		case 264:
+			return false;
+		case 265:
+			return false;
+		case 266:
+			return false;
+		case 267:
+			return false;
+		case 268:
+			return false;
+		case 269:
+			return false;
+		case 270:
+			return false;
+		case 272:
+			return false;
+		case 273:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 274:
+			return false;
+		case 275:
+			return false;
+		case 276:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 277:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 278:
+			return false;
+		case 280:
+			return false;
+		case 281:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 282:
+			return false;
+		case 283:
+			return false;
+		case 284:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 285:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 286:
+			return false;
+		case 288:
+			return false;
+		case 289:
+			return false;
+		case 290:
+			return false;
+		case 291:
+			return false;
+		case 292:
+			return false;
+		case 293:
+			return false;
+		case 294:
+			return false;
+		case 296:
+			return false;
+		case 297:
+			return false;
+		case 298:
+			return false;
+		case 299:
+			return false;
+		case 300:
+			return false;
+		case 301:
+			return false;
+		case 302:
+			return false;
+		case 304:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+		case 305:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 306:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+		case 307:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+		case 308:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 309:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 310:
+			return false;
+		case 320:
+			return false;
+		case 321:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 322:
+			return false;
+		case 323:
+			return false;
+		case 324:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged;
+		case 325:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 326:
+			return false;
+		case 328:
+			return false;
+		case 329:
+			return false;
+		case 330:
+			return false;
+		case 331:
+			return false;
+		case 332:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged;
+		case 333:
+			return false;
+		case 334:
+			return false;
+		case 336:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+		case 337:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 338:
+			return false;
+		case 339:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+		case 340:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 341:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 342:
+			return false;
+		case 344:
+			return false;
+		case 345:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 346:
+			return false;
+		case 347:
+			return false;
+		case 348:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 349:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 350:
+			return false;
+		case 352:
+			return false;
+		case 353:
+			return false;
+		case 354:
+			return false;
+		case 355:
+			return false;
+		case 356:
+			return false;
+		case 357:
+			return false;
+		case 358:
+			return false;
+		case 360:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+		case 361:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+		case 362:
+			return false;
+		case 363:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+		case 364:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 365:
+			return false;
+		case 366:
+			return false;
+		case 368:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+		case 369:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 370:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+		case 371:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+		case 372:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 373:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 374:
+			return false;
+		case 384:
+			return false;
+		case 385:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged;
+		case 386:
+			return false;
+		case 387:
+			return false;
+		case 388:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged;
+		case 389:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged;
+		case 390:
+			return false;
+		case 392:
+			return false;
+		case 393:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged;
+		case 394:
+			return false;
+		case 395:
+			return false;
+		case 396:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged;
+		case 397:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged;
+		case 398:
+			return false;
+		case 400:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+		case 401:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 402:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+		case 403:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+		case 404:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 405:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 406:
+			return false;
+		case 408:
+			return false;
+		case 409:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 410:
+			return false;
+		case 411:
+			return false;
+		case 412:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 413:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
+		case 414:
+			return false;
+		case 416:
+			return false;
+		case 417:
+			return false;
+		case 418:
+			return false;
+		case 419:
+			return false;
+		case 420:
+			return false;
+		case 421:
+			return false;
+		case 422:
+			return false;
+		case 424:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+		case 425:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 426:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+		case 427:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+		case 428:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 429:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 430:
+			return false;
+		case 432:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+		case 433:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 434:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+		case 435:
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+		case 436:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 437:
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return xTypesChanged || yTypesChanged || zTypesChanged;
+		case 438:
+			return false;
+		default:
+			throw new IllegalArgumentException("Unhandled case: xTypes=" 
+					+ xTypes.toString() + ", yTypes="
+					+ yTypes.toString() + ", zTypes=" + zTypes.toString());
+		}
+	}
 }

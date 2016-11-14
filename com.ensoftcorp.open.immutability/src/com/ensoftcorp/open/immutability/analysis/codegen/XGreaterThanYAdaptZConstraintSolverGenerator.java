@@ -1,16 +1,10 @@
 package com.ensoftcorp.open.immutability.analysis.codegen;
 
-import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.getTypes;
-import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.removeTypes;
-
 import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.Set;
 
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
-import com.ensoftcorp.open.immutability.log.Log;
-import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
 
 public class XGreaterThanYAdaptZConstraintSolverGenerator {
 
@@ -36,26 +30,80 @@ public class XGreaterThanYAdaptZConstraintSolverGenerator {
 		
 		int[] allSets = new int[]{1,2,3,4,5,6,7};
 		
+		System.out.println("boolean xTypesChanged = false;");
+		System.out.println("boolean yTypesChanged = false;");
+		System.out.println("boolean zTypesChanged = false;");
+		
+		System.out.println("short input = getCase(xTypes, yTypes, zTypes);");
+		
+		System.out.println("switch (input) {");
+
 		for(int x : allSets){
 			for(int y : allSets){
 				for(int z : allSets){
+					
+					// for each reference there are 7 possible sets (3 choose 3 + 3 choose 2 + 3 choose 1)
+					// to represent 7 cases we need 3 bits per reference
+					// for 3 references x,y,z we need 9 bits, so a short is needed
+					// format: 0000000xxxyyyzzz
+					// in total there are 1*7*7*7=343 possible 3 reference set inputs
+
+					EnumSet<ImmutabilityTypes> xTypes = sets.get(x-1);
+					EnumSet<ImmutabilityTypes> yTypes = sets.get(y-1);
+					EnumSet<ImmutabilityTypes> zTypes = sets.get(z-1);
+
+					short input = getCase(xTypes, yTypes, zTypes);
+					
 					String result = getResult(sets.get(x-1), sets.get(y-1), sets.get(z-1));
 					if(!result.equals("")){
-						System.out.println("if(xTypes.equals(SET" + x + ")){");
-						System.out.println("if(yTypes.equals(SET" + y + ")){");
-						System.out.println("if(zTypes.equals(SET" + z + ")){");
+						System.out.println("case " + input + ":");
 						System.out.println(result);
-						System.out.println("}");
-						System.out.println("}");
-						System.out.println("}");
 					}
 				}
 			}
 		}
-		System.out.println("return false;");
+		System.out.println("default:");
+		System.out.println("throw new IllegalArgumentException(\"Unhandled case: xTypes=\" + xTypes.toString() + \", yTypes=\" + yTypes.toString() + \", zTypes=\" + zTypes.toString());");
+		System.out.println("}");
 	}
-	
-	private static int counter = 1;
+
+	private static short getCase(EnumSet<ImmutabilityTypes> xTypes, EnumSet<ImmutabilityTypes> yTypes, EnumSet<ImmutabilityTypes> zTypes) {
+		short input = 0;
+		
+		int setID = 0;
+		for(EnumSet<ImmutabilityTypes> set : sets){
+			if(xTypes.equals(set)){
+				break;
+			} else {
+				setID++;
+			}
+		}
+		input |= setID;
+		input <<= 3;
+		
+		setID = 0;
+		for(EnumSet<ImmutabilityTypes> set : sets){
+			if(yTypes.equals(set)){
+				break;
+			} else {
+				setID++;
+			}
+		}
+		input |= setID;
+		input <<= 3;
+		
+		setID = 0;
+		for(EnumSet<ImmutabilityTypes> set : sets){
+			if(zTypes.equals(set)){
+				break;
+			} else {
+				setID++;
+			}
+		}
+		input |= setID;
+		
+		return input;
+	}
 	
 	private static String getResult(EnumSet<ImmutabilityTypes> xTypes, EnumSet<ImmutabilityTypes> yTypes, EnumSet<ImmutabilityTypes> zTypes) {
 		// process s(x)
@@ -116,50 +164,38 @@ public class XGreaterThanYAdaptZConstraintSolverGenerator {
 		}
 		
 		if(xTypesToRemove.isEmpty() && yTypesToRemove.isEmpty() && zTypesToRemove.isEmpty()){
-			String prefix = "if(ImmutabilityPreferences.isConstraintProfilingEnabled()) incrementCounter(" + counter++ + ");\n";
-			return prefix + "return false;";
+			return "return false;";
 		} else {
 			if(xTypesToRemove.isEmpty() && yTypesToRemove.isEmpty()){
-				String prefix = "if(ImmutabilityPreferences.isConstraintProfilingEnabled()) incrementCounter(" + counter++ + ");\n";
-				return prefix + "return removeTypes(z, EnumSet.of(" + getSetString(zTypesToRemove) + "));";
+				return "return removeTypes(z, EnumSet.of(" + getSetString(zTypesToRemove) + "));";
 			} else if(xTypesToRemove.isEmpty() && zTypesToRemove.isEmpty()){
-				String prefix = "if(ImmutabilityPreferences.isConstraintProfilingEnabled()) incrementCounter(" + counter++ + ");\n";
-				return prefix + "return removeTypes(y, EnumSet.of(" + getSetString(yTypesToRemove) + "));";
+				return "return removeTypes(y, EnumSet.of(" + getSetString(yTypesToRemove) + "));";
 			} else if(yTypesToRemove.isEmpty() && zTypesToRemove.isEmpty()){
-				String prefix = "if(ImmutabilityPreferences.isConstraintProfilingEnabled()) incrementCounter(" + counter++ + ");\n";
-				return prefix + "return removeTypes(x, EnumSet.of(" + getSetString(xTypesToRemove) + "));";
+				return "return removeTypes(x, EnumSet.of(" + getSetString(xTypesToRemove) + "));";
 			} else {
 				if(xTypesToRemove.isEmpty()){
 					String result = "";
-					String prefix = "if(ImmutabilityPreferences.isConstraintProfilingEnabled()) incrementCounter(" + counter++ + ");";
-					result += prefix + "\n";
-					result += "boolean yTypesChanged = removeTypes(y, EnumSet.of(" + getSetString(yTypesToRemove) + "));\n";
-					result += "boolean zTypesChanged = removeTypes(z, EnumSet.of(" + getSetString(zTypesToRemove) + "));\n";
+					result += "yTypesChanged = removeTypes(y, EnumSet.of(" + getSetString(yTypesToRemove) + "));\n";
+					result += "zTypesChanged = removeTypes(z, EnumSet.of(" + getSetString(zTypesToRemove) + "));\n";
 					result += "return yTypesChanged || zTypesChanged;";
 					return result;
 				} else if(yTypesToRemove.isEmpty()){
 					String result = "";
-					String prefix = "if(ImmutabilityPreferences.isConstraintProfilingEnabled()) incrementCounter(" + counter++ + ");";
-					result += prefix + "\n";
-					result += "boolean xTypesChanged = removeTypes(x, EnumSet.of(" + getSetString(xTypesToRemove) + "));\n";
-					result += "boolean zTypesChanged = removeTypes(z, EnumSet.of(" + getSetString(zTypesToRemove) + "));\n";
+					result += "xTypesChanged = removeTypes(x, EnumSet.of(" + getSetString(xTypesToRemove) + "));\n";
+					result += "zTypesChanged = removeTypes(z, EnumSet.of(" + getSetString(zTypesToRemove) + "));\n";
 					result += "return xTypesChanged || zTypesChanged;";
 					return result;
 				} else if(zTypesToRemove.isEmpty()){
 					String result = "";
-					String prefix = "if(ImmutabilityPreferences.isConstraintProfilingEnabled()) incrementCounter(" + counter++ + ");";
-					result += prefix + "\n";
-					result += "boolean xTypesChanged = removeTypes(x, EnumSet.of(" + getSetString(xTypesToRemove) + "));\n";
-					result += "boolean yTypesChanged = removeTypes(y, EnumSet.of(" + getSetString(yTypesToRemove) + "));\n";
+					result += "xTypesChanged = removeTypes(x, EnumSet.of(" + getSetString(xTypesToRemove) + "));\n";
+					result += "yTypesChanged = removeTypes(y, EnumSet.of(" + getSetString(yTypesToRemove) + "));\n";
 					result += "return xTypesChanged || yTypesChanged;";
 					return result;
 				} else {
 					String result = "";
-					String prefix = "if(ImmutabilityPreferences.isConstraintProfilingEnabled()) incrementCounter(" + counter++ + ");";
-					result += prefix + "\n";
-					result += "boolean xTypesChanged = removeTypes(x, EnumSet.of(" + getSetString(xTypesToRemove) + "));\n";
-					result += "boolean yTypesChanged = removeTypes(y, EnumSet.of(" + getSetString(yTypesToRemove) + "));\n";
-					result += "boolean zTypesChanged = removeTypes(z, EnumSet.of(" + getSetString(zTypesToRemove) + "));\n";
+					result += "xTypesChanged = removeTypes(x, EnumSet.of(" + getSetString(xTypesToRemove) + "));\n";
+					result += "yTypesChanged = removeTypes(y, EnumSet.of(" + getSetString(yTypesToRemove) + "));\n";
+					result += "zTypesChanged = removeTypes(z, EnumSet.of(" + getSetString(zTypesToRemove) + "));\n";
 					result += "return xTypesChanged || yTypesChanged || zTypesChanged;";
 					return result;
 				}

@@ -29,14 +29,10 @@ import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.analysis.StandardQueries;
 import com.ensoftcorp.open.commons.utilities.DisplayUtils;
-import com.ensoftcorp.open.commons.wishful.StopGap;
 import com.ensoftcorp.open.immutability.analysis.checkers.BasicAssignmentChecker;
 import com.ensoftcorp.open.immutability.analysis.checkers.CallChecker;
 import com.ensoftcorp.open.immutability.analysis.checkers.FieldAssignmentChecker;
 import com.ensoftcorp.open.immutability.analysis.checkers.SanityChecks;
-import com.ensoftcorp.open.immutability.analysis.solvers.XAdaptYGreaterThanZConstraintSolver;
-import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanYAdaptZConstraintSolver;
-import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanYConstraintSolver;
 import com.ensoftcorp.open.immutability.log.Log;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
 import com.ensoftcorp.open.jimple.commons.wishful.JimpleStopGap;
@@ -109,12 +105,6 @@ public class ImmutabilityAnalysis {
 				String summary = "READONLY: " + numReadOnly + ", POLYREAD: " + numPolyRead + ", MUTABLE: " + numMutable  + ", PURE: " + numPure;
 				Log.info("Immutability analysis completed in " + FORMAT.format(runtime) + " ms\n" + summary);
 			}
-		}
-		if(ImmutabilityPreferences.isGeneralLoggingEnabled()){
-			Log.info("Constraint Solver Profiling Completed"
-					+ "\nXGreaterThanYConstraintSolver: " + XGreaterThanYConstraintSolver.constraintCounts.toString() 
-					+ "\nXGreaterThanYAdaptZConstraintSolver: " + XGreaterThanYAdaptZConstraintSolver.constraintCounts.toString() 
-					+ "\nXAdaptZGreaterThanYConstraintSolver: " + XAdaptYGreaterThanZConstraintSolver.constraintCounts.toString());
 		}
 		return isSane;
 	}

@@ -20,7 +20,6 @@ public class ImmutabilityPreferencesPage extends FieldEditorPreferencePage imple
 	private static final String GENERATE_SUMMARIES_DESCRIPTION = "Generate summaries (partial program analysis)";
 	private static final String LOAD_SUMMARIES_DESCRIPTION = "Load summaries (partial program analysis)";
 	private static final String RUN_SANITY_CHECKS_DESCRIPTION = "Run sanity checks";
-	private static final String CONSTRAINT_PROFILING_DESCRIPTION = "Profile constraint solvers";
 	private static final String GENERAL_LOGGING_DESCRIPTION = "Enable General Logging";
 	private static final String INFERENCE_RULE_LOGGING_DESCRIPTION = "Enable Inference Rule Logging";
 	private static final String DEBUG_LOGGING_DESCRIPTION = "Enable Debug Logging";
@@ -54,7 +53,6 @@ public class ImmutabilityPreferencesPage extends FieldEditorPreferencePage imple
 		addField(new BooleanFieldEditor(ImmutabilityPreferences.GENERATE_SUMMARIES, "&" + GENERATE_SUMMARIES_DESCRIPTION, getFieldEditorParent()));
 		addField(new BooleanFieldEditor(ImmutabilityPreferences.LOAD_SUMMARIES, "&" + LOAD_SUMMARIES_DESCRIPTION, getFieldEditorParent()));
 		addField(new BooleanFieldEditor(ImmutabilityPreferences.RUN_SANITY_CHECKS, "&" + RUN_SANITY_CHECKS_DESCRIPTION, getFieldEditorParent()));
-		addField(new BooleanFieldEditor(ImmutabilityPreferences.CONSTRAINT_PROFILING, "&" + CONSTRAINT_PROFILING_DESCRIPTION, getFieldEditorParent()));
 		addField(new BooleanFieldEditor(ImmutabilityPreferences.GENERAL_LOGGING, "&" + GENERAL_LOGGING_DESCRIPTION, getFieldEditorParent()));
 		addField(new BooleanFieldEditor(ImmutabilityPreferences.INFERENCE_RULE_LOGGING, "&" + INFERENCE_RULE_LOGGING_DESCRIPTION, getFieldEditorParent()));
 		addField(new BooleanFieldEditor(ImmutabilityPreferences.DEBUG_LOGGING, "&" + DEBUG_LOGGING_DESCRIPTION, getFieldEditorParent()));
