@@ -8,6 +8,7 @@ import java.util.EnumSet;
 import java.util.Set;
 
 import com.ensoftcorp.atlas.core.db.graph.Node;
+import com.ensoftcorp.atlas.core.log.Log;
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
 
 public class XGreaterThanYConstraintSolver {
@@ -40,7 +41,17 @@ public class XGreaterThanYConstraintSolver {
 	 */
 	public static boolean satisify(Node x, Node y) {
 		Set<ImmutabilityTypes> xTypes = getTypes(x);
+		if(xTypes.isEmpty()){
+			Log.warning("x [" + x.address().toAddressString() + "] is untyped, constraints cannot be satisfied");
+			return false;
+		}
+		
 		Set<ImmutabilityTypes> yTypes = getTypes(y);
+		if(yTypes.isEmpty()){
+			Log.warning("y [" + y.address().toAddressString() + "] is untyped, constraints cannot be satisfied");
+			return false;
+		}
+		
 		return satisify(x, xTypes, y, yTypes);
 	}
 
