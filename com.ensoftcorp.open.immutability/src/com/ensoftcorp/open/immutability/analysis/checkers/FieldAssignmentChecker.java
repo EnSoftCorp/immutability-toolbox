@@ -39,9 +39,9 @@ public class FieldAssignmentChecker {
 			typesChanged = true;
 		}
 		
-		Set<ImmutabilityTypes> yTypes = getTypes(y);
-
 		// if y is only mutable then f cannot be readonly
+		// ISSUE 2
+		Set<ImmutabilityTypes> yTypes = getTypes(y);
 		if((yTypes.contains(ImmutabilityTypes.MUTABLE)) && yTypes.size()==1){
 			if(removeTypes(f, ImmutabilityTypes.READONLY)){
 				typesChanged = true;
@@ -71,34 +71,35 @@ public class FieldAssignmentChecker {
 		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()) Log.info("TREAD (x=y.f, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ")");
 		
 		boolean typesChanged = false;
-		Set<ImmutabilityTypes> xTypes = getTypes(x);
-		
-		boolean xIsPolyreadField = x.taggedWith(XCSG.Field) && (xTypes.contains(ImmutabilityTypes.POLYREAD) && xTypes.size() == 1);
-		boolean xIsMutableReference = !x.taggedWith(XCSG.Field) && (xTypes.contains(ImmutabilityTypes.MUTABLE) && xTypes.size() == 1);
-		 
-		if(xIsPolyreadField || xIsMutableReference){
-			// if x is a polyread field then the read field (f) and its container's must be polyread
-			// if x is a mutable reference then f and its container fields must be polyread
-			// for example x = z.y.f, if x has been mutated then so has f, y, and z
-			if(removeTypes(f, ImmutabilityTypes.READONLY)){
-				typesChanged = true;
-			}
-			for(Node container : AnalysisUtilities.getAccessedContainers(y)){
-				if(removeTypes(container, ImmutabilityTypes.READONLY)){
-					typesChanged = true;
-				}
-				if(container.taggedWith(XCSG.ClassVariable)){
-					if(removeTypes(StandardQueries.getContainingMethod(x), ImmutabilityTypes.READONLY)){
-						typesChanged = true;
-					}
-				}
-			}
-		}
+//		Set<ImmutabilityTypes> xTypes = getTypes(x);
+//		
+//		boolean xIsPolyreadField = x.taggedWith(XCSG.Field) && (xTypes.contains(ImmutabilityTypes.POLYREAD) && xTypes.size() == 1);
+//		boolean xIsMutableReference = !x.taggedWith(XCSG.Field) && (xTypes.contains(ImmutabilityTypes.MUTABLE) && xTypes.size() == 1);
+//		 
+//		if(xIsPolyreadField || xIsMutableReference){
+//			// if x is a polyread field then the read field (f) and its container's must be polyread
+//			// if x is a mutable reference then f and its container fields must be polyread
+//			// for example x = z.y.f, if x has been mutated then so has f, y, and z
+//			if(removeTypes(f, ImmutabilityTypes.READONLY)){
+//				typesChanged = true;
+//			}
+//			// TODO: should we consider containers?
+////			for(Node container : AnalysisUtilities.getAccessedContainers(y)){
+////				if(removeTypes(container, ImmutabilityTypes.READONLY)){
+////					typesChanged = true;
+////				}
+////				if(container.taggedWith(XCSG.ClassVariable)){
+////					if(removeTypes(StandardQueries.getContainingMethod(x), ImmutabilityTypes.READONLY)){
+////						typesChanged = true;
+////					}
+////				}
+////			}
+//		}
 	
-		if(y.taggedWith(XCSG.InstanceVariable) || y.taggedWith(XCSG.ClassVariable)){
-			// the remaining constraints are too strong for multiple fields
-			return typesChanged;
-		}
+//		if(y.taggedWith(XCSG.InstanceVariable) || y.taggedWith(XCSG.ClassVariable)){
+//			// the remaining constraints are too strong for multiple fields
+//			return typesChanged;
+//		}
 
 		// qy adapt qf <: qx
 		// = qx :> qy adapt qf
@@ -128,16 +129,18 @@ public class FieldAssignmentChecker {
 			typesChanged = true;
 		}
 		
-		if(BasicAssignmentChecker.handleAssignment(sf, x)){
-			typesChanged = true;
-		}
+		// TODO: should we assert constraints on the static assignment?
+		// looks like no...
+//		if(BasicAssignmentChecker.handleAssignment(sf, x)){
+//			typesChanged = true;
+//		}
 
 		return typesChanged;
 	}
 	
 	/**
 	 * Solves and satisfies constraints for Type Rule 7, - TSREAD
-	 * Let, x = sf
+	 * Let, x = sf (in m)
 	 * 
 	 * @param x The reference being written to
 	 * @param sf The static field being read from
@@ -153,9 +156,11 @@ public class FieldAssignmentChecker {
 			typesChanged = true;
 		}
 		
-		if(BasicAssignmentChecker.handleAssignment(x, sf)){
-			typesChanged = true;
-		}
+		// TODO: should we assert constraints on the static assignment?
+		// looks like no...
+//		if(BasicAssignmentChecker.handleAssignment(x, sf)){
+//			typesChanged = true;
+//		}
 		
 		return typesChanged;
 	}

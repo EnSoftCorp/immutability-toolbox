@@ -547,16 +547,18 @@ public class AnalysisUtilities {
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		} else if(ge.taggedWith(XCSG.ArrayComponents)){
 			qualifiers.add(ImmutabilityTypes.READONLY);
-//			qualifiers.add(ImmutabilityTypes.POLYREAD); // an array component is basically a local reference, TODO: what about array fields?
+			// an array component is basically a local reference, TODO: what about array fields?
+			qualifiers.add(ImmutabilityTypes.POLYREAD); // TODO: added polyread, but, what does it mean for a local reference to be polyread? ~Ben
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		} else if(ge.taggedWith(XCSG.CaughtValue)){
 			// caught exceptions could be polyread since they could come from multiple call stacks
 			qualifiers.add(ImmutabilityTypes.READONLY);
 			qualifiers.add(ImmutabilityTypes.POLYREAD); 
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
-		}  else if(ge.taggedWith(XCSG.ElementFromCollection)){
+		}  else if(ge.taggedWith(XCSG.ElementFromCollection)){			
 			// TODO: should probably treat these like array components (mutations to these mutate the collection)
 			qualifiers.add(ImmutabilityTypes.READONLY);
+			qualifiers.add(ImmutabilityTypes.POLYREAD); // TODO: added polyread, but, what does it mean for a local reference to be polyread? ~Ben
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		} else if(ge.taggedWith(XCSG.ParameterPass)){
 			// Section 2.4 of Reference 1
@@ -564,6 +566,7 @@ public class AnalysisUtilities {
 			// set of qualifiers, i.e. S(x) = {readonly, polyread, mutable}"
 			// But, what does it mean for a local reference to be polyread? ~Ben
 			qualifiers.add(ImmutabilityTypes.READONLY);
+			qualifiers.add(ImmutabilityTypes.POLYREAD); // TODO: added polyread, but, what does it mean for a local reference to be polyread? ~Ben
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		} else if(ge.taggedWith(XCSG.Assignment)){
 			if(!ge.taggedWith(XCSG.InstanceVariableAssignment) && !ge.taggedWith(JimpleStopGap.CLASS_VARIABLE_ASSIGNMENT)){
@@ -571,8 +574,8 @@ public class AnalysisUtilities {
 				// Section 2.4 of Reference 1
 				// "All other references are initialized to the maximal
 				// set of qualifiers, i.e. S(x) = {readonly, polyread, mutable}"
-				// But, what does it mean for a local reference to be polyread? ~Ben
 				qualifiers.add(ImmutabilityTypes.READONLY);
+				qualifiers.add(ImmutabilityTypes.POLYREAD); // TODO: added polyread, but, what does it mean for a local reference to be polyread? ~Ben
 				qualifiers.add(ImmutabilityTypes.MUTABLE);
 			}
 		}

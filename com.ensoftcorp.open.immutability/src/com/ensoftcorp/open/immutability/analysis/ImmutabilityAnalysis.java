@@ -89,6 +89,7 @@ public class ImmutabilityAnalysis {
 	 * @return Returns the time in milliseconds taken to complete the analysis
 	 */
 	public static boolean run(IProgressMonitor monitor){
+		Log.info("RUNNING...");
 		if(ImmutabilityPreferences.isGeneralLoggingEnabled()) Log.info("Immutability analysis started");
 		long start = System.nanoTime();
 		boolean isSane = runAnalysis();
