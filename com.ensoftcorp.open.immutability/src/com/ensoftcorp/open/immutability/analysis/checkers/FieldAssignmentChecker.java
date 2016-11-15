@@ -87,7 +87,7 @@ public class FieldAssignmentChecker {
 	 */
 	public static boolean handleStaticFieldWrite(Node sf, Node x, Node m) {
 		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()){
-			Log.info("TSWRITE (sf=x, sf=" + sf.getAttr(XCSG.name) + ", x=" + x.getAttr(XCSG.name) + ")");
+			Log.info("TSWRITE (sf=x in m, sf=" + sf.getAttr(XCSG.name) + ", x=" + x.getAttr(XCSG.name) + ", m=" + m.getAttr(XCSG.name) + ")");
 		}
 		// a write to a static field means the containing method cannot be pure (readonly)
 		return removeTypes(m, ImmutabilityTypes.READONLY);
