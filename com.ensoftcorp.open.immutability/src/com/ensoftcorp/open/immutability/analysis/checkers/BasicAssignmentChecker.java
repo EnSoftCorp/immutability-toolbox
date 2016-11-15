@@ -2,7 +2,7 @@ package com.ensoftcorp.open.immutability.analysis.checkers;
 
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
-import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanYConstraintSolver;
+import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYConstraintSolver;
 import com.ensoftcorp.open.immutability.log.Log;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
 
@@ -29,7 +29,7 @@ public class BasicAssignmentChecker {
 		
 		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()) Log.info("TASSIGN (x=y, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")");
 
-		return XGreaterThanYConstraintSolver.satisify(x, y);
+		return XGreaterThanEqualYConstraintSolver.satisify(x, y);
 	}
 	
 }

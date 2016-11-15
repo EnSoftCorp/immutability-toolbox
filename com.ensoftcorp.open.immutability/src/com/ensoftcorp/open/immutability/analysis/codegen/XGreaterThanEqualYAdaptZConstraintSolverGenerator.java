@@ -6,7 +6,7 @@ import java.util.Set;
 
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
 
-public class XAdaptYGreaterThanZConstraintSolverGenerator {
+public class XGreaterThanEqualYAdaptZConstraintSolverGenerator {
 
 	// all possible sets, 3 choose 3, 3 choose 2, and 3 choose 1
 	private static final EnumSet<ImmutabilityTypes> SET1 = EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY);
@@ -68,7 +68,7 @@ public class XAdaptYGreaterThanZConstraintSolverGenerator {
 		System.out.println("throw new IllegalArgumentException(\"Unhandled case: xTypes=\" + xTypes.toString() + \", yTypes=\" + yTypes.toString() + \", zTypes=\" + zTypes.toString());");
 		System.out.println("}");
 	}
-	
+
 	private static short getCase(EnumSet<ImmutabilityTypes> xTypes, EnumSet<ImmutabilityTypes> yTypes, EnumSet<ImmutabilityTypes> zTypes) {
 		short input = 0;
 		
@@ -115,15 +115,15 @@ public class XAdaptYGreaterThanZConstraintSolverGenerator {
 			satisfied:
 			for(ImmutabilityTypes yType : yTypes){
 				for(ImmutabilityTypes zType : zTypes){
-					ImmutabilityTypes xAdaptedY = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, yType);
-					if(xAdaptedY.compareTo(zType) >= 0){
+					ImmutabilityTypes yAdaptedZ = ImmutabilityTypes.getAdaptedFieldViewpoint(yType, zType);
+					if(xType.compareTo(yAdaptedZ) >= 0){
 						isSatisfied = true;
 						break satisfied;
 					}
 				}
-				if(!isSatisfied){
-					xTypesToRemove.add(xType);
-				}
+			}
+			if(!isSatisfied){
+				xTypesToRemove.add(xType);
 			}
 		}
 		
@@ -134,18 +134,18 @@ public class XAdaptYGreaterThanZConstraintSolverGenerator {
 			satisfied:
 			for(ImmutabilityTypes xType : xTypes){
 				for(ImmutabilityTypes zType : zTypes){
-					ImmutabilityTypes xAdaptedY = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, yType);
-					if(xAdaptedY.compareTo(zType) >= 0){
+					ImmutabilityTypes yAdaptedZ = ImmutabilityTypes.getAdaptedFieldViewpoint(yType, zType);
+					if(xType.compareTo(yAdaptedZ) >= 0){
 						isSatisfied = true;
 						break satisfied;
 					}
 				}
-				if(!isSatisfied){
-					yTypesToRemove.add(yType);
-				}
+			}
+			if(!isSatisfied){
+				yTypesToRemove.add(yType);
 			}
 		}
-
+		
 		// process s(z)
 		Set<ImmutabilityTypes> zTypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 		for(ImmutabilityTypes zType : zTypes){
@@ -153,15 +153,15 @@ public class XAdaptYGreaterThanZConstraintSolverGenerator {
 			satisfied:
 			for(ImmutabilityTypes xType : xTypes){
 				for(ImmutabilityTypes yType : yTypes){
-					ImmutabilityTypes xAdaptedY = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, yType);
-					if(xAdaptedY.compareTo(zType) >= 0){
+					ImmutabilityTypes yAdaptedZ = ImmutabilityTypes.getAdaptedFieldViewpoint(yType, zType);
+					if(xType.compareTo(yAdaptedZ) >= 0){
 						isSatisfied = true;
 						break satisfied;
 					}
 				}
-				if(!isSatisfied){
-					zTypesToRemove.add(zType);
-				}
+			}
+			if(!isSatisfied){
+				zTypesToRemove.add(zType);
 			}
 		}
 		

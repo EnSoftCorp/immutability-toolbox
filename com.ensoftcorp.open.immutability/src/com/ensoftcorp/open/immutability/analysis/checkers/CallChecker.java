@@ -16,9 +16,9 @@ import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.analysis.StandardQueries;
 import com.ensoftcorp.open.immutability.analysis.AnalysisUtilities;
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
-import com.ensoftcorp.open.immutability.analysis.solvers.XAdaptYGreaterThanZConstraintSolver;
-import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanYAdaptZConstraintSolver;
-import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanYConstraintSolver;
+import com.ensoftcorp.open.immutability.analysis.solvers.XAdaptYGreaterThanEqualZConstraintSolver;
+import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYAdaptZConstraintSolver;
+import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYConstraintSolver;
 import com.ensoftcorp.open.immutability.log.Log;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
 import com.ensoftcorp.open.jimple.commons.wishful.JimpleStopGap;
@@ -81,7 +81,7 @@ public class CallChecker {
 		
 		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Constraint qy <: qx adapt qthis");
 		
-		if(XAdaptYGreaterThanZConstraintSolver.satisify(x, identity, y)){
+		if(XAdaptYGreaterThanEqualZConstraintSolver.satisify(x, identity, y)){
 			typesChanged = true;
 		}
 		
@@ -105,7 +105,7 @@ public class CallChecker {
 			// constraint: overriddenReturn <: return
 			if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Constraint overriddenReturn <: return");
 			
-			if(XGreaterThanYConstraintSolver.satisify(ret, overriddenRet)){
+			if(XGreaterThanEqualYConstraintSolver.satisify(ret, overriddenRet)){
 				typesChanged = true;
 			}
 			
@@ -115,7 +115,7 @@ public class CallChecker {
 			// constraint: this <: overriddenThis 
 			if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Constraint this <: overriddenThis");
 			
-			if(XGreaterThanYConstraintSolver.satisify(overriddenMethodIdentity, identity)){
+			if(XGreaterThanEqualYConstraintSolver.satisify(overriddenMethodIdentity, identity)){
 				typesChanged = true;
 			}
 
@@ -136,7 +136,7 @@ public class CallChecker {
 						Node p = Common.toQ(parameters).selectNode(XCSG.parameterIndex, i).eval().nodes().getFirst();
 						Node pOverridden = Common.toQ(overriddenMethodParameters).selectNode(XCSG.parameterIndex, i).eval().nodes().getFirst();
 
-						if(XGreaterThanYConstraintSolver.satisify(pOverridden, p)){
+						if(XGreaterThanEqualYConstraintSolver.satisify(pOverridden, p)){
 							typesChanged = true;
 						}
 					}
@@ -230,7 +230,7 @@ public class CallChecker {
 
 		// qm' <: qx adapt qm
 		// = qx adapt qm :> qm'
-		return XAdaptYGreaterThanZConstraintSolver.satisify(x, method, containingMethod);
+		return XAdaptYGreaterThanEqualZConstraintSolver.satisify(x, method, containingMethod);
 	}
 	
 	/**
@@ -251,7 +251,7 @@ public class CallChecker {
 			
 			// qz <: qx adapt qp
 			// = qx adapt qp :> qz
-			if(XAdaptYGreaterThanZConstraintSolver.satisify(x, p, z)){
+			if(XAdaptYGreaterThanEqualZConstraintSolver.satisify(x, p, z)){
 				typesChanged = true;
 			}
 		}
@@ -271,7 +271,7 @@ public class CallChecker {
 
 		// qx adapt qret <: qx
 		// = qx :> qx adapt qret
-		return XGreaterThanYAdaptZConstraintSolver.satisify(x, x, ret);
+		return XGreaterThanEqualYAdaptZConstraintSolver.satisify(x, x, ret);
 	}
 	
 }

@@ -7,12 +7,10 @@ import java.util.Set;
 
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
-import com.ensoftcorp.open.commons.analysis.StandardQueries;
-import com.ensoftcorp.open.immutability.analysis.AnalysisUtilities;
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
-import com.ensoftcorp.open.immutability.analysis.solvers.XAdaptYGreaterThanZConstraintSolver;
-import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanYAdaptZConstraintSolver;
-import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanYConstraintSolver;
+import com.ensoftcorp.open.immutability.analysis.solvers.XAdaptYGreaterThanEqualZConstraintSolver;
+import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYAdaptZConstraintSolver;
+import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYConstraintSolver;
 import com.ensoftcorp.open.immutability.log.Log;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
 
@@ -35,12 +33,14 @@ public class FieldAssignmentChecker {
 		
 		// if x is a reference it must be mutable
 		// if x is a field it must be polyread
+		// TWRITE precondition
 		if(removeTypes(x, ImmutabilityTypes.READONLY)){
 			typesChanged = true;
 		}
 		
 		// if y is only mutable then f cannot be readonly
-		// ISSUE 2
+		// ISSUE 2 - not documented in the publications and accounts for 52 
+		// of reiminfer 0.1.2 and 0.1.3 failures on immutability benchmark
 		Set<ImmutabilityTypes> yTypes = getTypes(y);
 		if((yTypes.contains(ImmutabilityTypes.MUTABLE)) && yTypes.size()==1){
 			if(removeTypes(f, ImmutabilityTypes.READONLY)){
@@ -50,7 +50,7 @@ public class FieldAssignmentChecker {
 		
 		// qy <: qx adapt qf
 		// = qx adapt qf :> qy
-		if(XAdaptYGreaterThanZConstraintSolver.satisify(x, f, y)){
+		if(XAdaptYGreaterThanEqualZConstraintSolver.satisify(x, f, y)){
 			typesChanged = true;
 		}
 		
@@ -67,47 +67,12 @@ public class FieldAssignmentChecker {
 	 * @return Returns true if the graph element's ImmutabilityTypes have changed
 	 */
 	public static boolean handleFieldRead(Node x, Node y, Node f) {
-		
-		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()) Log.info("TREAD (x=y.f, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ")");
-		
-		boolean typesChanged = false;
-//		Set<ImmutabilityTypes> xTypes = getTypes(x);
-//		
-//		boolean xIsPolyreadField = x.taggedWith(XCSG.Field) && (xTypes.contains(ImmutabilityTypes.POLYREAD) && xTypes.size() == 1);
-//		boolean xIsMutableReference = !x.taggedWith(XCSG.Field) && (xTypes.contains(ImmutabilityTypes.MUTABLE) && xTypes.size() == 1);
-//		 
-//		if(xIsPolyreadField || xIsMutableReference){
-//			// if x is a polyread field then the read field (f) and its container's must be polyread
-//			// if x is a mutable reference then f and its container fields must be polyread
-//			// for example x = z.y.f, if x has been mutated then so has f, y, and z
-//			if(removeTypes(f, ImmutabilityTypes.READONLY)){
-//				typesChanged = true;
-//			}
-//			// TODO: should we consider containers?
-////			for(Node container : AnalysisUtilities.getAccessedContainers(y)){
-////				if(removeTypes(container, ImmutabilityTypes.READONLY)){
-////					typesChanged = true;
-////				}
-////				if(container.taggedWith(XCSG.ClassVariable)){
-////					if(removeTypes(StandardQueries.getContainingMethod(x), ImmutabilityTypes.READONLY)){
-////						typesChanged = true;
-////					}
-////				}
-////			}
-//		}
-	
-//		if(y.taggedWith(XCSG.InstanceVariable) || y.taggedWith(XCSG.ClassVariable)){
-//			// the remaining constraints are too strong for multiple fields
-//			return typesChanged;
-//		}
-
+		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()){
+			Log.info("TREAD (x=y.f, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ")");
+		}
 		// qy adapt qf <: qx
 		// = qx :> qy adapt qf
-		if(XGreaterThanYAdaptZConstraintSolver.satisify(x, y, f)){
-			typesChanged = true;
-		}
-		
-		return typesChanged;
+		return XGreaterThanEqualYAdaptZConstraintSolver.satisify(x, y, f);
 	}
 	
 	/**
@@ -121,21 +86,11 @@ public class FieldAssignmentChecker {
 	 * @return
 	 */
 	public static boolean handleStaticFieldWrite(Node sf, Node x, Node m) {
-		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()) Log.info("TSWRITE (sf=x, sf=" + sf.getAttr(XCSG.name) + ", x=" + x.getAttr(XCSG.name) + ")");
-		
-		boolean typesChanged = false;
-		
-		if(removeTypes(m, ImmutabilityTypes.READONLY)){
-			typesChanged = true;
+		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()){
+			Log.info("TSWRITE (sf=x, sf=" + sf.getAttr(XCSG.name) + ", x=" + x.getAttr(XCSG.name) + ")");
 		}
-		
-		// TODO: should we assert constraints on the static assignment?
-		// looks like no...
-//		if(BasicAssignmentChecker.handleAssignment(sf, x)){
-//			typesChanged = true;
-//		}
-
-		return typesChanged;
+		// a write to a static field means the containing method cannot be pure (readonly)
+		return removeTypes(m, ImmutabilityTypes.READONLY);
 	}
 	
 	/**
@@ -148,21 +103,12 @@ public class FieldAssignmentChecker {
 	 * @return
 	 */
 	public static boolean handleStaticFieldRead(Node x, Node sf, Node m) {
-		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()) Log.info("TSREAD (x=sf, x=" + x.getAttr(XCSG.name) + ", sf=" + sf.getAttr(XCSG.name) + ")");
-		
-		boolean typesChanged = false;
-		
-		if(XGreaterThanYConstraintSolver.satisify(x, m)){
-			typesChanged = true;
+		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()){
+			Log.info("TSREAD (x=sf in m, x=" + x.getAttr(XCSG.name) + ", sf=" + sf.getAttr(XCSG.name) + ", m=" + m.getAttr(XCSG.name) + ")");
 		}
-		
-		// TODO: should we assert constraints on the static assignment?
-		// looks like no...
-//		if(BasicAssignmentChecker.handleAssignment(x, sf)){
-//			typesChanged = true;
-//		}
-		
-		return typesChanged;
+		// m <: x
+		// = x :> m
+		return XGreaterThanEqualYConstraintSolver.satisify(x, m);
 	}
 	
 }

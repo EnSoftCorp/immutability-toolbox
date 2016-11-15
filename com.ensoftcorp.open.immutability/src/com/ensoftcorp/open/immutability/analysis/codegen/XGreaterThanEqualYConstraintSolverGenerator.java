@@ -6,7 +6,7 @@ import java.util.Set;
 
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
 
-public class XGreaterThanYConstraintSolverGenerator {
+public class XGreaterThanEqualYConstraintSolverGenerator {
 
 	// all possible sets, 3 choose 3, 3 choose 2, and 3 choose 1
 	private static final EnumSet<ImmutabilityTypes> SET1 = EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY);
