@@ -74,6 +74,7 @@
 	</extension>
 	
 	<!-- create an advanced immutability analysis submenu -->
+	<!-- note: disabled advanced menu, as it causes too much confusion in the UI
 	<extension
 	      point="org.eclipse.ui.menus">
 	   <menuContribution
@@ -91,6 +92,7 @@
 	               label="Export Summary"
 	               id="com.ensoftcorp.open.immutability.menus.advanced.exportSummaryCommandMenuItem">
 	         </command>
+	         -->
 	         <!-- todo implement
 	         <command
 	               commandId="com.ensoftcorp.open.immutability.menus.advanced.extractMaximalTypesCommand"
@@ -102,10 +104,11 @@
 	               label="Resume Fixed Point Analysis"
 	               id="com.ensoftcorp.open.immutability.menus.advanced.resumeFixedPointAnalysisCommandMenuItem">
 	         </command>
-	         -->
+	         --><!--
 	      </menu>
 	   </menuContribution>
 	</extension>
+	-->
    
    <!-- create an initializer extension to initialize preferences -->
    <extension
