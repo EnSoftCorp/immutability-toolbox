@@ -39,8 +39,9 @@ public class FieldAssignmentChecker {
 		}
 		
 		// if y is only mutable then f cannot be readonly
-		// ISSUE 2 - not documented in the publications and accounts for 52 
+		// ISSUE 2 - not documented in the publications and accounts for 40 
 		// of reiminfer 0.1.2 and 0.1.3 failures on immutability benchmark
+		// but introduces 2 bugs in immutability benchmark so this isn't perfect
 		Set<ImmutabilityTypes> yTypes = getTypes(y);
 		if((yTypes.contains(ImmutabilityTypes.MUTABLE)) && yTypes.size()==1){
 			if(removeTypes(f, ImmutabilityTypes.READONLY)){
