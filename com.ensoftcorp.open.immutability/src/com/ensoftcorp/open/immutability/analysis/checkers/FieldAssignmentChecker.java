@@ -38,16 +38,21 @@ public class FieldAssignmentChecker {
 			typesChanged = true;
 		}
 		
-		// if y is only mutable then f cannot be readonly
-		// ISSUE 2 - not documented in the publications and accounts for 40 
-		// of reiminfer 0.1.2 and 0.1.3 failures on immutability benchmark
-		// but introduces 2 bugs in immutability benchmark so this isn't perfect
-		Set<ImmutabilityTypes> yTypes = getTypes(y);
-		if((yTypes.contains(ImmutabilityTypes.MUTABLE)) && yTypes.size()==1){
-			if(removeTypes(f, ImmutabilityTypes.READONLY)){
-				typesChanged = true;
-			}
-		}
+//		// if y is only mutable then f cannot be readonly
+//		// ISSUE 2 - not documented in the publications and accounts for 40 
+//		// of reiminfer 0.1.2 and 0.1.3 failures on immutability benchmark
+//		// but introduces 2 bugs in immutability benchmark so this isn't perfect
+//		Set<ImmutabilityTypes> yTypes = getTypes(y);
+//		if((yTypes.contains(ImmutabilityTypes.MUTABLE)) && yTypes.size()==1){
+//			if(removeTypes(f, ImmutabilityTypes.READONLY)){
+//				typesChanged = true;
+//			}
+//		}
+		
+//		// y was assigned to f
+//		if(BasicAssignmentChecker.handleAssignment(f, y)){
+//			typesChanged = true;
+//		}
 		
 		// qy <: qx adapt qf
 		// = qx adapt qf :> qy
@@ -71,9 +76,21 @@ public class FieldAssignmentChecker {
 		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()){
 			Log.info("TREAD (x=y.f, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ")");
 		}
+		
+		boolean typesChanged = false;
+		
+//		// f was assigned to x
+//		if(BasicAssignmentChecker.handleAssignment(f, x)){
+//			typesChanged = true;
+//		}
+		
 		// qy adapt qf <: qx
 		// = qx :> qy adapt qf
-		return XGreaterThanEqualYAdaptZConstraintSolver.satisify(x, y, f);
+		if(XGreaterThanEqualYAdaptZConstraintSolver.satisify(x, y, f)){
+			typesChanged = true;
+		}
+		
+		return typesChanged;
 	}
 	
 	/**
