@@ -194,7 +194,7 @@ public class CallChecker {
 						typesChanged = true;
 					}
 					if(container.taggedWith(XCSG.ClassVariable)){
-						if(removeTypes(StandardQueries.getContainingMethod(x), ImmutabilityTypes.READONLY)){
+						if(removeTypes(StandardQueries.getContainingFunction(x), ImmutabilityTypes.READONLY)){
 							typesChanged = true;
 						}
 					}
@@ -216,7 +216,7 @@ public class CallChecker {
 		
 		/////////////////////// start qm' <: qx adapt qm /////////////////////////
 		// m' is the method that contains the callsite m()
-		Node containingMethod = StandardQueries.getContainingMethod(callsite);
+		Node containingMethod = StandardQueries.getContainingFunction(callsite);
 		if(processStaticDispatchConstraints(x, method, containingMethod)){
 			typesChanged = true;
 		}

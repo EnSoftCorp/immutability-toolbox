@@ -350,7 +350,7 @@ public class ImmutabilityAnalysis {
 									typesChanged = true;
 								}
 								if(container.taggedWith(XCSG.ClassVariable)){
-									if(removeTypes(StandardQueries.getContainingMethod(instanceVariableAccessed), ImmutabilityTypes.READONLY)){
+									if(removeTypes(StandardQueries.getContainingFunction(instanceVariableAccessed), ImmutabilityTypes.READONLY)){
 										typesChanged = true;
 									}
 								}
@@ -397,7 +397,7 @@ public class ImmutabilityAnalysis {
 			if(from.taggedWith(JimpleStopGap.CLASS_VARIABLE_VALUE)){
 				AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(to);
 				for(Node x : xReferences){
-					Node m = StandardQueries.getContainingMethod(to);
+					Node m = StandardQueries.getContainingFunction(to);
 					AtlasSet<Node> sfReferences = AnalysisUtilities.parseReferences(from);
 					for(Node sf : sfReferences){
 						if(FieldAssignmentChecker.handleStaticFieldRead(x, sf, m)){
@@ -414,7 +414,7 @@ public class ImmutabilityAnalysis {
 			if(to.taggedWith(JimpleStopGap.CLASS_VARIABLE_ASSIGNMENT)){
 				AtlasSet<Node> sfReferences = AnalysisUtilities.parseReferences(to);
 				for(Node sf : sfReferences){
-					Node m = StandardQueries.getContainingMethod(to);
+					Node m = StandardQueries.getContainingFunction(to);
 					AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(from);
 					for(Node x : xReferences){
 						if(FieldAssignmentChecker.handleStaticFieldWrite(sf, x, m)){
@@ -431,7 +431,7 @@ public class ImmutabilityAnalysis {
 			if(from.taggedWith(XCSG.DynamicDispatchCallSite)){
 				// Type Rule 5 - TCALL
 				// let, x = y.m(z)
-				Node containingMethod = StandardQueries.getContainingMethod(to);
+				Node containingMethod = StandardQueries.getContainingFunction(to);
 				AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(to);
 				for(Node x : xReferences){
 					Node callsite = from;
