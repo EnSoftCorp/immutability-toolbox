@@ -269,6 +269,14 @@ public class CallChecker {
 		
 		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Constraint qx adapt qret <: qx");
 
+//		// TODO: how should this be handled?
+//		if(x.taggedWith(AnalysisUtilities.DUMMY_ASSIGNMENT_NODE)){
+//			return false;
+//		}
+//		if(ret.taggedWith(AnalysisUtilities.DUMMY_RETURN_NODE)){
+//			return false;
+//		}
+		
 		// qx adapt qret <: qx
 		// = qx :> qx adapt qret
 		return XGreaterThanEqualYAdaptZConstraintSolver.satisify(x, x, ret);

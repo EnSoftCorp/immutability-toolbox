@@ -315,7 +315,7 @@ public class ImmutabilityAnalysis {
 			AtlasSet<Node> toReferences = AnalysisUtilities.parseReferences(to);
 			for(Node toReference : toReferences){
 				if(toReference.taggedWith(XCSG.ArrayComponents)){
-					// an assignment to an array mutates the array
+					// an assignment to an array component mutates the array
 					GraphElement arrayComponents = toReference;
 					Q arrayIdentityForEdges = Common.universe().edgesTaggedWithAny(XCSG.ArrayIdentityFor);
 					Q arrayWrite = interproceduralDataFlowEdges.predecessors(Common.toQ(arrayComponents));
