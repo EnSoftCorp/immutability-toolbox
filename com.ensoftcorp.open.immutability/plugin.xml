@@ -124,7 +124,8 @@
       <page
             class="com.ensoftcorp.open.immutability.ui.ImmutabilityPreferencesPage"
             id="com.ensoftcorp.open.immutability.ui.preferences"
-            name="Immutability Analysis">
+            name="Immutability Analysis"
+            category="com.ensoftcorp.open.commons.ui.toolbox">
       </page>
    </extension>
 
