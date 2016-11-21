@@ -2,23 +2,7 @@
 <?eclipse version="3.4"?>
 <plugin>
    
-   <!-- define command some handler extensions -->
-   <extension
-	      point="org.eclipse.ui.handlers">
-	   <handler
-	         commandId="com.ensoftcorp.open.immutability.menus.runImmutabilityAnalysisCommand"
-	         class="com.ensoftcorp.open.immutability.handlers.RunImmutabilityAnalysisHandler">
-	   </handler>
-	</extension>
-	
-	<extension
-	      point="org.eclipse.ui.handlers">
-	   <handler
-	         commandId="com.ensoftcorp.open.immutability.menus.editImmutabilityPreferencesCommand"
-	         class="com.ensoftcorp.open.immutability.handlers.ImmutabilityPreferencesHandler">
-	   </handler>
-	</extension>
-	
+   <!-- define command some handler extensions -->	
 	<extension
 	      point="org.eclipse.ui.handlers">
 	   <handler

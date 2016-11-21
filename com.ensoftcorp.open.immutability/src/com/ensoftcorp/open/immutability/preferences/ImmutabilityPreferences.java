@@ -11,6 +11,40 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 	private static boolean initialized = false;
 	
 	/**
+	 * Enable/disable immutability analysis
+	 */
+	public static final String RUN_IMMUTABILITY_ANALYSIS = "RUN_IMMUTABILITY_ANALYSIS";
+	public static final Boolean RUN_IMMUTABILITY_ANALYSIS_DEFAULT = false;
+	private static boolean runImmutabilityAnalysisValue = RUN_IMMUTABILITY_ANALYSIS_DEFAULT;
+	
+	public static boolean isImmutabilityAnalysisEnabled(){
+		if(!initialized){
+			loadPreferences();
+		}
+		return runImmutabilityAnalysisValue;
+	}
+	
+	public static final String IMMUTABILITY_ANALYSIS_MODE = "IMMUTABILITY_ANALYSIS_MODE";
+	public static final String IMMUTABILITY_ANALYSIS_INFERENCE_MODE = "IMMUTABILITY_ANALYSIS_INFERENCE_MODE";
+	public static final String IMMUTABILITY_ANALYSIS_POINTSTO_MODE = "IMMUTABILITY_ANALYSIS_INFERENCE_MODE";
+	public static final String IMMUTABILITY_ANALYSIS_MODE_DEFAULT = IMMUTABILITY_ANALYSIS_INFERENCE_MODE;
+	private static String analysisModeValue = IMMUTABILITY_ANALYSIS_MODE_DEFAULT;
+	
+	public static boolean isPointsToAnalysisModeEnabled(){
+		if(!initialized){
+			loadPreferences();
+		}
+		return analysisModeValue.equals(IMMUTABILITY_ANALYSIS_INFERENCE_MODE);
+	}
+	
+	public static boolean isInferenceAnalysisModeEnabled(){
+		if(!initialized){
+			loadPreferences();
+		}
+		return analysisModeValue.equals(IMMUTABILITY_ANALYSIS_POINTSTO_MODE);
+	}
+	
+	/**
 	 * Enable/disable partial program analysis (summaries)
 	 * If enabled the type sets are converted to tags and the resulting index can be used to resume analysis later
 	 * If disabled the maximal type is extracted from the type set and the qualifier sets are removed
@@ -100,6 +134,8 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 	@Override
 	public void initializeDefaultPreferences() {
 		IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
+		preferences.setDefault(RUN_IMMUTABILITY_ANALYSIS, RUN_IMMUTABILITY_ANALYSIS_DEFAULT);
+		preferences.setDefault(IMMUTABILITY_ANALYSIS_MODE, IMMUTABILITY_ANALYSIS_INFERENCE_MODE);
 		preferences.setDefault(GENERATE_SUMMARIES, GENERATE_SUMMARIES_DEFAULT);
 		preferences.setDefault(LOAD_SUMMARIES, LOAD_SUMMARIES_DEFAULT);
 		preferences.setDefault(RUN_SANITY_CHECKS, RUN_SANITY_CHECKS_DEFAULT);
@@ -114,9 +150,11 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 	public static void loadPreferences() {
 		try {
 			IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
-			runSanityChecksValue = preferences.getBoolean(RUN_SANITY_CHECKS);
+			runImmutabilityAnalysisValue = preferences.getBoolean(RUN_IMMUTABILITY_ANALYSIS);
+			analysisModeValue = preferences.getString(IMMUTABILITY_ANALYSIS_MODE);
 			generateSummariesValue = preferences.getBoolean(GENERATE_SUMMARIES);
 			loadSummariesValue = preferences.getBoolean(LOAD_SUMMARIES);
+			runSanityChecksValue = preferences.getBoolean(RUN_SANITY_CHECKS);
 			generalLoggingValue = preferences.getBoolean(GENERAL_LOGGING);
 			inferenceRuleLoggingValue = preferences.getBoolean(INFERENCE_RULE_LOGGING);
 			debugLoggingValue = preferences.getBoolean(DEBUG_LOGGING);

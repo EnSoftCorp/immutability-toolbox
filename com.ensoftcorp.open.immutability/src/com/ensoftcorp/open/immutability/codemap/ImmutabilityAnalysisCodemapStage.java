@@ -10,7 +10,7 @@ import com.ensoftcorp.open.pointsto.codemap.PointsToCodemapStage;
 
 public class ImmutabilityAnalysisCodemapStage extends PrioritizedCodemapStage {
 
-	public static final String IDENTIFIER = "IMMUTABILITY_ANALYSIS";
+	public static final String IDENTIFIER = "com.ensoftcorp.open.immutability";
 	
 	@Override
 	public String getDisplayName() {
@@ -29,8 +29,9 @@ public class ImmutabilityAnalysisCodemapStage extends PrioritizedCodemapStage {
 
 	@Override
 	public void performIndexing(IProgressMonitor monitor) {
-		ImmutabilityAnalysis.run(monitor);
-		if(ImmutabilityPreferences.isGeneralLoggingEnabled()) Log.info("Job completed.");
+		if(ImmutabilityPreferences.isImmutabilityAnalysisEnabled()){
+			ImmutabilityAnalysis.runAnalysis(monitor);
+		}
 	}
 
 }
