@@ -52,6 +52,7 @@
 	</extension>
    
    <!-- extend the Atlas Toolbox menu with a new submenu for immutability analysis -->
+   <!--
 	<extension
 	      point="org.eclipse.ui.menus">
 	   <menuContribution
@@ -72,6 +73,7 @@
 	      </menu>
 	   </menuContribution>
 	</extension>
+	-->
 	
 	<!-- create an advanced immutability analysis submenu -->
 	<!-- note: disabled advanced menu, as it causes too much confusion in the UI
@@ -125,8 +127,13 @@
             class="com.ensoftcorp.open.immutability.ui.ImmutabilityPreferencesPage"
             id="com.ensoftcorp.open.immutability.ui.preferences"
             name="Immutability Analysis"
-            category="com.ensoftcorp.open.commons.ui.toolbox">
+            category="com.ensoftcorp.open.commons.ui.toolbox.preferences">
       </page>
+   </extension>
+   
+   <!-- adds the prioritized codemap stage for immutability analysis -->
+   <extension point="com.ensoftcorp.open.commons.codemap">
+      <codemap class="com.ensoftcorp.open.immutability.codemap.ImmutabilityAnalysisCodemapStage"></codemap>
    </extension>
 
 </plugin>
