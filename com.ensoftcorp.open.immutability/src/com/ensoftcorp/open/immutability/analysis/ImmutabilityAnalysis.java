@@ -1,11 +1,18 @@
 package com.ensoftcorp.open.immutability.analysis;
 
+import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.getTypes;
+
 import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Set;
 
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
 
 import com.ensoftcorp.atlas.core.db.graph.GraphElement;
 import com.ensoftcorp.atlas.core.db.graph.Node;
+import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
@@ -57,7 +64,7 @@ public abstract class ImmutabilityAnalysis {
 	/**
 	 * Helper for formatting decimal strings
 	 */
-	public static final DecimalFormat FORMAT = new DecimalFormat("#.##"); 
+	private static final DecimalFormat FORMAT = new DecimalFormat("#.##"); 
 
 	/**
 	 * Runs the implementation of immutability analysis
@@ -106,7 +113,7 @@ public abstract class ImmutabilityAnalysis {
 	/**
 	 * Tags pure methods with "PURE"
 	 */
-	public void tagPureMethods(){
+	protected void tagPureMethods(){
 		AtlasSet<Node> methods = Common.universe().nodesTaggedWithAny(XCSG.Method).eval().nodes();
 		for(GraphElement method : methods){
 			if(isPureMethod(method)){

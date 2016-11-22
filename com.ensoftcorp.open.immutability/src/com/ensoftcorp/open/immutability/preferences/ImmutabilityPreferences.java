@@ -26,7 +26,7 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 	
 	public static final String IMMUTABILITY_ANALYSIS_MODE = "IMMUTABILITY_ANALYSIS_MODE";
 	public static final String IMMUTABILITY_ANALYSIS_INFERENCE_MODE = "IMMUTABILITY_ANALYSIS_INFERENCE_MODE";
-	public static final String IMMUTABILITY_ANALYSIS_POINTSTO_MODE = "IMMUTABILITY_ANALYSIS_INFERENCE_MODE";
+	public static final String IMMUTABILITY_ANALYSIS_POINTSTO_MODE = "IMMUTABILITY_ANALYSIS_POINTSTO_MODE";
 	public static final String IMMUTABILITY_ANALYSIS_MODE_DEFAULT = IMMUTABILITY_ANALYSIS_INFERENCE_MODE;
 	private static String analysisModeValue = IMMUTABILITY_ANALYSIS_MODE_DEFAULT;
 	
@@ -34,14 +34,14 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 		if(!initialized){
 			loadPreferences();
 		}
-		return analysisModeValue.equals(IMMUTABILITY_ANALYSIS_INFERENCE_MODE);
+		return analysisModeValue.equals(IMMUTABILITY_ANALYSIS_POINTSTO_MODE);
 	}
 	
 	public static boolean isInferenceAnalysisModeEnabled(){
 		if(!initialized){
 			loadPreferences();
 		}
-		return analysisModeValue.equals(IMMUTABILITY_ANALYSIS_POINTSTO_MODE);
+		return analysisModeValue.equals(IMMUTABILITY_ANALYSIS_INFERENCE_MODE);
 	}
 	
 	/**

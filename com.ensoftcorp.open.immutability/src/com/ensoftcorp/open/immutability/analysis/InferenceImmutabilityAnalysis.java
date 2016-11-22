@@ -5,6 +5,7 @@ import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.remove
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Set;
@@ -38,6 +39,14 @@ import com.ensoftcorp.open.jimple.commons.wishful.JimpleStopGap;
 
 public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 
+	/**
+	 * Helper for formatting decimal strings
+	 */
+	private static final DecimalFormat FORMAT = new DecimalFormat("#.##"); 
+	
+	/**
+	 * Helper class to store a File object result
+	 */
 	private static class FileResult {
 		File file = null;
 	}
@@ -127,7 +136,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 			}
 			
 			long stopIteration = System.nanoTime();
-			if(ImmutabilityPreferences.isGeneralLoggingEnabled()) Log.info("Immutability analysis iteration: " + iteration + " completed in " + ImmutabilityAnalysis.FORMAT.format((stopIteration-startIteration)/1000.0/1000.0) + " ms");
+			if(ImmutabilityPreferences.isGeneralLoggingEnabled()) Log.info("Immutability analysis iteration: " + iteration + " completed in " + FORMAT.format((stopIteration-startIteration)/1000.0/1000.0) + " ms");
 			
 			// If every reference was in the worklist then theoretically each item
 			// should only ever be visited at most 3 times (because in the worst
@@ -493,17 +502,6 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 		return typesChanged;
 	}
 	
-	public ImmutabilityTypes getDefaultMaximalType(GraphElement ge) {
-		ImmutabilityTypes maximalType;
-		if(ge.taggedWith(XCSG.Instantiation) || ge.taggedWith(XCSG.ArrayInstantiation)){
-			maximalType = ImmutabilityTypes.MUTABLE;
-		} else {
-			// all other cases default to readonly as the maximal type
-			maximalType = ImmutabilityTypes.READONLY;
-		}
-		return maximalType;
-	}
-	
 	/**
 	 * Converts the immutability types to tags for partial program analysis
 	 */
@@ -529,20 +527,16 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 			}
 		}
 	}
-
-	private AtlasSet<Node> getUntrackedItems(AtlasSet<Node> attributedNodes) {
-		Q literals = Common.universe().nodesTaggedWithAll(XCSG.Literal);
-		Q parameters = Common.universe().nodesTaggedWithAny(XCSG.Parameter);
-		Q returnValues = Common.universe().nodesTaggedWithAny(XCSG.ReturnValue);
-		Q instanceVariables = Common.universe().nodesTaggedWithAny(XCSG.InstanceVariable);
-		Q thisNodes = Common.universe().nodesTaggedWithAny(XCSG.Identity);
-		Q classVariables = Common.universe().nodesTaggedWithAny(XCSG.ClassVariable);
-		// note local variables may also get tracked, but only if need be during the analysis
-		Q trackedItems = literals.union(parameters, returnValues, instanceVariables, thisNodes, classVariables);
-		Q untouchedTrackedItems = trackedItems.difference(trackedItems.nodesTaggedWithAny(READONLY, POLYREAD, MUTABLE), Common.toQ(attributedNodes));
-		AtlasSet<Node> itemsToTrack = new AtlasHashSet<Node>();
-		itemsToTrack.addAll(untouchedTrackedItems.eval().nodes());
-		return itemsToTrack;
+	
+	private ImmutabilityTypes getDefaultMaximalType(GraphElement ge) {
+		ImmutabilityTypes maximalType;
+		if(ge.taggedWith(XCSG.Instantiation) || ge.taggedWith(XCSG.ArrayInstantiation)){
+			maximalType = ImmutabilityTypes.MUTABLE;
+		} else {
+			// all other cases default to readonly as the maximal type
+			maximalType = ImmutabilityTypes.READONLY;
+		}
+		return maximalType;
 	}
 	
 	/**
@@ -565,13 +559,26 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 				attributedNode.tag(maximalType.toString());
 			}
 		}
-		
 		AtlasSet<Node> itemsToTrack = getUntrackedItems(attributedNodes);
 		for(GraphElement untouchedTrackedItem : itemsToTrack){
 			ImmutabilityTypes maximalType = getDefaultMaximalType(untouchedTrackedItem);
 			untouchedTrackedItem.tag(maximalType.toString());
 		}
 	}
-
+	
+	private AtlasSet<Node> getUntrackedItems(AtlasSet<Node> attributedNodes) {
+		Q literals = Common.universe().nodesTaggedWithAll(XCSG.Literal);
+		Q parameters = Common.universe().nodesTaggedWithAny(XCSG.Parameter);
+		Q returnValues = Common.universe().nodesTaggedWithAny(XCSG.ReturnValue);
+		Q instanceVariables = Common.universe().nodesTaggedWithAny(XCSG.InstanceVariable);
+		Q thisNodes = Common.universe().nodesTaggedWithAny(XCSG.Identity);
+		Q classVariables = Common.universe().nodesTaggedWithAny(XCSG.ClassVariable);
+		// note local variables may also get tracked, but only if need be during the analysis
+		Q trackedItems = literals.union(parameters, returnValues, instanceVariables, thisNodes, classVariables);
+		Q untouchedTrackedItems = trackedItems.difference(trackedItems.nodesTaggedWithAny(READONLY, POLYREAD, MUTABLE), Common.toQ(attributedNodes));
+		AtlasSet<Node> itemsToTrack = new AtlasHashSet<Node>();
+		itemsToTrack.addAll(untouchedTrackedItems.eval().nodes());
+		return itemsToTrack;
+	}
 	
 }

@@ -12,6 +12,7 @@ import com.ensoftcorp.open.commons.ui.components.LabelFieldEditor;
 import com.ensoftcorp.open.commons.ui.components.SpacerFieldEditor;
 import com.ensoftcorp.open.immutability.Activator;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
+import com.ensoftcorp.open.pointsto.log.Log;
 
 /**
  * UI for setting immutability analysis preferences
@@ -66,10 +67,10 @@ public class ImmutabilityPreferencesPage extends FieldEditorPreferencePage imple
 				"Analysis Mode",
 				1,
 				new String[][] {
-					{ IMMUTABILITY_ANALYSIS_POINTSTO_MODE_DESCRIPTION, 
+					{ "&" + IMMUTABILITY_ANALYSIS_POINTSTO_MODE_DESCRIPTION, 
 						ImmutabilityPreferences.IMMUTABILITY_ANALYSIS_POINTSTO_MODE
 					},
-					{ IMMUTABILITY_ANALYSIS_INFERENCE_MODE_DESCRIPTION, 
+					{ "&" + IMMUTABILITY_ANALYSIS_INFERENCE_MODE_DESCRIPTION, 
 						ImmutabilityPreferences.IMMUTABILITY_ANALYSIS_INFERENCE_MODE
 					}
 				},
