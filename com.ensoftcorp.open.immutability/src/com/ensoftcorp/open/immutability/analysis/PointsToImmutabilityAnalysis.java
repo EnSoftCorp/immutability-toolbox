@@ -52,6 +52,8 @@ public class PointsToImmutabilityAnalysis extends ImmutabilityAnalysis {
 				}
 			}
 			
+			// TODO: handle arrays and array components
+			
 			// flattens the type hierarchy to the maximal types
 			if(ImmutabilityPreferences.isGeneralLoggingEnabled()) Log.info("Extracting maximal types...");
 			long startExtraction = System.nanoTime();
