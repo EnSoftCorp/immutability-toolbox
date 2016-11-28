@@ -32,7 +32,11 @@ public class PointsToImmutabilityAnalysis extends ImmutabilityAnalysis {
 	@Override
 	public boolean run(IProgressMonitor monitor) {
 		if(PointsToPreferences.isPointsToAnalysisEnabled()){
-			Q objectInstantiations = Common.universe().nodesTaggedWithAny(XCSG.Instantiation /*, XCSG.ArrayInstantiation*/);
+			// considers primitives, String literals, and enum constants
+			// note: this set also includes null, but that case is explicitly handled in address creation
+			//       so all null literals are represented with a single address id to save on space
+			Q specialInstantiations = Common.universe().nodesTaggedWithAny(XCSG.Java.EnumConstant, XCSG.Literal).difference(Common.universe().nodesTaggedWithAny(XCSG.Null));
+			Q objectInstantiations = Common.universe().nodesTaggedWithAny(XCSG.Instantiation, XCSG.ArrayInstantiation).union(specialInstantiations);
 			Q instanceVariableWrittenEdges = Common.universe().edgesTaggedWithAny(XCSG.InstanceVariableWritten);
 			Q instanceVariableAssignments = Common.universe().nodesTaggedWithAny(XCSG.InstanceVariableAssignment);
 			for(Node objectInstantiation : objectInstantiations.eval().nodes()){
@@ -52,7 +56,7 @@ public class PointsToImmutabilityAnalysis extends ImmutabilityAnalysis {
 				}
 			}
 			
-			// TODO: handle arrays and array components
+			// TODO: handle array components
 			
 			// flattens the type hierarchy to the maximal types
 			if(ImmutabilityPreferences.isGeneralLoggingEnabled()) Log.info("Extracting maximal types...");
