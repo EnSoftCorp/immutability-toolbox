@@ -12,7 +12,6 @@ import com.ensoftcorp.open.commons.ui.components.LabelFieldEditor;
 import com.ensoftcorp.open.commons.ui.components.SpacerFieldEditor;
 import com.ensoftcorp.open.immutability.Activator;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
-import com.ensoftcorp.open.pointsto.log.Log;
 
 /**
  * UI for setting immutability analysis preferences

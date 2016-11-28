@@ -4,7 +4,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 
 import com.ensoftcorp.open.commons.codemap.PrioritizedCodemapStage;
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityAnalysis;
-import com.ensoftcorp.open.immutability.log.Log;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
 import com.ensoftcorp.open.pointsto.codemap.PointsToCodemapStage;
 
