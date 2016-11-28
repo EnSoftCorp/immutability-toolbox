@@ -34,23 +34,23 @@ public class XAdaptYGreaterThanEqualZConstraintSolver {
 
 	public static boolean satisify(Node x, Node y, Node z) {
 		Set<ImmutabilityTypes> xTypes = getTypes(x);
-		if(xTypes.isEmpty()){
+		if (xTypes.isEmpty()) {
 			Log.warning("x [" + x.address().toAddressString() + "] is untyped, constraint 'qx adapt zy :> qz' cannot be satisfied", new IllegalArgumentException());
 			return false;
 		}
-		
+
 		Set<ImmutabilityTypes> yTypes = getTypes(y);
-		if(yTypes.isEmpty()){
+		if (yTypes.isEmpty()) {
 			Log.warning("y [" + y.address().toAddressString() + "] is untyped, constraint 'qx adapt zy :> qz' cannot be satisfied", new IllegalArgumentException());
 			return false;
 		}
-		
+
 		Set<ImmutabilityTypes> zTypes = getTypes(z);
-		if(zTypes.isEmpty()){
+		if (zTypes.isEmpty()) {
 			Log.warning("z [" + z.address().toAddressString() + "] is untyped, constraint 'qx adapt zy :> qz' cannot be satisfied", new IllegalArgumentException());
 			return false;
 		}
-		
+
 		return satisify(x, xTypes, y, yTypes, z, zTypes);
 	}
 
@@ -101,84 +101,63 @@ public class XAdaptYGreaterThanEqualZConstraintSolver {
 		case 0: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
 		case 1: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[POLYREAD, READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 2: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
 		case 3: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
 		case 4: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 5: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[POLYREAD]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 6: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE]
 			return false;
 		case 8: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
 		case 9: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[POLYREAD, READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged;
+			return false;
 		case 10: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
 		case 11: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
 		case 12: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged;
+			return false;
 		case 13: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[POLYREAD]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged;
+			return false;
 		case 14: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE]
 			return false;
 		case 16: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, POLYREAD, READONLY]
-			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			return false;
 		case 17: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[POLYREAD, READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-			return xTypesChanged || yTypesChanged || zTypesChanged;
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
 		case 18: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, POLYREAD]
-			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return false;
 		case 19: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, READONLY]
-			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+			return false;
 		case 20: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-			return xTypesChanged || yTypesChanged || zTypesChanged;
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
 		case 21: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[POLYREAD]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged || zTypesChanged;
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
 		case 22: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE]
 			return false;
 		case 24: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
 		case 25: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[POLYREAD, READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 26: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
 		case 27: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
 		case 28: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 29: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[POLYREAD]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 30: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE]
 			return false;
 		case 32: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
@@ -196,26 +175,17 @@ public class XAdaptYGreaterThanEqualZConstraintSolver {
 		case 38: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[READONLY], zTypes=[MUTABLE]
 			return false;
 		case 40: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[POLYREAD], zTypes=[MUTABLE, POLYREAD, READONLY]
-			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			return false;
 		case 41: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[POLYREAD], zTypes=[POLYREAD, READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-			return xTypesChanged || yTypesChanged || zTypesChanged;
+			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 42: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[POLYREAD], zTypes=[MUTABLE, POLYREAD]
-			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return false;
 		case 43: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[POLYREAD], zTypes=[MUTABLE, READONLY]
-			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+			return false;
 		case 44: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[POLYREAD], zTypes=[READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-			return xTypesChanged || yTypesChanged || zTypesChanged;
+			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
 		case 45: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[POLYREAD], zTypes=[POLYREAD]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged || zTypesChanged;
+			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 46: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[POLYREAD], zTypes=[MUTABLE]
 			return false;
 		case 48: // xTypes=[MUTABLE, POLYREAD, READONLY], yTypes=[MUTABLE], zTypes=[MUTABLE, POLYREAD, READONLY]
@@ -244,21 +214,15 @@ public class XAdaptYGreaterThanEqualZConstraintSolver {
 		case 64: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
 		case 65: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[POLYREAD, READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 66: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
 		case 67: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
 		case 68: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 69: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[POLYREAD]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 70: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE]
 			return false;
 		case 72: // xTypes=[POLYREAD, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
@@ -270,53 +234,39 @@ public class XAdaptYGreaterThanEqualZConstraintSolver {
 		case 75: // xTypes=[POLYREAD, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
 		case 76: // xTypes=[POLYREAD, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged;
+			return false;
 		case 77: // xTypes=[POLYREAD, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[POLYREAD]
 			return false;
 		case 78: // xTypes=[POLYREAD, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE]
 			return false;
 		case 80: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, POLYREAD, READONLY]
-			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+			return false;
 		case 81: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[POLYREAD, READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-			return xTypesChanged || yTypesChanged || zTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 82: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, POLYREAD]
 			return false;
 		case 83: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, READONLY]
-			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+			return false;
 		case 84: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-			return xTypesChanged || yTypesChanged || zTypesChanged;
-		case 85: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[POLYREAD]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 			return xTypesChanged || yTypesChanged;
+		case 85: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[POLYREAD]
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 86: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE]
 			return false;
 		case 88: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
 		case 89: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[POLYREAD, READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 90: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
 		case 91: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
 		case 92: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 93: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[POLYREAD]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 94: // xTypes=[POLYREAD, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE]
 			return false;
 		case 96: // xTypes=[POLYREAD, READONLY], yTypes=[READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
@@ -334,18 +284,15 @@ public class XAdaptYGreaterThanEqualZConstraintSolver {
 		case 102: // xTypes=[POLYREAD, READONLY], yTypes=[READONLY], zTypes=[MUTABLE]
 			return false;
 		case 104: // xTypes=[POLYREAD, READONLY], yTypes=[POLYREAD], zTypes=[MUTABLE, POLYREAD, READONLY]
-			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+			return false;
 		case 105: // xTypes=[POLYREAD, READONLY], yTypes=[POLYREAD], zTypes=[POLYREAD, READONLY]
-			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+			return false;
 		case 106: // xTypes=[POLYREAD, READONLY], yTypes=[POLYREAD], zTypes=[MUTABLE, POLYREAD]
 			return false;
 		case 107: // xTypes=[POLYREAD, READONLY], yTypes=[POLYREAD], zTypes=[MUTABLE, READONLY]
-			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+			return false;
 		case 108: // xTypes=[POLYREAD, READONLY], yTypes=[POLYREAD], zTypes=[READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-			return xTypesChanged || yTypesChanged || zTypesChanged;
+			return removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
 		case 109: // xTypes=[POLYREAD, READONLY], yTypes=[POLYREAD], zTypes=[POLYREAD]
 			return false;
 		case 110: // xTypes=[POLYREAD, READONLY], yTypes=[POLYREAD], zTypes=[MUTABLE]
@@ -376,52 +323,40 @@ public class XAdaptYGreaterThanEqualZConstraintSolver {
 		case 128: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
 		case 129: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[POLYREAD, READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 130: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
 		case 131: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
 		case 132: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
 		case 133: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[POLYREAD]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 134: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE]
 			return false;
 		case 136: // xTypes=[MUTABLE, POLYREAD], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
 		case 137: // xTypes=[MUTABLE, POLYREAD], yTypes=[POLYREAD, READONLY], zTypes=[POLYREAD, READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged;
+			return false;
 		case 138: // xTypes=[MUTABLE, POLYREAD], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
 		case 139: // xTypes=[MUTABLE, POLYREAD], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
 		case 140: // xTypes=[MUTABLE, POLYREAD], yTypes=[POLYREAD, READONLY], zTypes=[READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
 		case 141: // xTypes=[MUTABLE, POLYREAD], yTypes=[POLYREAD, READONLY], zTypes=[POLYREAD]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged;
+			return false;
 		case 142: // xTypes=[MUTABLE, POLYREAD], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE]
 			return false;
 		case 144: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, POLYREAD, READONLY]
-			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 		case 145: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, POLYREAD], zTypes=[POLYREAD, READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
 		case 146: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, POLYREAD]
-			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return false;
 		case 147: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 		case 148: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, POLYREAD], zTypes=[READONLY]
@@ -430,30 +365,23 @@ public class XAdaptYGreaterThanEqualZConstraintSolver {
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
 		case 149: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, POLYREAD], zTypes=[POLYREAD]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged || zTypesChanged;
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
 		case 150: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE]
 			return false;
 		case 152: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
 		case 153: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, READONLY], zTypes=[POLYREAD, READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 154: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
 		case 155: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
 		case 156: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, READONLY], zTypes=[READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 157: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, READONLY], zTypes=[POLYREAD]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 158: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE]
 			return false;
 		case 160: // xTypes=[MUTABLE, POLYREAD], yTypes=[READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
@@ -471,14 +399,13 @@ public class XAdaptYGreaterThanEqualZConstraintSolver {
 		case 166: // xTypes=[MUTABLE, POLYREAD], yTypes=[READONLY], zTypes=[MUTABLE]
 			return false;
 		case 168: // xTypes=[MUTABLE, POLYREAD], yTypes=[POLYREAD], zTypes=[MUTABLE, POLYREAD, READONLY]
-			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 		case 169: // xTypes=[MUTABLE, POLYREAD], yTypes=[POLYREAD], zTypes=[POLYREAD, READONLY]
 			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-			return xTypesChanged || yTypesChanged || zTypesChanged;
+			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+			return xTypesChanged || zTypesChanged;
 		case 170: // xTypes=[MUTABLE, POLYREAD], yTypes=[POLYREAD], zTypes=[MUTABLE, POLYREAD]
-			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return false;
 		case 171: // xTypes=[MUTABLE, POLYREAD], yTypes=[POLYREAD], zTypes=[MUTABLE, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 		case 172: // xTypes=[MUTABLE, POLYREAD], yTypes=[POLYREAD], zTypes=[READONLY]
@@ -487,10 +414,7 @@ public class XAdaptYGreaterThanEqualZConstraintSolver {
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
 		case 173: // xTypes=[MUTABLE, POLYREAD], yTypes=[POLYREAD], zTypes=[POLYREAD]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged || zTypesChanged;
+			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 174: // xTypes=[MUTABLE, POLYREAD], yTypes=[POLYREAD], zTypes=[MUTABLE]
 			return false;
 		case 176: // xTypes=[MUTABLE, POLYREAD], yTypes=[MUTABLE], zTypes=[MUTABLE, POLYREAD, READONLY]
@@ -519,84 +443,63 @@ public class XAdaptYGreaterThanEqualZConstraintSolver {
 		case 192: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
 		case 193: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[POLYREAD, READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 194: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
 		case 195: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
 		case 196: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 197: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[POLYREAD]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 198: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE]
 			return false;
 		case 200: // xTypes=[MUTABLE, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
 		case 201: // xTypes=[MUTABLE, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[POLYREAD, READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged;
+			return false;
 		case 202: // xTypes=[MUTABLE, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
 		case 203: // xTypes=[MUTABLE, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
 		case 204: // xTypes=[MUTABLE, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged;
+			return false;
 		case 205: // xTypes=[MUTABLE, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[POLYREAD]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged;
+			return false;
 		case 206: // xTypes=[MUTABLE, READONLY], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE]
 			return false;
 		case 208: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, POLYREAD, READONLY]
-			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			return false;
 		case 209: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[POLYREAD, READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-			return xTypesChanged || yTypesChanged || zTypesChanged;
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
 		case 210: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, POLYREAD]
-			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return false;
 		case 211: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, READONLY]
-			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+			return false;
 		case 212: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-			return xTypesChanged || yTypesChanged || zTypesChanged;
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
 		case 213: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[POLYREAD]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged || zTypesChanged;
+			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
+			return xTypesChanged || yTypesChanged;
 		case 214: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE]
 			return false;
 		case 216: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
 		case 217: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[POLYREAD, READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 218: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
 		case 219: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
 		case 220: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 221: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[POLYREAD]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 222: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE]
 			return false;
 		case 224: // xTypes=[MUTABLE, READONLY], yTypes=[READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
@@ -614,26 +517,17 @@ public class XAdaptYGreaterThanEqualZConstraintSolver {
 		case 230: // xTypes=[MUTABLE, READONLY], yTypes=[READONLY], zTypes=[MUTABLE]
 			return false;
 		case 232: // xTypes=[MUTABLE, READONLY], yTypes=[POLYREAD], zTypes=[MUTABLE, POLYREAD, READONLY]
-			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
+			return false;
 		case 233: // xTypes=[MUTABLE, READONLY], yTypes=[POLYREAD], zTypes=[POLYREAD, READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY));
-			return xTypesChanged || yTypesChanged || zTypesChanged;
+			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 234: // xTypes=[MUTABLE, READONLY], yTypes=[POLYREAD], zTypes=[MUTABLE, POLYREAD]
-			return removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
+			return false;
 		case 235: // xTypes=[MUTABLE, READONLY], yTypes=[POLYREAD], zTypes=[MUTABLE, READONLY]
-			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
+			return false;
 		case 236: // xTypes=[MUTABLE, READONLY], yTypes=[POLYREAD], zTypes=[READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-			return xTypesChanged || yTypesChanged || zTypesChanged;
+			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 237: // xTypes=[MUTABLE, READONLY], yTypes=[POLYREAD], zTypes=[POLYREAD]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged || zTypesChanged;
+			return removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 238: // xTypes=[MUTABLE, READONLY], yTypes=[POLYREAD], zTypes=[MUTABLE]
 			return false;
 		case 240: // xTypes=[MUTABLE, READONLY], yTypes=[MUTABLE], zTypes=[MUTABLE, POLYREAD, READONLY]
@@ -662,21 +556,15 @@ public class XAdaptYGreaterThanEqualZConstraintSolver {
 		case 256: // xTypes=[READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
 		case 257: // xTypes=[READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[POLYREAD, READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 258: // xTypes=[READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
 		case 259: // xTypes=[READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
 		case 260: // xTypes=[READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 261: // xTypes=[READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[POLYREAD]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 262: // xTypes=[READONLY], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE]
 			return false;
 		case 264: // xTypes=[READONLY], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
@@ -696,41 +584,29 @@ public class XAdaptYGreaterThanEqualZConstraintSolver {
 		case 272: // xTypes=[READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
 		case 273: // xTypes=[READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[POLYREAD, READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 274: // xTypes=[READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, POLYREAD]
 			return false;
 		case 275: // xTypes=[READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, READONLY]
 			return false;
 		case 276: // xTypes=[READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 277: // xTypes=[READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[POLYREAD]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 278: // xTypes=[READONLY], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE]
 			return false;
 		case 280: // xTypes=[READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
 		case 281: // xTypes=[READONLY], yTypes=[MUTABLE, READONLY], zTypes=[POLYREAD, READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 282: // xTypes=[READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
 		case 283: // xTypes=[READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
 		case 284: // xTypes=[READONLY], yTypes=[MUTABLE, READONLY], zTypes=[READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 285: // xTypes=[READONLY], yTypes=[MUTABLE, READONLY], zTypes=[POLYREAD]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.READONLY));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 286: // xTypes=[READONLY], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE]
 			return false;
 		case 288: // xTypes=[READONLY], yTypes=[READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
@@ -787,21 +663,15 @@ public class XAdaptYGreaterThanEqualZConstraintSolver {
 		case 320: // xTypes=[POLYREAD], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
 		case 321: // xTypes=[POLYREAD], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[POLYREAD, READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 322: // xTypes=[POLYREAD], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
 		case 323: // xTypes=[POLYREAD], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
 		case 324: // xTypes=[POLYREAD], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
 		case 325: // xTypes=[POLYREAD], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[POLYREAD]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 326: // xTypes=[POLYREAD], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE]
 			return false;
 		case 328: // xTypes=[POLYREAD], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
@@ -813,9 +683,7 @@ public class XAdaptYGreaterThanEqualZConstraintSolver {
 		case 331: // xTypes=[POLYREAD], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
 		case 332: // xTypes=[POLYREAD], yTypes=[POLYREAD, READONLY], zTypes=[READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
 		case 333: // xTypes=[POLYREAD], yTypes=[POLYREAD, READONLY], zTypes=[POLYREAD]
 			return false;
 		case 334: // xTypes=[POLYREAD], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE]
@@ -823,10 +691,9 @@ public class XAdaptYGreaterThanEqualZConstraintSolver {
 		case 336: // xTypes=[POLYREAD], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 		case 337: // xTypes=[POLYREAD], yTypes=[MUTABLE, POLYREAD], zTypes=[POLYREAD, READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
 			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
-			return xTypesChanged || yTypesChanged || zTypesChanged;
+			return yTypesChanged || zTypesChanged;
 		case 338: // xTypes=[POLYREAD], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, POLYREAD]
 			return false;
 		case 339: // xTypes=[POLYREAD], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, READONLY]
@@ -837,29 +704,21 @@ public class XAdaptYGreaterThanEqualZConstraintSolver {
 			zTypesChanged = removeTypes(z, EnumSet.of(ImmutabilityTypes.READONLY));
 			return xTypesChanged || yTypesChanged || zTypesChanged;
 		case 341: // xTypes=[POLYREAD], yTypes=[MUTABLE, POLYREAD], zTypes=[POLYREAD]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 342: // xTypes=[POLYREAD], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE]
 			return false;
 		case 344: // xTypes=[POLYREAD], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
 		case 345: // xTypes=[POLYREAD], yTypes=[MUTABLE, READONLY], zTypes=[POLYREAD, READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 346: // xTypes=[POLYREAD], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
 		case 347: // xTypes=[POLYREAD], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
 		case 348: // xTypes=[POLYREAD], yTypes=[MUTABLE, READONLY], zTypes=[READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 349: // xTypes=[POLYREAD], yTypes=[MUTABLE, READONLY], zTypes=[POLYREAD]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 350: // xTypes=[POLYREAD], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE]
 			return false;
 		case 352: // xTypes=[POLYREAD], yTypes=[READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
@@ -919,41 +778,29 @@ public class XAdaptYGreaterThanEqualZConstraintSolver {
 		case 384: // xTypes=[MUTABLE], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
 		case 385: // xTypes=[MUTABLE], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[POLYREAD, READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
 		case 386: // xTypes=[MUTABLE], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
 		case 387: // xTypes=[MUTABLE], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
 		case 388: // xTypes=[MUTABLE], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
 		case 389: // xTypes=[MUTABLE], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[POLYREAD]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD));
 		case 390: // xTypes=[MUTABLE], yTypes=[MUTABLE, POLYREAD, READONLY], zTypes=[MUTABLE]
 			return false;
 		case 392: // xTypes=[MUTABLE], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
 		case 393: // xTypes=[MUTABLE], yTypes=[POLYREAD, READONLY], zTypes=[POLYREAD, READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
 		case 394: // xTypes=[MUTABLE], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
 		case 395: // xTypes=[MUTABLE], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
 		case 396: // xTypes=[MUTABLE], yTypes=[POLYREAD, READONLY], zTypes=[READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
 		case 397: // xTypes=[MUTABLE], yTypes=[POLYREAD, READONLY], zTypes=[POLYREAD]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.POLYREAD));
 		case 398: // xTypes=[MUTABLE], yTypes=[POLYREAD, READONLY], zTypes=[MUTABLE]
 			return false;
 		case 400: // xTypes=[MUTABLE], yTypes=[MUTABLE, POLYREAD], zTypes=[MUTABLE, POLYREAD, READONLY]
@@ -982,21 +829,15 @@ public class XAdaptYGreaterThanEqualZConstraintSolver {
 		case 408: // xTypes=[MUTABLE], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
 			return false;
 		case 409: // xTypes=[MUTABLE], yTypes=[MUTABLE, READONLY], zTypes=[POLYREAD, READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 410: // xTypes=[MUTABLE], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, POLYREAD]
 			return false;
 		case 411: // xTypes=[MUTABLE], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE, READONLY]
 			return false;
 		case 412: // xTypes=[MUTABLE], yTypes=[MUTABLE, READONLY], zTypes=[READONLY]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 413: // xTypes=[MUTABLE], yTypes=[MUTABLE, READONLY], zTypes=[POLYREAD]
-			xTypesChanged = removeTypes(x, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			yTypesChanged = removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
-			return xTypesChanged || yTypesChanged;
+			return removeTypes(y, EnumSet.of(ImmutabilityTypes.MUTABLE));
 		case 414: // xTypes=[MUTABLE], yTypes=[MUTABLE, READONLY], zTypes=[MUTABLE]
 			return false;
 		case 416: // xTypes=[MUTABLE], yTypes=[READONLY], zTypes=[MUTABLE, POLYREAD, READONLY]
@@ -1060,8 +901,9 @@ public class XAdaptYGreaterThanEqualZConstraintSolver {
 		case 438: // xTypes=[MUTABLE], yTypes=[MUTABLE], zTypes=[MUTABLE]
 			return false;
 		default:
-			throw new IllegalArgumentException("XAdaptYGreaterThanZConstraintSolver Unhandled Case: xTypes=" + xTypes.toString() + ", yTypes=" + yTypes.toString() + ", zTypes=" + zTypes.toString());
+			throw new IllegalArgumentException("Unhandled case: xTypes=" + xTypes.toString() + ", yTypes=" + yTypes.toString() + ", zTypes=" + zTypes.toString());
 		}
+
 	}
 
 }

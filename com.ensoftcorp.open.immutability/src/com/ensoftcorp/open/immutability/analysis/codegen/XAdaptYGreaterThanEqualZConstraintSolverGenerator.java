@@ -120,10 +120,10 @@ public class XAdaptYGreaterThanEqualZConstraintSolverGenerator {
 						isSatisfied = true;
 						break satisfied;
 					}
-				}
-				if(!isSatisfied){
-					xTypesToRemove.add(xType);
-				}
+				}	
+			}
+			if(!isSatisfied){
+				xTypesToRemove.add(xType);
 			}
 		}
 		
@@ -140,9 +140,9 @@ public class XAdaptYGreaterThanEqualZConstraintSolverGenerator {
 						break satisfied;
 					}
 				}
-				if(!isSatisfied){
-					yTypesToRemove.add(yType);
-				}
+			}
+			if(!isSatisfied){
+				yTypesToRemove.add(yType);
 			}
 		}
 
@@ -159,9 +159,9 @@ public class XAdaptYGreaterThanEqualZConstraintSolverGenerator {
 						break satisfied;
 					}
 				}
-				if(!isSatisfied){
-					zTypesToRemove.add(zType);
-				}
+			}
+			if(!isSatisfied){
+				zTypesToRemove.add(zType);
 			}
 		}
 		
