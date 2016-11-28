@@ -5,7 +5,7 @@ import java.util.EnumSet;
 
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
 
-public class Test {
+public class TestConstraintEquality {
 
 	// all possible sets, 3 choose 3, 3 choose 2, and 3 choose 1
 	private static final ArrayList<EnumSet<ImmutabilityTypes>> sets = new ArrayList<EnumSet<ImmutabilityTypes>>();
@@ -36,19 +36,16 @@ public class Test {
 						// a.b = c.d
 						// x.f1 = y.f2
 						// a=x, b=f1, c=y, d=f2
-						EnumSet<ImmutabilityTypes> a1Types = sets.get(a-1);
-						EnumSet<ImmutabilityTypes> b1Types = sets.get(b-1);
-						EnumSet<ImmutabilityTypes> c1Types = sets.get(c-1);
-						EnumSet<ImmutabilityTypes> d1Types = sets.get(d-1);
+						EnumSet<ImmutabilityTypes> aTypes = sets.get(a-1);
+						EnumSet<ImmutabilityTypes> bTypes = sets.get(b-1);
+						EnumSet<ImmutabilityTypes> cTypes = sets.get(c-1);
+						EnumSet<ImmutabilityTypes> dTypes = sets.get(d-1);
+						
 						EnumSet<ImmutabilityTypes> a1TypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 						EnumSet<ImmutabilityTypes> b1TypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 						EnumSet<ImmutabilityTypes> c1TypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 						EnumSet<ImmutabilityTypes> d1TypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-						
-						EnumSet<ImmutabilityTypes> a2Types = sets.get(a-1);
-						EnumSet<ImmutabilityTypes> b2Types = sets.get(b-1);
-						EnumSet<ImmutabilityTypes> c2Types = sets.get(c-1);
-						EnumSet<ImmutabilityTypes> d2Types = sets.get(d-1);
+
 						EnumSet<ImmutabilityTypes> a2TypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 						EnumSet<ImmutabilityTypes> b2TypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
 						EnumSet<ImmutabilityTypes> c2TypesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
@@ -57,35 +54,51 @@ public class Test {
 						// approach 1
 						// TWRITE: x.f1 = y, qy <: qx adapt qf1
 						// = qx adapt qf1 :> qy
-						xAdaptYGreaterThanEqualZ(a1Types, b1Types, c1Types, a1TypesToRemove, b1TypesToRemove, c1TypesToRemove);
+						xAdaptYGreaterThanEqualZ(aTypes, bTypes, cTypes, a1TypesToRemove, b1TypesToRemove, c1TypesToRemove);
 						// TREAD: x = y.f2, qy adapt qf2 <: qx
 						// qx :> qy adapt qf2
-						xGreaterThanEqualYAdaptZ(a1Types, c1Types, d1Types, a1TypesToRemove, c1TypesToRemove, d1TypesToRemove);
+						xGreaterThanEqualYAdaptZ(aTypes, cTypes, dTypes, a1TypesToRemove, c1TypesToRemove, d1TypesToRemove);
 						
 						// approach 2
 						// Combined: x.f1 = y.f2, qy adapt qf2 <: qx adapt qf1
 						// = qx adapt qf1 :> qy adapt qf2
-						aAdaptBGreaterThanEqualCAdaptD(a2Types, b2Types, c2Types, d2Types, a2TypesToRemove, b2TypesToRemove, c2TypesToRemove, d2TypesToRemove);
+						aAdaptBGreaterThanEqualCAdaptD(aTypes, bTypes, cTypes, dTypes, a2TypesToRemove, b2TypesToRemove, c2TypesToRemove, d2TypesToRemove);
 						
-						boolean changed = false;
-						changed |= a1TypesToRemove.retainAll(a2TypesToRemove);
-						changed |= a2TypesToRemove.retainAll(a1TypesToRemove);
-						
-						changed |= b1TypesToRemove.retainAll(b2TypesToRemove);
-						changed |= b2TypesToRemove.retainAll(b1TypesToRemove);
-						
-						changed |= c1TypesToRemove.retainAll(c2TypesToRemove);
-						changed |= c2TypesToRemove.retainAll(c1TypesToRemove);
-						
-						changed |= d1TypesToRemove.retainAll(d2TypesToRemove);
-						changed |= d2TypesToRemove.retainAll(d1TypesToRemove);
-						
-						if(changed){
-							System.out.println("changed");
+						if(!setEquals(a1TypesToRemove, a2TypesToRemove) 
+								|| !setEquals(b1TypesToRemove, b2TypesToRemove) 
+								|| !setEquals(c1TypesToRemove, c2TypesToRemove) 
+								|| !setEquals(d1TypesToRemove, d2TypesToRemove)){
+							System.out.println("\nCase a: " + aTypes.toString() + ", b: " + bTypes.toString() + ", c: " + cTypes.toString() + ", d: " + dTypes.toString());
 						}
+						
+						if(!setEquals(a1TypesToRemove, a2TypesToRemove)){
+							System.out.println("a1: " + a1TypesToRemove.toString() + ", a2: " + a2TypesToRemove.toString());
+						}
+						if(!setEquals(b1TypesToRemove, b2TypesToRemove)){
+							System.out.println("b1: " + b1TypesToRemove.toString() + ", b2: " + b2TypesToRemove.toString());
+						}
+						if(!setEquals(c1TypesToRemove, c2TypesToRemove)){
+							System.out.println("c1: " + c1TypesToRemove.toString() + ", c2: " + c2TypesToRemove.toString());
+						}
+						if(!setEquals(d1TypesToRemove, d2TypesToRemove)){
+							System.out.println("d1: " + d1TypesToRemove.toString() + ", d2: " + d2TypesToRemove.toString());
+						}
+						
 					}
 				}
 			}
+		}
+	}
+	
+	private static boolean setEquals(EnumSet<ImmutabilityTypes> aTypes, EnumSet<ImmutabilityTypes> bTypes){
+		if(aTypes.size() != bTypes.size()){
+			return false;
+		} else if(!aTypes.containsAll(bTypes)){
+			return false;
+		} else if(!bTypes.containsAll(aTypes)){
+			return false;
+		} else {
+			return true;
 		}
 	}
 	
