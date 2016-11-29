@@ -112,6 +112,9 @@ public abstract class ImmutabilityAnalysis {
 			if(isPureMethod(method)){
 				method.tag(PURE_METHOD);
 			}
+			method.tags().remove(READONLY);
+			method.tags().remove(POLYREAD);
+			method.tags().remove(MUTABLE);
 		}
 	}
 	
@@ -128,19 +131,20 @@ public abstract class ImmutabilityAnalysis {
 		} else {
 			// from reference 1 section 3
 			// a method is pure if 
-			// 1) it does not mutate prestates reachable through parameters
+			// 1) it does not mutate (not readonly or polyread) prestates reachable through parameters
 			// this includes the formal parameters and implicit "this" parameter
 			Q parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter);
-			Q mutableParameters = parameters.nodesTaggedWithAny(MUTABLE, POLYREAD);
+			Q mutableParameters = parameters.nodesTaggedWithAny(MUTABLE);
 			if(mutableParameters.eval().nodes().size() > 0){
 				return false;
 			}
-			Q mutableIdentity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).nodesTaggedWithAny(MUTABLE, POLYREAD);
+			Q mutableIdentity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).nodesTaggedWithAny(MUTABLE);
 			if(mutableIdentity.eval().nodes().size() > 0){
 				return false;
 			}
 			
 			// 2) it does not mutate prestates reachable through static fields
+			// (its static type is not readonly or polyread)
 			if(method.taggedWith(MUTABLE)){
 				return false;
 			}

@@ -104,8 +104,8 @@ public class FieldAssignmentChecker {
 		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()){
 			Log.info("TSWRITE (sf=x in m, sf=" + sf.getAttr(XCSG.name) + ", x=" + x.getAttr(XCSG.name) + ", m=" + m.getAttr(XCSG.name) + ")");
 		}
-		// a write to a static field means the containing method cannot be pure (readonly)
-		return removeTypes(m, ImmutabilityTypes.READONLY);
+		// a write to a static field means the containing method cannot be pure (readonly or polyread)
+		return removeTypes(m, ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD);
 	}
 	
 	/**

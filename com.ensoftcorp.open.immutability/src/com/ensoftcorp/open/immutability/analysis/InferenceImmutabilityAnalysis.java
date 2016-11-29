@@ -199,10 +199,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 
 		if(ImmutabilityPreferences.isGeneralLoggingEnabled()) Log.info("Removing Immutability Qualifier Sets...");
 		AtlasSet<Node> attributedNodes = Common.universe().selectNode(AnalysisUtilities.IMMUTABILITY_QUALIFIERS).eval().nodes();
-		AtlasHashSet<Node> attributedNodesToUnattribute = new AtlasHashSet<Node>();
-		for(Node attributedNode : attributedNodes){
-			attributedNodesToUnattribute.add(attributedNode);
-		}
+		AtlasHashSet<Node> attributedNodesToUnattribute = new AtlasHashSet<Node>(attributedNodes);
 		while(!attributedNodesToUnattribute.isEmpty()){
 			Node attributedNode = attributedNodesToUnattribute.getFirst();
 			attributedNodesToUnattribute.remove(attributedNode);
@@ -242,12 +239,15 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 		AtlasSet<Edge> inEdges = localDataFlowEdges.reverseStep(Common.toQ(to)).eval().edges();
 		for(GraphElement edge : inEdges){
 			Node from = edge.getNode(EdgeDirection.FROM);
-			boolean involvesField = false;
 			
+			// recursively parse the to/from references
 			AtlasSet<Node> toReferences = AnalysisUtilities.parseReferences(to);
+			AtlasSet<Node> fromReferences = AnalysisUtilities.parseReferences(from);
+			
+			// process constraints for each assignment
 			for(Node toReference : toReferences){
+				// an assignment to an array component mutates the array
 				if(toReference.taggedWith(XCSG.ArrayComponents)){
-					// an assignment to an array component mutates the array
 					GraphElement arrayComponents = toReference;
 					Q arrayIdentityForEdges = Common.universe().edgesTaggedWithAny(XCSG.ArrayIdentityFor);
 					Q arrayWrite = interproceduralDataFlowEdges.predecessors(Common.toQ(arrayComponents));
@@ -257,241 +257,299 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 								typesChanged = true;
 							}
 						}
-					}
-				}
-			}
-			
-			// TWRITE
-			if(to.taggedWith(XCSG.InstanceVariableAssignment)){
-				// Type Rule 3 - TWRITE
-				// let, x.f = y
-				AtlasSet<Node> yReferences = AnalysisUtilities.parseReferences(from);
-				for(Node y : yReferences){
-					AtlasSet<Node> fReferences = AnalysisUtilities.parseReferences(to);
-					for(Node f : fReferences){
-						// Reference (x) -InstanceVariableAccessed-> InstanceVariableAssignment (f=)
-						Node instanceVariableAssignment = to; // (f=)
-						Node instanceVariableAccessed = instanceVariableAccessedEdges.predecessors(Common.toQ(instanceVariableAssignment)).eval().nodes().getFirst();
-
-						if(instanceVariableAccessed.taggedWith(XCSG.InstanceVariableValue) || instanceVariableAccessed.taggedWith(JimpleStopGap.CLASS_VARIABLE_VALUE)){
-							// if a field changes in an object then that object and any container 
-							// objects which contain an object where the field is have also changed
-							// for example z.x.f = y, x is being mutated and so is z
-							for(Node container : AnalysisUtilities.getAccessedContainers(instanceVariableAccessed)){
-								if(removeTypes(container, ImmutabilityTypes.READONLY)){
-									typesChanged = true;
+						// if the array is an instance variable then the mutation to the array mutated the object instance as well
+						if(arrayIdentity.taggedWith(XCSG.InstanceVariableValue)){
+							// TWRITE
+							// x.f[] = y
+							// Reference (x) -InstanceVariableAccessed-> InstanceVariableAccess (.f)
+							AtlasSet<Node> instanceVariablesAccessed = instanceVariableAccessedEdges.predecessors(Common.toQ(arrayIdentity)).eval().nodes();
+							for(Node instanceVariableAccessed : instanceVariablesAccessed){
+								for(Node x : AnalysisUtilities.parseReferences(instanceVariableAccessed)){
+									// if x is a reference it must be mutable
+									// if x is a field it must be polyread
+									// TWRITE precondition, however for arrays we 
+									// don't enforce qy <: qx adapt qf because
+									// that constraint would be applied to the array component
+									if(removeTypes(x, ImmutabilityTypes.READONLY)){
+										typesChanged = true;
+									}
 								}
-								if(container.taggedWith(XCSG.ClassVariable)){
-									if(removeTypes(StandardQueries.getContainingFunction(instanceVariableAccessed), ImmutabilityTypes.READONLY)){
+							}
+						} else if(arrayIdentity.taggedWith(JimpleStopGap.CLASS_VARIABLE_VALUE)){
+							// TSWRITE
+							// let, sf[] = x
+							AtlasSet<Node> sfReferences = AnalysisUtilities.parseReferences(arrayIdentity);
+							for(Node sf : sfReferences){
+								Node m = StandardQueries.getContainingFunction(arrayIdentity);
+								AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(from);
+								for(Node x : xReferences){
+									if(FieldAssignmentChecker.handleStaticFieldWrite(sf, x, m)){
 										typesChanged = true;
 									}
 								}
 							}
 						}
-						
-						AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(instanceVariableAccessed);
-						for(Node x : xReferences){
-							if(FieldAssignmentChecker.handleFieldWrite(x, f, y)){
-								typesChanged = true;
-							}
-						}
 					}
+					continue; // no further constraints apply to this reference
 				}
 				
-				involvesField = true;
-			}
-			
-			// TREAD
-			if(from.taggedWith(XCSG.InstanceVariableValue)){
-				// Type Rule 4 - TREAD
-				// let, x = y.f
-				AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(to);
-				for(Node x : xReferences){
-					AtlasSet<Node> fReferences = AnalysisUtilities.parseReferences(from);
-					for(Node f : fReferences){
-						// Reference (y) -InstanceVariableAccessed-> InstanceVariableValue (.f)
-						Node instanceVariableValue = from; // (.f)
-						Node instanceVariableAccessed = instanceVariableAccessedEdges.predecessors(Common.toQ(instanceVariableValue)).eval().nodes().getFirst();
-						AtlasSet<Node> yReferences = AnalysisUtilities.parseReferences(instanceVariableAccessed);
-						for(Node y : yReferences){
-							if(FieldAssignmentChecker.handleFieldRead(x, y, f)){
-								typesChanged = true;
-							}
-						}
-					}
-				}
-				
-				involvesField = true;
-			}
-			
-			// Type Rule 7 - TSREAD
-			// let, x = sf
-			if(from.taggedWith(JimpleStopGap.CLASS_VARIABLE_VALUE)){
-				AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(to);
-				for(Node x : xReferences){
-					Node m = StandardQueries.getContainingFunction(to);
-					AtlasSet<Node> sfReferences = AnalysisUtilities.parseReferences(from);
-					for(Node sf : sfReferences){
-						if(FieldAssignmentChecker.handleStaticFieldRead(x, sf, m)){
-							typesChanged = true;
-						}
-					}
-				}
-				
-				involvesField = true;
-			}
-			
-			// Type Rule 8 - TSWRITE
-			// let, sf = x
-			if(to.taggedWith(JimpleStopGap.CLASS_VARIABLE_ASSIGNMENT)){
-				AtlasSet<Node> sfReferences = AnalysisUtilities.parseReferences(to);
-				for(Node sf : sfReferences){
-					Node m = StandardQueries.getContainingFunction(to);
-					AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(from);
-					for(Node x : xReferences){
-						if(FieldAssignmentChecker.handleStaticFieldWrite(sf, x, m)){
-							typesChanged = true;
-						}
-					}
-				}
-				
-				involvesField = true;
-			}	
-			
-			// TCALL
-			boolean involvesCallsite = false;
-			if(from.taggedWith(XCSG.DynamicDispatchCallSite)){
-				// Type Rule 5 - TCALL
-				// let, x = y.m(z)
-				Node containingMethod = StandardQueries.getContainingFunction(to);
-				AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(to);
-				for(Node x : xReferences){
-					Node callsite = from;
+				for(Node fromReference : fromReferences){
 					
-//					// TODO: consider if this should be updated to use only the method signature
-//					// get the callsites invoked signature method
-//					Node method = Utilities.getInvokedMethodSignature(callsite);
-//					
-//					// Method (method) -Contains-> Identity
-//					Node identity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
-//					
-//					// Method (method) -Contains-> ReturnValue (ret)
-//					Node ret = Common.toQ(method).children().nodesTaggedWithAny(XCSG.ReturnValue).eval().nodes().getFirst();
-//					
-//					// IdentityPass (.this) -IdentityPassedTo-> CallSite (m)
-//					AtlasSet<Node> identityPassReferences = identityPassedToEdges.predecessors(Common.toQ(callsite)).eval().nodes();
-//					for(Node identityPass : identityPassReferences){
-//						// Receiver (r) -LocalDataFlow-> IdentityPass (.this)
-//						Node r = localDataFlowEdges.predecessors(Common.toQ(identityPass)).eval().nodes().getFirst();
-//						AtlasSet<Node> yReferences = Utilities.parseReferences(r);
-//						for(Node y : yReferences){
-//							// Method (method) -Contains-> Parameter (p1, p2, ...)
-//							AtlasSet<Node> parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
-//							
-//							// ControlFlow -Contains-> CallSite
-//							// CallSite -Contains-> ParameterPassed (z1, z2, ...)
-//							AtlasSet<Node> parametersPassed = Common.toQ(callsite).parent().children().nodesTaggedWithAny(XCSG.ParameterPass).eval().nodes();
-//							
-//							// ParameterPassed (z1, z2, ...) -InterproceduralDataFlow-> Parameter (p1, p2, ...)
-//							// such that z1-InterproceduralDataFlow->p1, z2-InterproceduralDataFlow->p2, ...
-//							AtlasSet<Edge> parametersPassedEdges = interproceduralDataFlowEdges
-//									.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
-//							
-//							if(CallChecker.handleCall(x, y, identity, method, ret, parametersPassedEdges, containingMethod)){
+				}
+			}
+		}
+		
+		
+//			boolean involvesField = false;
+//			
+//			AtlasSet<Node> toReferences = AnalysisUtilities.parseReferences(to);
+//			for(Node toReference : toReferences){
+//				if(toReference.taggedWith(XCSG.ArrayComponents)){
+//					// an assignment to an array component mutates the array
+//					GraphElement arrayComponents = toReference;
+//					Q arrayIdentityForEdges = Common.universe().edgesTaggedWithAny(XCSG.ArrayIdentityFor);
+//					Q arrayWrite = interproceduralDataFlowEdges.predecessors(Common.toQ(arrayComponents));
+//					for(Node arrayIdentity : arrayIdentityForEdges.predecessors(arrayWrite).eval().nodes()){
+//						for(Node arrayReference : AnalysisUtilities.parseReferences(arrayIdentity)){
+//							if(AnalysisUtilities.removeTypes(arrayReference, ImmutabilityTypes.READONLY)){
 //								typesChanged = true;
 //							}
 //						}
 //					}
-
-					// IdentityPass (.this) -IdentityPassedTo-> CallSite (m)
-					AtlasSet<Node> identityPassReferences = identityPassedToEdges.predecessors(Common.toQ(callsite)).eval().nodes();
-					for(Node identityPass : identityPassReferences){
-						// Receiver (receiver) -LocalDataFlow-> IdentityPass (.this)
-						Node reciever = localDataFlowEdges.predecessors(Common.toQ(identityPass)).eval().nodes().getFirst();
-						AtlasSet<Node> yReferences = AnalysisUtilities.parseReferences(reciever);
-						for(Node y : yReferences){
-							// ReturnValue (ret) -InterproceduralDataFlow-> CallSite (m)
-							Node ret = interproceduralDataFlowEdges.predecessors(Common.toQ(callsite)).eval().nodes().getFirst();
-
-							// Method (method) -Contains-> ReturnValue (ret)
-							Node method = Common.toQ(ret).parent().eval().nodes().getFirst();
-							
-							// Method (method) -Contains-> Identity
-							// there should only be one identity node, but in case the graph is malformed this will act as an early prevention measure
-							// TODO: assert this property through a sanity check before running this computation
-							AtlasSet<Node> identities = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes();
-							for(Node identity : identities){
-								// Method (method) -Contains-> Parameter (p1, p2, ...)
-								AtlasSet<Node> parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
-								
-								// ControlFlow -Contains-> CallSite
-								// CallSite -Contains-> ParameterPassed (z1, z2, ...)
-								AtlasSet<Node> parametersPassed = Common.toQ(callsite).parent().children().nodesTaggedWithAny(XCSG.ParameterPass).eval().nodes();
-								
-								// ParameterPassed (z1, z2, ...) -InterproceduralDataFlow-> Parameter (p1, p2, ...)
-								// such that z1-InterproceduralDataFlow->p1, z2-InterproceduralDataFlow->p2, ...
-								AtlasSet<Edge> parametersPassedEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow)
-										.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
-								
-								if(CallChecker.handleCall(x, y, identity, method, ret, parametersPassedEdges, containingMethod)){
-									typesChanged = true;
-								}
-							}
-						}
-					}
-				}
-				
-				involvesCallsite = true;
-			}
-			
-			// TSCALL
-			if(from.taggedWith(XCSG.StaticDispatchCallSite)){
-				
-				// Type Rule 8 - TSCALL
-				// let, x = m(z)
-				AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(to);
-				for(Node x : xReferences){
-					Node callsite = from;
-
-					Node method = AnalysisUtilities.getInvokedMethodSignature(callsite);
-
-					// ReturnValue (ret) -InterproceduralDataFlow-> CallSite (m)
-					Node ret = interproceduralDataFlowEdges.predecessors(Common.toQ(callsite)).eval().nodes().getFirst();
-					
-					// Method (method) -Contains-> Parameter (p1, p2, ...)
-					AtlasSet<Node> parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
-					
-					// ControlFlow -Contains-> CallSite
-					// CallSite -Contains-> ParameterPassed (z1, z2, ...)
-					AtlasSet<Node> parametersPassed = Common.toQ(callsite).parent().children().nodesTaggedWithAny(XCSG.ParameterPass).eval().nodes();
-					
-					// ParameterPassed (z1, z2, ...) -InterproceduralDataFlow-> Parameter (p1, p2, ...)
-					// such that z1-InterproceduralDataFlow->p1, z2-InterproceduralDataFlow->p2, ...
-					AtlasSet<Edge> parametersPassedEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow)
-							.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
-
-					if(CallChecker.handleStaticCall(x, callsite, method, ret, parametersPassedEdges)){
-						typesChanged = true;
-					}
-				}
-				
-				involvesCallsite = true;
-			}
-			
-			// Type Rule 2 - TASSIGN
-			// let x = y
-			if(!involvesField && !involvesCallsite){
-				AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(to);
-				for(Node x : xReferences){
-					AtlasSet<Node> yReferences = AnalysisUtilities.parseReferences(from);;
-					for(Node y : yReferences){
-						if(BasicAssignmentChecker.handleAssignment(x, y)){
-							typesChanged = true;
-						}
-					}
-				}
-			}
-		}
+//				}
+//			}
+//			
+//			// TWRITE
+//			if(to.taggedWith(XCSG.InstanceVariableAssignment)){
+//				// Type Rule 3 - TWRITE
+//				// let, x.f = y
+//				AtlasSet<Node> yReferences = AnalysisUtilities.parseReferences(from);
+//				for(Node y : yReferences){
+//					AtlasSet<Node> fReferences = AnalysisUtilities.parseReferences(to);
+//					for(Node f : fReferences){
+//						// Reference (x) -InstanceVariableAccessed-> InstanceVariableAssignment (f=)
+//						Node instanceVariableAssignment = to; // (f=)
+//						Node instanceVariableAccessed = instanceVariableAccessedEdges.predecessors(Common.toQ(instanceVariableAssignment)).eval().nodes().getFirst();
+//
+//						if(instanceVariableAccessed.taggedWith(XCSG.InstanceVariableValue) || instanceVariableAccessed.taggedWith(JimpleStopGap.CLASS_VARIABLE_VALUE)){
+//							// if a field changes in an object then that object and any container 
+//							// objects which contain an object where the field is have also changed
+//							// for example z.x.f = y, x is being mutated and so is z
+//							for(Node container : AnalysisUtilities.getAccessedContainers(instanceVariableAccessed)){
+//								if(removeTypes(container, ImmutabilityTypes.READONLY)){
+//									typesChanged = true;
+//								}
+//								if(container.taggedWith(XCSG.ClassVariable)){
+//									if(removeTypes(StandardQueries.getContainingFunction(instanceVariableAccessed), ImmutabilityTypes.READONLY)){
+//										typesChanged = true;
+//									}
+//								}
+//							}
+//						}
+//						
+//						AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(instanceVariableAccessed);
+//						for(Node x : xReferences){
+//							if(FieldAssignmentChecker.handleFieldWrite(x, f, y)){
+//								typesChanged = true;
+//							}
+//						}
+//					}
+//				}
+//				
+//				involvesField = true;
+//			}
+//			
+//			// TREAD
+//			if(from.taggedWith(XCSG.InstanceVariableValue)){
+//				// Type Rule 4 - TREAD
+//				// let, x = y.f
+//				AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(to);
+//				for(Node x : xReferences){
+//					AtlasSet<Node> fReferences = AnalysisUtilities.parseReferences(from);
+//					for(Node f : fReferences){
+//						// Reference (y) -InstanceVariableAccessed-> InstanceVariableValue (.f)
+//						Node instanceVariableValue = from; // (.f)
+//						Node instanceVariableAccessed = instanceVariableAccessedEdges.predecessors(Common.toQ(instanceVariableValue)).eval().nodes().getFirst();
+//						AtlasSet<Node> yReferences = AnalysisUtilities.parseReferences(instanceVariableAccessed);
+//						for(Node y : yReferences){
+//							if(FieldAssignmentChecker.handleFieldRead(x, y, f)){
+//								typesChanged = true;
+//							}
+//						}
+//					}
+//				}
+//				
+//				involvesField = true;
+//			}
+//			
+//			// Type Rule 7 - TSREAD
+//			// let, x = sf
+//			if(from.taggedWith(JimpleStopGap.CLASS_VARIABLE_VALUE)){
+//				AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(to);
+//				for(Node x : xReferences){
+//					Node m = StandardQueries.getContainingFunction(to);
+//					AtlasSet<Node> sfReferences = AnalysisUtilities.parseReferences(from);
+//					for(Node sf : sfReferences){
+//						if(FieldAssignmentChecker.handleStaticFieldRead(x, sf, m)){
+//							typesChanged = true;
+//						}
+//					}
+//				}
+//				
+//				involvesField = true;
+//			}
+//			
+//			// Type Rule 8 - TSWRITE
+//			// let, sf = x
+//			if(to.taggedWith(JimpleStopGap.CLASS_VARIABLE_ASSIGNMENT)){
+//				AtlasSet<Node> sfReferences = AnalysisUtilities.parseReferences(to);
+//				for(Node sf : sfReferences){
+//					Node m = StandardQueries.getContainingFunction(to);
+//					AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(from);
+//					for(Node x : xReferences){
+//						if(FieldAssignmentChecker.handleStaticFieldWrite(sf, x, m)){
+//							typesChanged = true;
+//						}
+//					}
+//				}
+//				
+//				involvesField = true;
+//			}	
+//			
+//			// TCALL
+//			boolean involvesCallsite = false;
+//			if(from.taggedWith(XCSG.DynamicDispatchCallSite)){
+//				// Type Rule 5 - TCALL
+//				// let, x = y.m(z)
+//				Node containingMethod = StandardQueries.getContainingFunction(to);
+//				AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(to);
+//				for(Node x : xReferences){
+//					Node callsite = from;
+//					
+////					// TODO: consider if this should be updated to use only the method signature
+////					// get the callsites invoked signature method
+////					Node method = Utilities.getInvokedMethodSignature(callsite);
+////					
+////					// Method (method) -Contains-> Identity
+////					Node identity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
+////					
+////					// Method (method) -Contains-> ReturnValue (ret)
+////					Node ret = Common.toQ(method).children().nodesTaggedWithAny(XCSG.ReturnValue).eval().nodes().getFirst();
+////					
+////					// IdentityPass (.this) -IdentityPassedTo-> CallSite (m)
+////					AtlasSet<Node> identityPassReferences = identityPassedToEdges.predecessors(Common.toQ(callsite)).eval().nodes();
+////					for(Node identityPass : identityPassReferences){
+////						// Receiver (r) -LocalDataFlow-> IdentityPass (.this)
+////						Node r = localDataFlowEdges.predecessors(Common.toQ(identityPass)).eval().nodes().getFirst();
+////						AtlasSet<Node> yReferences = Utilities.parseReferences(r);
+////						for(Node y : yReferences){
+////							// Method (method) -Contains-> Parameter (p1, p2, ...)
+////							AtlasSet<Node> parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
+////							
+////							// ControlFlow -Contains-> CallSite
+////							// CallSite -Contains-> ParameterPassed (z1, z2, ...)
+////							AtlasSet<Node> parametersPassed = Common.toQ(callsite).parent().children().nodesTaggedWithAny(XCSG.ParameterPass).eval().nodes();
+////							
+////							// ParameterPassed (z1, z2, ...) -InterproceduralDataFlow-> Parameter (p1, p2, ...)
+////							// such that z1-InterproceduralDataFlow->p1, z2-InterproceduralDataFlow->p2, ...
+////							AtlasSet<Edge> parametersPassedEdges = interproceduralDataFlowEdges
+////									.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
+////							
+////							if(CallChecker.handleCall(x, y, identity, method, ret, parametersPassedEdges, containingMethod)){
+////								typesChanged = true;
+////							}
+////						}
+////					}
+//
+//					// IdentityPass (.this) -IdentityPassedTo-> CallSite (m)
+//					AtlasSet<Node> identityPassReferences = identityPassedToEdges.predecessors(Common.toQ(callsite)).eval().nodes();
+//					for(Node identityPass : identityPassReferences){
+//						// Receiver (receiver) -LocalDataFlow-> IdentityPass (.this)
+//						Node reciever = localDataFlowEdges.predecessors(Common.toQ(identityPass)).eval().nodes().getFirst();
+//						AtlasSet<Node> yReferences = AnalysisUtilities.parseReferences(reciever);
+//						for(Node y : yReferences){
+//							// ReturnValue (ret) -InterproceduralDataFlow-> CallSite (m)
+//							Node ret = interproceduralDataFlowEdges.predecessors(Common.toQ(callsite)).eval().nodes().getFirst();
+//
+//							// Method (method) -Contains-> ReturnValue (ret)
+//							Node method = Common.toQ(ret).parent().eval().nodes().getFirst();
+//							
+//							// Method (method) -Contains-> Identity
+//							// there should only be one identity node, but in case the graph is malformed this will act as an early prevention measure
+//							// TODO: assert this property through a sanity check before running this computation
+//							AtlasSet<Node> identities = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes();
+//							for(Node identity : identities){
+//								// Method (method) -Contains-> Parameter (p1, p2, ...)
+//								AtlasSet<Node> parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
+//								
+//								// ControlFlow -Contains-> CallSite
+//								// CallSite -Contains-> ParameterPassed (z1, z2, ...)
+//								AtlasSet<Node> parametersPassed = Common.toQ(callsite).parent().children().nodesTaggedWithAny(XCSG.ParameterPass).eval().nodes();
+//								
+//								// ParameterPassed (z1, z2, ...) -InterproceduralDataFlow-> Parameter (p1, p2, ...)
+//								// such that z1-InterproceduralDataFlow->p1, z2-InterproceduralDataFlow->p2, ...
+//								AtlasSet<Edge> parametersPassedEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow)
+//										.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
+//								
+//								if(CallChecker.handleCall(x, y, identity, method, ret, parametersPassedEdges, containingMethod)){
+//									typesChanged = true;
+//								}
+//							}
+//						}
+//					}
+//				}
+//				
+//				involvesCallsite = true;
+//			}
+//			
+//			// TSCALL
+//			if(from.taggedWith(XCSG.StaticDispatchCallSite)){
+//				
+//				// Type Rule 8 - TSCALL
+//				// let, x = m(z)
+//				AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(to);
+//				for(Node x : xReferences){
+//					Node callsite = from;
+//
+//					Node method = AnalysisUtilities.getInvokedMethodSignature(callsite);
+//
+//					// ReturnValue (ret) -InterproceduralDataFlow-> CallSite (m)
+//					Node ret = interproceduralDataFlowEdges.predecessors(Common.toQ(callsite)).eval().nodes().getFirst();
+//					
+//					// Method (method) -Contains-> Parameter (p1, p2, ...)
+//					AtlasSet<Node> parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
+//					
+//					// ControlFlow -Contains-> CallSite
+//					// CallSite -Contains-> ParameterPassed (z1, z2, ...)
+//					AtlasSet<Node> parametersPassed = Common.toQ(callsite).parent().children().nodesTaggedWithAny(XCSG.ParameterPass).eval().nodes();
+//					
+//					// ParameterPassed (z1, z2, ...) -InterproceduralDataFlow-> Parameter (p1, p2, ...)
+//					// such that z1-InterproceduralDataFlow->p1, z2-InterproceduralDataFlow->p2, ...
+//					AtlasSet<Edge> parametersPassedEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow)
+//							.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
+//
+//					if(CallChecker.handleStaticCall(x, callsite, method, ret, parametersPassedEdges)){
+//						typesChanged = true;
+//					}
+//				}
+//				
+//				involvesCallsite = true;
+//			}
+//			
+//			// Type Rule 2 - TASSIGN
+//			// let x = y
+//			if(!involvesField && !involvesCallsite){
+//				AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(to);
+//				for(Node x : xReferences){
+//					AtlasSet<Node> yReferences = AnalysisUtilities.parseReferences(from);;
+//					for(Node y : yReferences){
+//						if(BasicAssignmentChecker.handleAssignment(x, y)){
+//							typesChanged = true;
+//						}
+//					}
+//				}
+//			}
+//		}
 		
 		return typesChanged;
 	}
@@ -538,8 +596,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 	 * and applies the maximal type as a tag
 	 */
 	private void extractMaximalTypes(){
-		Q methods = Common.universe().nodesTaggedWithAny(XCSG.Method);
-		Q typesToExtract = Common.universe().selectNode(AnalysisUtilities.IMMUTABILITY_QUALIFIERS).difference(methods);
+		Q typesToExtract = Common.universe().selectNode(AnalysisUtilities.IMMUTABILITY_QUALIFIERS);
 		AtlasSet<Node> attributedNodes = Common.resolve(new NullProgressMonitor(), typesToExtract.eval()).nodes();
 		for(Node attributedNode : attributedNodes){
 			Set<ImmutabilityTypes> types = getTypes(attributedNode);
