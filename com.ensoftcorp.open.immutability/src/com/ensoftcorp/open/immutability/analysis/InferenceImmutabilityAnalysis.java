@@ -138,16 +138,10 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 			long stopIteration = System.nanoTime();
 			if(ImmutabilityPreferences.isGeneralLoggingEnabled()) Log.info("Immutability analysis iteration: " + iteration + " completed in " + FORMAT.format((stopIteration-startIteration)/1000.0/1000.0) + " ms");
 			
-			// If every reference was in the worklist then theoretically each item
-			// should only ever be visited at most 3 times (because in the worst
-			// case the first two visits remove 1 immutability type and fixed point is
-			// reached on the 3rd visit when there is nothing left to remove since
-			// there must be at least one immutability type left, mutable for the case
-			// of one type left, for each reference).
-			// So for some implementations after 3 iterations the fixed point should have 
-			// been reached (and perhaps a 4th iteration to realize it), but...
-			// not every reference is placed in our worklist (some references are processed
-			// on-demand) so we must run until fixed point.
+			// the worklist consists of assignments (including stack assignments)
+			// in the worst case an iteration through the worklist only removes one type from one reference in an assignment
+			// since there are at most only 3 valid types for each reference, the algorithm must reach fixed point in
+			// O(3*n) iterations where n is the number of typed references used in the set of assignments
 			if(!typesChanged){
 				if(ImmutabilityPreferences.isGeneralLoggingEnabled()) Log.info("Immutability analysis reached fixed point in " + iteration + " iterations");
 				break;
@@ -159,7 +153,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 		}
 		
 		if(ImmutabilityPreferences.isGenerateSummariesEnabled()){
-			// serialize immutability sets to in Atlas tags
+			// serialize immutability sets to Atlas tags
 			if(ImmutabilityPreferences.isGeneralLoggingEnabled()) Log.info("Converting immutability sets into tags...");
 			convertImmutabilityTypesToTags();
 			if(ImmutabilityPreferences.isGeneralLoggingEnabled()) Log.info("Converted immutability sets into tags.");
