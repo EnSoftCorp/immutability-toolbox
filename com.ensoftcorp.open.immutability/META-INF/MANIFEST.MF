@@ -10,7 +10,7 @@ Require-Bundle: org.eclipse.debug.ui,
  com.ensoftcorp.open.java.commons;bundle-version="3.0.12",
  com.ensoftcorp.open.jimple.commons;bundle-version="3.0.12",
  com.ensoftcorp.open.pointsto;bundle-version="3.0.12"
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy
 Export-Package: com.ensoftcorp.open.immutability.codemap,
  com.ensoftcorp.open.immutability.preferences
