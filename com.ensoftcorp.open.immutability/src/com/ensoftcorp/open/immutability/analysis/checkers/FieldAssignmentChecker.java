@@ -4,6 +4,7 @@ import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.remove
 
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
+import com.ensoftcorp.open.immutability.analysis.AnalysisUtilities;
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
 import com.ensoftcorp.open.immutability.analysis.solvers.XAdaptYGreaterThanEqualZConstraintSolver;
 import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYAdaptZConstraintSolver;
@@ -31,8 +32,15 @@ public class FieldAssignmentChecker {
 		// if x is a reference it must be mutable
 		// if x is a field it must be polyread
 		// TWRITE precondition
-		if(removeTypes(x, ImmutabilityTypes.READONLY)){
-			typesChanged = true;
+		// TODO: this isn't quite right...
+		if(AnalysisUtilities.getDefaultTypes(x).contains(ImmutabilityTypes.MUTABLE)){
+			if(removeTypes(x, ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)){
+				typesChanged = true;
+			}
+		} else {
+			if(removeTypes(x, ImmutabilityTypes.READONLY)){
+				typesChanged = true;
+			}
 		}
 		
 //		// if y is only mutable then f cannot be readonly

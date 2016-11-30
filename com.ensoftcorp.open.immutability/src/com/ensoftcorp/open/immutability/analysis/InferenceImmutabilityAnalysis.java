@@ -268,8 +268,16 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 										// TWRITE precondition, however for arrays we 
 										// don't enforce qy <: qx adapt qf because
 										// that constraint would be applied to the array component
-										if(removeTypes(x, ImmutabilityTypes.READONLY)){
-											typesChanged = true;
+										
+										// TODO: this isn't quite right...
+										if(AnalysisUtilities.getDefaultTypes(x).contains(ImmutabilityTypes.MUTABLE)){
+											if(removeTypes(x, ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)){
+												typesChanged = true;
+											}
+										} else {
+											if(removeTypes(x, ImmutabilityTypes.READONLY)){
+												typesChanged = true;
+											}
 										}
 									}
 								}

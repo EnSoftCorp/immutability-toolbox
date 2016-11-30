@@ -517,12 +517,7 @@ public class AnalysisUtilities {
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		} else if(ge.taggedWith(XCSG.Identity)){
 			qualifiers.add(ImmutabilityTypes.READONLY);
-			
-			// TODO: fix me...
-			// POLYREAD IS CAUSING A PROBLEM HERE....
-			// but its supposed to be included...not sure how to fix
-			qualifiers.add(ImmutabilityTypes.POLYREAD);  // TODO: what does it mean for a the this reference to be polyread? ~Ben
-			
+			qualifiers.add(ImmutabilityTypes.POLYREAD);
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		} else if(ge.taggedWith(XCSG.InstanceVariable)){
 			// Section 2.4 of Reference 1
