@@ -243,7 +243,10 @@ public class AnalysisUtilities {
 		boolean typesChanged = typeSet.removeAll(typesToRemove);
 		if(typesChanged){
 			if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info(logMessage);
-			if(ImmutabilityPreferences.isDebugLoggingEnabled() && typeSet.isEmpty()) Log.warning("Remove result in an empty type set.");
+			if(ImmutabilityPreferences.isDebugLoggingEnabled() && typeSet.isEmpty()) {
+				Log.warning("Remove on '" + node.getAttr(XCSG.name).toString() + "' resulted in an empty type set.", 
+					new RuntimeException(node.getAttr(XCSG.name).toString() + " is untyped."));
+			}
 		}
 		return typesChanged;
 	}
@@ -260,6 +263,40 @@ public class AnalysisUtilities {
 			typesToRemove.add(type);
 		}
 		return removeTypes(node, typesToRemove);
+	}
+	
+	/**
+	 * Adds a type qualifier for a graph element
+	 * USE EXTREME CAUTION WHEN USING THIS METHOD!!!!
+	 * ADDING TYPES CAN BREAK FIXED POINT GUARENTEES!!!
+	 * @param node
+	 * @param qualifier
+	 * @return Returns true if the type qualifier changed
+	 */
+	public static boolean addTypes(Node node, ImmutabilityTypes... types){
+		EnumSet<ImmutabilityTypes> typesToAdd = EnumSet.noneOf(ImmutabilityTypes.class);
+		for(ImmutabilityTypes type : types){
+			typesToAdd.add(type);
+		}
+		return addTypes(node, typesToAdd);
+	}
+	
+	/**
+	 * Sets the type qualifier for a graph element
+	 * USE EXTREME CAUTION WHEN USING THIS METHOD!!!!
+	 * ADDING TYPES CAN BREAK FIXED POINT GUARENTEES!!!
+	 * @param node
+	 * @param qualifier
+	 * @return Returns true if the type qualifier changed
+	 */
+	public static boolean addTypes(Node node, Set<ImmutabilityTypes> typesToAdd){
+		Set<ImmutabilityTypes> typeSet = getTypes(node);
+		String logMessage = "Add: " + typesToAdd.toString() + " to " + typeSet.toString() + " for " + node.getAttr(XCSG.name);
+		boolean typesChanged = typeSet.addAll(typesToAdd);
+		if(typesChanged){
+			if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info(logMessage);
+		}
+		return typesChanged;
 	}
 	
 	@SuppressWarnings("unchecked")

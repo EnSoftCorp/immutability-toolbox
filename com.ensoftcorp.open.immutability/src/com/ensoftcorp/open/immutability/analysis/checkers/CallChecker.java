@@ -1,10 +1,5 @@
 package com.ensoftcorp.open.immutability.analysis.checkers;
 
-import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.getTypes;
-import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.removeTypes;
-
-import java.util.Set;
-
 import com.ensoftcorp.atlas.core.db.graph.Edge;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.EdgeDirection;
@@ -14,14 +9,11 @@ import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.analysis.StandardQueries;
-import com.ensoftcorp.open.immutability.analysis.AnalysisUtilities;
-import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
 import com.ensoftcorp.open.immutability.analysis.solvers.XAdaptYGreaterThanEqualZConstraintSolver;
 import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYAdaptZConstraintSolver;
 import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYConstraintSolver;
 import com.ensoftcorp.open.immutability.log.Log;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
-import com.ensoftcorp.open.jimple.commons.wishful.JimpleStopGap;
 
 public class CallChecker {
 
@@ -40,36 +32,6 @@ public class CallChecker {
 		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()) Log.info("TCALL (x=y.m(z), x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", m=" + method.getAttr("##signature") + ")");
 		
 		boolean typesChanged = false;
-		Set<ImmutabilityTypes> xTypes = getTypes(x);
-		
-		boolean isPolyreadField = x.taggedWith(XCSG.Field) && (xTypes.contains(ImmutabilityTypes.POLYREAD) && xTypes.size() == 1);
-		boolean isMutableReference = !x.taggedWith(XCSG.Field) && (xTypes.contains(ImmutabilityTypes.MUTABLE) && xTypes.size() == 1);
-		
-		// if x is a field and polyread then the return value must be polyread
-		// if x is a reference and mutable then the return value must be polyread
-		// whether the field or reference is polyread or mutable we know know that it
-		// is at least not readonly
-		if(isPolyreadField || isMutableReference){
-			if(removeTypes(ret, ImmutabilityTypes.READONLY)){
-				typesChanged = true;
-			}
-			// if the return value is a field then the field and its container fields must be mutable as well
-			Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
-			Q returnValues = localDataFlowEdges.predecessors(Common.toQ(ret));
-			Q fieldValues = localDataFlowEdges.predecessors(returnValues).nodesTaggedWithAny(XCSG.InstanceVariableValue, JimpleStopGap.CLASS_VARIABLE_VALUE);
-			for(Node fieldValue : fieldValues.eval().nodes()){
-				for(Node container : AnalysisUtilities.getAccessedContainers(fieldValue)){
-					if(removeTypes(container, ImmutabilityTypes.READONLY)){
-						typesChanged = true;
-					}
-					if(container.taggedWith(XCSG.ClassVariable)){
-						if(removeTypes(containingMethod, ImmutabilityTypes.READONLY)){
-							typesChanged = true;
-						}
-					}
-				}
-			}
-		}
 		
 		/////////////////////// start qx adapt qret <: qx /////////////////////// 
 		if(processReturnAssignmentConstraints(x, ret)){
@@ -169,38 +131,6 @@ public class CallChecker {
 		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()) Log.info("TSCALL (x=y.m(z), x=" + x.getAttr(XCSG.name) + ", m=" + method.getAttr("##signature") + ")");
 		
 		boolean typesChanged = false;
-		Set<ImmutabilityTypes> xTypes = getTypes(x);
-		
-		boolean isPolyreadField = x.taggedWith(XCSG.Field) && (xTypes.contains(ImmutabilityTypes.POLYREAD) && xTypes.size() == 1);
-		boolean isMutableReference = !x.taggedWith(XCSG.Field) && (xTypes.contains(ImmutabilityTypes.MUTABLE) && xTypes.size() == 1);
-		
-		// if x is a field and polyread then the return value must be polyread
-		// if x is a reference and mutable then the return value must be polyread
-		// whether the field or reference is polyread or mutable we know know that it
-		// is at least not readonly
-		if(isPolyreadField || isMutableReference){
-			if(removeTypes(ret, ImmutabilityTypes.READONLY)){
-				typesChanged = true;
-			}
-			// if the return value is a field then the field and its container fields must be mutable as well
-			Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
-			Q returnValues = localDataFlowEdges.predecessors(Common.toQ(ret));
-			Q fieldValues = localDataFlowEdges.predecessors(returnValues).nodesTaggedWithAny(XCSG.InstanceVariableValue, JimpleStopGap.CLASS_VARIABLE_VALUE);
-			Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
-			Q fields = interproceduralDataFlowEdges.predecessors(fieldValues);
-			for(Node field : fields.eval().nodes()){
-				for(Node container : AnalysisUtilities.getAccessedContainers(field)){
-					if(removeTypes(container, ImmutabilityTypes.READONLY)){
-						typesChanged = true;
-					}
-					if(container.taggedWith(XCSG.ClassVariable)){
-						if(removeTypes(StandardQueries.getContainingFunction(x), ImmutabilityTypes.READONLY)){
-							typesChanged = true;
-						}
-					}
-				}
-			}
-		}
 		
 		/////////////////////// start qx adapt qret <: qx /////////////////////// 
 		if(processReturnAssignmentConstraints(x, ret)){

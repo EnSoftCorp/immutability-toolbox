@@ -181,8 +181,12 @@ public class SanityChecks {
 				if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.warning("GraphElement " + ge.address().toAddressString() + " is tagged as POLYREAD but POLYREAD is not a valid default for this element.");
 				unexpectedTypes++;
 			} else if(ge.taggedWith(ImmutabilityAnalysis.MUTABLE) && !defaultTypes.contains(ImmutabilityTypes.MUTABLE)){
-				if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.warning("GraphElement " + ge.address().toAddressString() + " is tagged as MUTABLE but MUTABLE is not a valid default for this element.");
-				unexpectedTypes++;
+				// its ok for instance variables to gain the mutable type
+				// this is undocumented, but necessary in the reiminfer implementation
+				if(!ge.taggedWith(XCSG.InstanceVariable)){
+					if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.warning("GraphElement " + ge.address().toAddressString() + " is tagged as MUTABLE but MUTABLE is not a valid default for this element.");
+					unexpectedTypes++;
+				}
 			}
 		}
 		boolean hasUnexpectedTypes = unexpectedTypes > 0;

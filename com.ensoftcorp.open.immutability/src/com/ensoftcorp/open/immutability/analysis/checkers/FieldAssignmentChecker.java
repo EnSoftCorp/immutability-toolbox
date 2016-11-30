@@ -4,7 +4,6 @@ import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.remove
 
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
-import com.ensoftcorp.open.immutability.analysis.AnalysisUtilities;
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
 import com.ensoftcorp.open.immutability.analysis.solvers.XAdaptYGreaterThanEqualZConstraintSolver;
 import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYAdaptZConstraintSolver;
@@ -33,14 +32,20 @@ public class FieldAssignmentChecker {
 		// if x is a field it must be polyread
 		// TWRITE precondition
 		// TODO: this isn't quite right...
-		if(AnalysisUtilities.getDefaultTypes(x).contains(ImmutabilityTypes.MUTABLE)){
-			if(removeTypes(x, ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)){
-				typesChanged = true;
-			}
-		} else {
-			if(removeTypes(x, ImmutabilityTypes.READONLY)){
-				typesChanged = true;
-			}
+//		if(AnalysisUtilities.getDefaultTypes(x).contains(ImmutabilityTypes.MUTABLE)){
+//			if(removeTypes(x, ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)){
+//				typesChanged = true;
+//			}
+//		} else {
+//			if(removeTypes(x, ImmutabilityTypes.READONLY)){
+//				typesChanged = true;
+//			}
+//		}
+		
+		// x must be mutable...if x is a field a mutable type has been added as duck tape...this is hacky solution to fix the broken type system
+		// Reference: https://github.com/proganalysis/type-inference/blob/master/object-immutability/src/edu/rpi/reim/ReimTransformer.java#L250
+		if(removeTypes(x, ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)){
+			typesChanged = true;
 		}
 		
 //		// if y is only mutable then f cannot be readonly
