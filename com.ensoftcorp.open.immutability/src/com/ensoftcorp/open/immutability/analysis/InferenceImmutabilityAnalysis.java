@@ -281,6 +281,21 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 										if(removeTypes(x, ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)){
 											typesChanged = true;
 										}
+										
+										if(ImmutabilityPreferences.isContainerConsiderationEnabled()){
+											// each instance containing x has been mutated as well
+											// TODO: should this be like a basic assignment constraint 
+											// between each parent container field or just all are not readonly???
+											// for now going with the latter since its easier to implement...
+											for(Node container : AnalysisUtilities.getAccessedContainers(arrayIdentity)){
+												if(ImmutabilityPreferences.isDebugLoggingEnabled()) {
+													Log.info("A mutation to " + arrayIdentity.getAttr(XCSG.name).toString() + " mutated container " + container.getAttr(XCSG.name).toString());
+												}
+												if(removeTypes(container, ImmutabilityTypes.READONLY)){
+													typesChanged = true;
+												}
+											}
+										}
 									}
 								}
 							}
@@ -336,6 +351,23 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 //							}
 							if(FieldAssignmentChecker.handleFieldWrite(x, f, y)){
 								typesChanged = true;
+							}
+							
+							if(ImmutabilityPreferences.isContainerConsiderationEnabled()){
+								if(to.taggedWith(XCSG.InstanceVariableAccess) && !getTypes(x).contains(ImmutabilityTypes.READONLY)){
+									// each instance containing x has been mutated as well
+									// TODO: should this be like a basic assignment constraint 
+									// between each parent container field or just all are not readonly???
+									// for now going with the latter since its easier to implement...
+									for(Node container : AnalysisUtilities.getAccessedContainers(to)){
+										if(ImmutabilityPreferences.isDebugLoggingEnabled()) {
+											Log.info("A mutation to " + to.getAttr(XCSG.name).toString() + " mutated container " + container.getAttr(XCSG.name).toString());
+										}
+										if(removeTypes(container, ImmutabilityTypes.READONLY)){
+											typesChanged = true;
+										}
+									}
+								}
 							}
 						}
 					}
@@ -404,10 +436,8 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 				Node containingMethod = StandardQueries.getContainingFunction(to);
 				AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(to);
 				for(Node x : xReferences){
-					
-					// TODO: enable if untyped types are occurring from TCALL
-					//       I don't think we need this, but adding it here for posterity 
-					//       left possible hack here for posterity
+					// I don't think we ever needed this, but adding it here for posterity 
+					// left possible hack here for posterity
 //					if(x.taggedWith(XCSG.InstanceVariable)){
 //						if(addTypes(x, ImmutabilityTypes.MUTABLE)){
 //							typesChanged = true;
@@ -491,6 +521,23 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 								
 								if(CallChecker.handleCall(x, y, identity, method, ret, parametersPassedEdges, containingMethod)){
 									typesChanged = true;
+								}
+								
+								if(ImmutabilityPreferences.isContainerConsiderationEnabled()){
+									if(reciever.taggedWith(XCSG.InstanceVariableAccess) && !getTypes(y).contains(ImmutabilityTypes.READONLY)){
+										// each instance containing x has been mutated as well
+										// TODO: should this be like a basic assignment constraint 
+										// between each parent container field or just all are not readonly???
+										// for now going with the latter since its easier to implement...
+										for(Node container : AnalysisUtilities.getAccessedContainers(reciever)){
+											if(ImmutabilityPreferences.isDebugLoggingEnabled()) {
+												Log.info("A mutation to " + reciever.getAttr(XCSG.name).toString() + " mutated container " + container.getAttr(XCSG.name).toString());
+											}
+											if(removeTypes(container, ImmutabilityTypes.READONLY)){
+												typesChanged = true;
+											}
+										}
+									}
 								}
 							}
 						}

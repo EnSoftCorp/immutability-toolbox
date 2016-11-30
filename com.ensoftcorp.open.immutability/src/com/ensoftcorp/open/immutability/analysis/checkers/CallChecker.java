@@ -1,5 +1,7 @@
 package com.ensoftcorp.open.immutability.analysis.checkers;
 
+import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.removeTypes;
+
 import com.ensoftcorp.atlas.core.db.graph.Edge;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.EdgeDirection;
@@ -9,6 +11,8 @@ import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.analysis.StandardQueries;
+import com.ensoftcorp.open.immutability.analysis.AnalysisUtilities;
+import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
 import com.ensoftcorp.open.immutability.analysis.solvers.XAdaptYGreaterThanEqualZConstraintSolver;
 import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYAdaptZConstraintSolver;
 import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYConstraintSolver;
@@ -40,13 +44,10 @@ public class CallChecker {
 		/////////////////////// end qx adapt qret <: qx ///////////////////////  
 		
 		/////////////////////// start qy <: qx adapt qthis /////////////////////// 
-		
 		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Constraint qy <: qx adapt qthis");
-		
 		if(XAdaptYGreaterThanEqualZConstraintSolver.satisify(x, identity, y)){
 			typesChanged = true;
 		}
-		
 		/////////////////////// end qy <: qx adapt qthis ///////////////////////
 
 		/////////////////////// start qz <: qx adapt qp ///////////////////////
@@ -183,6 +184,27 @@ public class CallChecker {
 			// = qx adapt qp :> qz
 			if(XAdaptYGreaterThanEqualZConstraintSolver.satisify(x, p, z)){
 				typesChanged = true;
+				
+				if(ImmutabilityPreferences.isContainerConsiderationEnabled()){
+					Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
+					for(Node paramValue : localDataFlowEdges.predecessors(Common.toQ(z)).eval().nodes()){
+						if(paramValue.taggedWith(XCSG.InstanceVariableAccess)){
+							Node instanceVariableAccess = paramValue;
+							// each instance containing x has been mutated as well
+							// TODO: should this be like a basic assignment constraint 
+							// between each parent container field or just all are not readonly???
+							// for now going with the latter since its easier to implement...
+							for(Node container : AnalysisUtilities.getAccessedContainers(instanceVariableAccess)){
+								if(ImmutabilityPreferences.isDebugLoggingEnabled()) {
+									Log.info("A mutation to " + paramValue.getAttr(XCSG.name).toString() + " mutated container " + container.getAttr(XCSG.name).toString());
+								}
+								if(removeTypes(container, ImmutabilityTypes.READONLY)){
+									typesChanged = true;
+								}
+							}
+						}
+					}
+				}
 			}
 		}
 		
@@ -200,6 +222,7 @@ public class CallChecker {
 		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Constraint qx adapt qret <: qx");
 
 //		// TODO: how should this be handled?
+		// follow up question, does it need to be handled?
 //		if(x.taggedWith(AnalysisUtilities.DUMMY_ASSIGNMENT_NODE)){
 //			return false;
 //		}

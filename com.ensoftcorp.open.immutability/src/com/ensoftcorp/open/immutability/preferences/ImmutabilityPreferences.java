@@ -45,6 +45,50 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 	}
 	
 	/**
+	 * Enable/disable general logging to the Atlas log
+	 */
+	public static final String GENERAL_LOGGING = "GENERAL_LOGGING";
+	public static final Boolean GENERAL_LOGGING_DEFAULT = true;
+	private static Boolean generalLoggingValue = GENERAL_LOGGING_DEFAULT;
+	
+	public static boolean isGeneralLoggingEnabled(){
+		if(!initialized){
+			loadPreferences();
+		}
+		return generalLoggingValue;
+	}
+
+	
+	
+	/**
+	 * Enables verbose debug logging to the Atlas log
+	 */
+	public static final String DEBUG_LOGGING = "DEBUG_LOGGING";
+	public static final Boolean DEBUG_LOGGING_DEFAULT = false;
+	private static Boolean debugLoggingValue = DEBUG_LOGGING_DEFAULT;
+	
+	public static boolean isDebugLoggingEnabled(){
+		if(!initialized){
+			loadPreferences();
+		}
+		return debugLoggingValue;
+	}
+	
+	/**
+	 * Enable/disable running sanity checks
+	 */
+	public static final String RUN_SANITY_CHECKS = "RUN_SANITY_CHECKS";
+	public static final Boolean RUN_SANITY_CHECKS_DEFAULT = true;
+	private static boolean runSanityChecksValue = RUN_SANITY_CHECKS_DEFAULT;
+	
+	public static boolean isRunSanityChecksEnabled(){
+		if(!initialized){
+			loadPreferences();
+		}
+		return runSanityChecksValue;
+	}
+	
+	/**
 	 * Enable/disable partial program analysis (summaries)
 	 * If enabled the type sets are converted to tags and the resulting index can be used to resume analysis later
 	 * If disabled the maximal type is extracted from the type set and the qualifier sets are removed
@@ -76,19 +120,19 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 	}
 	
 	/**
-	 * Enable/disable general logging to the Atlas log
+	 * Enable/disable container mutations
 	 */
-	public static final String GENERAL_LOGGING = "GENERAL_LOGGING";
-	public static final Boolean GENERAL_LOGGING_DEFAULT = true;
-	private static Boolean generalLoggingValue = GENERAL_LOGGING_DEFAULT;
+	public static final String CONSIDER_CONTAINERS = "CONSIDER_CONTAINERS";
+	public static final Boolean CONSIDER_CONTAINERS_DEFAULT = true;
+	private static boolean considerContainersValue = CONSIDER_CONTAINERS_DEFAULT;
 	
-	public static boolean isGeneralLoggingEnabled(){
+	public static boolean isContainerConsiderationEnabled(){
 		if(!initialized){
 			loadPreferences();
 		}
-		return generalLoggingValue;
+		return considerContainersValue;
 	}
-
+	
 	/**
 	 * Enables/disables inference rule logging to the Atlas log
 	 */
@@ -103,45 +147,18 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 		return inferenceRuleLoggingValue;
 	}
 	
-	/**
-	 * Enables verbose debug logging to the Atlas log
-	 */
-	public static final String DEBUG_LOGGING = "DEBUG_LOGGING";
-	public static final Boolean DEBUG_LOGGING_DEFAULT = false;
-	private static Boolean debugLoggingValue = DEBUG_LOGGING_DEFAULT;
-	
-	public static boolean isDebugLoggingEnabled(){
-		if(!initialized){
-			loadPreferences();
-		}
-		return debugLoggingValue;
-	}
-	
-	/**
-	 * Enable/disable running sanity checks
-	 */
-	public static final String RUN_SANITY_CHECKS = "RUN_SANITY_CHECKS";
-	public static final Boolean RUN_SANITY_CHECKS_DEFAULT = true;
-	private static boolean runSanityChecksValue = RUN_SANITY_CHECKS_DEFAULT;
-	
-	public static boolean isRunSanityChecksEnabled(){
-		if(!initialized){
-			loadPreferences();
-		}
-		return runSanityChecksValue;
-	}
-	
 	@Override
 	public void initializeDefaultPreferences() {
 		IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
 		preferences.setDefault(RUN_IMMUTABILITY_ANALYSIS, RUN_IMMUTABILITY_ANALYSIS_DEFAULT);
 		preferences.setDefault(IMMUTABILITY_ANALYSIS_MODE, IMMUTABILITY_ANALYSIS_INFERENCE_MODE);
-		preferences.setDefault(GENERATE_SUMMARIES, GENERATE_SUMMARIES_DEFAULT);
-		preferences.setDefault(LOAD_SUMMARIES, LOAD_SUMMARIES_DEFAULT);
 		preferences.setDefault(RUN_SANITY_CHECKS, RUN_SANITY_CHECKS_DEFAULT);
 		preferences.setDefault(GENERAL_LOGGING, GENERAL_LOGGING_DEFAULT);
-		preferences.setDefault(INFERENCE_RULE_LOGGING, INFERENCE_RULE_LOGGING_DEFAULT);
 		preferences.setDefault(DEBUG_LOGGING, DEBUG_LOGGING_DEFAULT);
+		preferences.setDefault(GENERATE_SUMMARIES, GENERATE_SUMMARIES_DEFAULT);
+		preferences.setDefault(LOAD_SUMMARIES, LOAD_SUMMARIES_DEFAULT);
+		preferences.setDefault(CONSIDER_CONTAINERS, CONSIDER_CONTAINERS_DEFAULT);
+		preferences.setDefault(INFERENCE_RULE_LOGGING, INFERENCE_RULE_LOGGING_DEFAULT);
 	}
 	
 	/**
@@ -152,10 +169,11 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 			IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
 			runImmutabilityAnalysisValue = preferences.getBoolean(RUN_IMMUTABILITY_ANALYSIS);
 			analysisModeValue = preferences.getString(IMMUTABILITY_ANALYSIS_MODE);
-			generateSummariesValue = preferences.getBoolean(GENERATE_SUMMARIES);
-			loadSummariesValue = preferences.getBoolean(LOAD_SUMMARIES);
 			runSanityChecksValue = preferences.getBoolean(RUN_SANITY_CHECKS);
 			generalLoggingValue = preferences.getBoolean(GENERAL_LOGGING);
+			generateSummariesValue = preferences.getBoolean(GENERATE_SUMMARIES);
+			loadSummariesValue = preferences.getBoolean(LOAD_SUMMARIES);
+			considerContainersValue = preferences.getBoolean(CONSIDER_CONTAINERS);
 			inferenceRuleLoggingValue = preferences.getBoolean(INFERENCE_RULE_LOGGING);
 			debugLoggingValue = preferences.getBoolean(DEBUG_LOGGING);
 		} catch (Exception e){

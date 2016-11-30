@@ -28,41 +28,10 @@ public class FieldAssignmentChecker {
 		
 		boolean typesChanged = false;
 		
-		// if x is a reference it must be mutable
-		// if x is a field it must be polyread
-		// TWRITE precondition
-		// TODO: this isn't quite right...
-//		if(AnalysisUtilities.getDefaultTypes(x).contains(ImmutabilityTypes.MUTABLE)){
-//			if(removeTypes(x, ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)){
-//				typesChanged = true;
-//			}
-//		} else {
-//			if(removeTypes(x, ImmutabilityTypes.READONLY)){
-//				typesChanged = true;
-//			}
-//		}
-		
-		// x must be mutable...if x is a field a mutable type has been added as duck tape...this is hacky solution to fix the broken type system
-		// Reference: https://github.com/proganalysis/type-inference/blob/master/object-immutability/src/edu/rpi/reim/ReimTransformer.java#L250
+		// x must be mutable
 		if(removeTypes(x, ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)){
 			typesChanged = true;
 		}
-		
-//		// if y is only mutable then f cannot be readonly
-//		// ISSUE 2 - not documented in the publications and accounts for 40 
-//		// of reiminfer 0.1.2 and 0.1.3 failures on immutability benchmark
-//		// but introduces 2 bugs in immutability benchmark so this isn't perfect
-//		Set<ImmutabilityTypes> yTypes = getTypes(y);
-//		if((yTypes.contains(ImmutabilityTypes.MUTABLE)) && yTypes.size()==1){
-//			if(removeTypes(f, ImmutabilityTypes.READONLY)){
-//				typesChanged = true;
-//			}
-//		}
-		
-//		// y was assigned to f
-//		if(BasicAssignmentChecker.handleAssignment(f, y)){
-//			typesChanged = true;
-//		}
 		
 		// qy <: qx adapt qf
 		// = qx adapt qf :> qy
@@ -88,11 +57,6 @@ public class FieldAssignmentChecker {
 		}
 		
 		boolean typesChanged = false;
-		
-//		// f was assigned to x
-//		if(BasicAssignmentChecker.handleAssignment(f, x)){
-//			typesChanged = true;
-//		}
 		
 		// qy adapt qf <: qx
 		// = qx :> qy adapt qf

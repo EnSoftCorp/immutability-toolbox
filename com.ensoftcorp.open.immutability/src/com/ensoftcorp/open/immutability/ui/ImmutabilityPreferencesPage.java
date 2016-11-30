@@ -31,6 +31,7 @@ public class ImmutabilityPreferencesPage extends FieldEditorPreferencePage imple
 	
 	private static final String GENERATE_SUMMARIES_DESCRIPTION = "Generate summaries (inference only, partial program analysis)";
 	private static final String LOAD_SUMMARIES_DESCRIPTION = "Load summaries (inference only, partial program analysis)";
+	private static final String CONSIDER_CONTAINERS_DESCRIPTION = "Consider mutations to parent container object instances (beta feature, inference only)";
 	private static final String INFERENCE_RULE_LOGGING_DESCRIPTION = "Enable Inference Rule Logging (inference only)";
 	
 	private static boolean changeListenerAdded = false;
@@ -87,6 +88,7 @@ public class ImmutabilityPreferencesPage extends FieldEditorPreferencePage imple
 		addField(new LabelFieldEditor("Inference Based Analysis Options", getFieldEditorParent()));
 		addField(new BooleanFieldEditor(ImmutabilityPreferences.GENERATE_SUMMARIES, "&" + GENERATE_SUMMARIES_DESCRIPTION, getFieldEditorParent()));
 		addField(new BooleanFieldEditor(ImmutabilityPreferences.LOAD_SUMMARIES, "&" + LOAD_SUMMARIES_DESCRIPTION, getFieldEditorParent()));
+		addField(new BooleanFieldEditor(ImmutabilityPreferences.CONSIDER_CONTAINERS, "&" + CONSIDER_CONTAINERS_DESCRIPTION, getFieldEditorParent()));
 		addField(new BooleanFieldEditor(ImmutabilityPreferences.INFERENCE_RULE_LOGGING, "&" + INFERENCE_RULE_LOGGING_DESCRIPTION, getFieldEditorParent()));
 	}
 
