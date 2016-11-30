@@ -491,21 +491,15 @@ public class AnalysisUtilities {
 			qualifiers.add(ImmutabilityTypes.POLYREAD);
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		} else if(ge.taggedWith(XCSG.Null)){
-			// null does not modify the stack or heap so it is readonly
-			// however in order to satisfy constraints the other types should be initialized
-			// note that assignments of nulls to a field can still mutate an object
-			qualifiers.add(ImmutabilityTypes.READONLY);
-			qualifiers.add(ImmutabilityTypes.POLYREAD);
+			// assignments of nulls to a field can still mutate an object
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		} else if(ge.taggedWith(XCSG.Literal) || ge.taggedWith(XCSG.Type)){
-			// several java objects are readonly for all practical purposes
-			// however in order to satisfy constraints the other types should be initialized
+			// literals should be treated as object instantiation and default to mutable
+			// an XCSG.Type here represents a class literal
 			// Note that at least in Jimple its possible for a Type -> Literal -> Formal Parameter
 			// not the normal Type -> Literal -> Actual Parameter -> Formal Parameter
 			// so in this case the Type graph element should be treated as the type literal
 			// and hence readonly...TODO: bug EnSoft to see if this graph pattern is expected!
-			qualifiers.add(ImmutabilityTypes.READONLY);
-			qualifiers.add(ImmutabilityTypes.POLYREAD);
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		} else if(ge.taggedWith(XCSG.Instantiation) || ge.taggedWith(XCSG.ArrayInstantiation)){
 			// Type Rule 1 - TNEW
@@ -523,7 +517,12 @@ public class AnalysisUtilities {
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		} else if(ge.taggedWith(XCSG.Identity)){
 			qualifiers.add(ImmutabilityTypes.READONLY);
+			
+			// TODO: fix me...
+			// POLYREAD IS CAUSING A PROBLEM HERE....
+			// but its supposed to be included...not sure how to fix
 			qualifiers.add(ImmutabilityTypes.POLYREAD);  // TODO: what does it mean for a the this reference to be polyread? ~Ben
+			
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		} else if(ge.taggedWith(XCSG.InstanceVariable)){
 			// Section 2.4 of Reference 1
