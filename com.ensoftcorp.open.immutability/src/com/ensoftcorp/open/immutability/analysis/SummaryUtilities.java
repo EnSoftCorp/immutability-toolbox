@@ -26,7 +26,7 @@ import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.immutability.log.Log;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
-import com.ensoftcorp.open.java.commons.wishful.StopGap;
+import com.ensoftcorp.open.java.commons.wishful.JavaStopGap;
 
 public class SummaryUtilities {
 	
@@ -196,7 +196,7 @@ public class SummaryUtilities {
 		Q packages = Common.universe().nodesTaggedWithAny(XCSG.Package).selectNode(XCSG.name, method.pkg);
 		Q parents = packages.contained().nodesTaggedWithAny(XCSG.Type).selectNode(XCSG.name, method.parentClass);
 		Q methods = parents.children().nodesTaggedWithAny(method.type);
-		methods = methods.selectNode(StopGap.SIGNATURE, method.signature);
+		methods = methods.selectNode(JavaStopGap.SIGNATURE, method.signature);
 		
 		AtlasSet<Node> methodNodes = methods.eval().nodes();
 		
@@ -358,7 +358,7 @@ public class SummaryUtilities {
 	private static void serializeMethod(Node method, XMLStreamWriter writer) throws XMLStreamException {
 		// write method
 		writer.writeStartElement("method");
-		writer.writeAttribute("signature", method.getAttr(StopGap.SIGNATURE).toString());
+		writer.writeAttribute("signature", method.getAttr(JavaStopGap.SIGNATURE).toString());
 		
 		if(method.taggedWith(XCSG.Constructor)){
 			writer.writeAttribute("type", XCSG.Constructor);

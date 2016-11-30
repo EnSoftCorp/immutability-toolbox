@@ -35,6 +35,7 @@ import com.ensoftcorp.open.immutability.analysis.checkers.FieldAssignmentChecker
 import com.ensoftcorp.open.immutability.analysis.checkers.SanityChecks;
 import com.ensoftcorp.open.immutability.log.Log;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
+import com.ensoftcorp.open.java.commons.wishful.JavaStopGap;
 import com.ensoftcorp.open.jimple.commons.wishful.JimpleStopGap;
 
 public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
@@ -101,7 +102,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 		}
 		
 		// TODO: remove when there are appropriate alternatives
-		JimpleStopGap.addClassVariableAccessTags();
+		JavaStopGap.addClassVariableAccessTags();
 		JimpleStopGap.addDataFlowDisplayNodeTags();
 		
 		AnalysisUtilities.addDummyReturnAssignments();
@@ -210,7 +211,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 		
 		// TODO: remove when there are appropriate alternatives
 		JimpleStopGap.removeDataFlowDisplayNodeTags();
-		JimpleStopGap.removeClassVariableAccessTags();
+		JavaStopGap.removeClassVariableAccessTags();
 		
 		return isSane;
 	}
@@ -284,7 +285,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 								}
 							}
 							// if the array was a class variable then the method where the assignment happened is not pure
-							else if(arrayIdentity.taggedWith(JimpleStopGap.CLASS_VARIABLE_VALUE)){
+							else if(arrayIdentity.taggedWith(JavaStopGap.CLASS_VARIABLE_VALUE)){
 								// TSWRITE
 								// let, sf[] = x
 								AtlasSet<Node> sfReferences = AnalysisUtilities.parseReferences(arrayIdentity);
@@ -366,7 +367,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 			
 			// Type Rule 7 - TSREAD
 			// let, x = sf
-			if(from.taggedWith(JimpleStopGap.CLASS_VARIABLE_VALUE)){
+			if(from.taggedWith(JavaStopGap.CLASS_VARIABLE_VALUE)){
 				AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(to);
 				for(Node x : xReferences){
 					Node m = StandardQueries.getContainingFunction(to);
@@ -382,7 +383,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 			
 			// Type Rule 8 - TSWRITE
 			// let, sf = x
-			if(to.taggedWith(JimpleStopGap.CLASS_VARIABLE_ASSIGNMENT)){
+			if(to.taggedWith(JavaStopGap.CLASS_VARIABLE_ASSIGNMENT)){
 				AtlasSet<Node> sfReferences = AnalysisUtilities.parseReferences(to);
 				for(Node sf : sfReferences){
 					Node m = StandardQueries.getContainingFunction(to);
