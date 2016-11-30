@@ -1,7 +1,6 @@
 package com.ensoftcorp.open.immutability.analysis;
 
 import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.getTypes;
-import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.addTypes;
 import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.removeTypes;
 
 import java.io.File;
@@ -269,12 +268,15 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 										// TWRITE precondition, however for arrays we 
 										// don't enforce qy <: qx adapt qf because
 										// that constraint would be applied to the array component
+										
 										// note if x is an instance variable, a mutable type is added to fix the type system
-										if(x.taggedWith(XCSG.InstanceVariable)){
-											if(addTypes(x, ImmutabilityTypes.MUTABLE)){
-												typesChanged = true;
-											}
-										}
+										// compensated by adding mutable as a default type instead of this on the fly hack
+										// left hack here for posterity
+//										if(x.taggedWith(XCSG.InstanceVariable)){
+//											if(addTypes(x, ImmutabilityTypes.MUTABLE)){
+//												typesChanged = true;
+//											}
+//										}
 										if(removeTypes(x, ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)){
 											typesChanged = true;
 										}
@@ -294,6 +296,11 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 											typesChanged = true;
 										}
 									}
+								}
+							} else {
+								// local reference was mutated directly, can't be polyread either
+								if(removeTypes(arrayIdentity, ImmutabilityTypes.POLYREAD)){
+									typesChanged = true;
 								}
 							}
 						}
@@ -319,11 +326,13 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 						Node instanceVariableAccessed = instanceVariableAccessedEdges.predecessors(Common.toQ(instanceVariableAssignment)).eval().nodes().getFirst();
 						AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(instanceVariableAccessed);
 						for(Node x : xReferences){
-							if(x.taggedWith(XCSG.InstanceVariable)){
-								if(addTypes(x, ImmutabilityTypes.MUTABLE)){
-									typesChanged = true;
-								}
-							}
+							// compensated by adding mutable as a default type instead of this on the fly hack
+							// left hack here for posterity
+//							if(x.taggedWith(XCSG.InstanceVariable)){
+//								if(addTypes(x, ImmutabilityTypes.MUTABLE)){
+//									typesChanged = true;
+//								}
+//							}
 							if(FieldAssignmentChecker.handleFieldWrite(x, f, y)){
 								typesChanged = true;
 							}
@@ -397,6 +406,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 					
 					// TODO: enable if untyped types are occurring from TCALL
 					//       I don't think we need this, but adding it here for posterity 
+					//       left possible hack here for posterity
 //					if(x.taggedWith(XCSG.InstanceVariable)){
 //						if(addTypes(x, ImmutabilityTypes.MUTABLE)){
 //							typesChanged = true;
@@ -447,11 +457,13 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 						AtlasSet<Node> yReferences = AnalysisUtilities.parseReferences(reciever);
 						for(Node y : yReferences){
 							
-							if(y.taggedWith(XCSG.InstanceVariable)){
-								if(addTypes(y, ImmutabilityTypes.MUTABLE)){
-									typesChanged = true;
-								}
-							}
+							// compensated by adding mutable as a default type instead of this on the fly hack
+							// left hack here for posterity
+//							if(y.taggedWith(XCSG.InstanceVariable)){
+//								if(addTypes(y, ImmutabilityTypes.MUTABLE)){
+//									typesChanged = true;
+//								}
+//							}
 							
 							// ReturnValue (ret) -InterproceduralDataFlow-> CallSite (m)
 							Node ret = interproceduralDataFlowEdges.predecessors(Common.toQ(callsite)).eval().nodes().getFirst();
@@ -520,7 +532,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 			
 			// Type Rule 2 - TASSIGN
 			// let x = y
-			if(!involvesField && !involvesCallsiteRHS){
+			if((!involvesField && !involvesCallsiteRHS) || to.taggedWith(XCSG.ParameterPass)){
 				AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(to);
 				for(Node x : xReferences){
 					AtlasSet<Node> yReferences = AnalysisUtilities.parseReferences(from);;
@@ -531,7 +543,6 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 					}
 				}
 			}
-			
 		}
 	
 		return typesChanged;

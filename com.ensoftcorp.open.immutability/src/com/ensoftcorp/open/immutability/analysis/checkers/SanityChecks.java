@@ -183,10 +183,10 @@ public class SanityChecks {
 			} else if(ge.taggedWith(ImmutabilityAnalysis.MUTABLE) && !defaultTypes.contains(ImmutabilityTypes.MUTABLE)){
 				// its ok for instance variables to gain the mutable type
 				// this is undocumented, but necessary in the reiminfer implementation
-				if(!ge.taggedWith(XCSG.InstanceVariable)){
+//				if(!ge.taggedWith(XCSG.InstanceVariable)){ // left hack here for posterity, instance variables now include mutable in default type
 					if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.warning("GraphElement " + ge.address().toAddressString() + " is tagged as MUTABLE but MUTABLE is not a valid default for this element.");
 					unexpectedTypes++;
-				}
+//				}
 			}
 		}
 		boolean hasUnexpectedTypes = unexpectedTypes > 0;
