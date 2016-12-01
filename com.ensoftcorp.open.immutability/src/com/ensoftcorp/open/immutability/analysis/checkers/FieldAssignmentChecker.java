@@ -31,28 +31,12 @@ public class FieldAssignmentChecker {
 		
 		boolean typesChanged = false;
 		
-//		// x must be mutable
-//		if (ImmutabilityPreferences.isSetMutableInstancesVariablesEnabled()) {
-//			if (removeTypes(x, ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)) {
-//				typesChanged = true;
-//			}
-//		} else {
-//			// removing polyread and readonly would leave instance variables untyped...so we must allow polyread
-//			if (removeTypes(x, ImmutabilityTypes.READONLY)) {
-//				typesChanged = true;
-//			}
-//		}
-//		
-//		if(setMutable(x)){
-//			typesChanged = true;
-//		}
-
+		// x must be mutable
 		if (x.taggedWith(XCSG.InstanceVariable)) {
 			if (ImmutabilityPreferences.isAllowAddMutableInstanceVariablesEnabled()) {
 				addMutable(x); // doesn't count as a type change
 			}
-		}
-		
+		}	
 		if(ImmutabilityPreferences.isAllowDefaultMutableInstancesVariablesEnabled() || ImmutabilityPreferences.isAllowAddMutableInstanceVariablesEnabled()){
 			if(XEqualsYConstraintSolver.satisfty(x, ImmutabilityTypes.MUTABLE)){
 				typesChanged = true;

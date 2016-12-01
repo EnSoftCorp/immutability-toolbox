@@ -267,42 +267,11 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 								for(Node instanceVariableAccessed : instanceVariablesAccessed){
 									for(Node x : AnalysisUtilities.parseReferences(instanceVariableAccessed)){
 										// x must be mutable
-										// TWRITE precondition, however for arrays we 
-										// don't enforce qy <: qx adapt qf because
-										// that constraint would be applied to the array component
-										// note if x is an instance variable, a mutable type is added to fix the type system
-//										if (x.taggedWith(XCSG.InstanceVariable)) {
-//											if (ImmutabilityPreferences.isSetMutableInstancesVariablesEnabled()) {
-//												if(setMutable(x)){
-//													typesChanged = true;
-//												}
-//											} 
-//											
-//											if (ImmutabilityPreferences.isAllowDefaultMutableInstancesVariablesEnabled()) {
-//												if (removeTypes(x, ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)) {
-//													typesChanged = true;
-//												}
-//											} else {
-//												if (removeTypes(x, ImmutabilityTypes.READONLY)) {
-//													typesChanged = true;
-//												}
-//											}
-//										} else {
-//											if (removeTypes(x, ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)) {
-//												typesChanged = true;
-//											}
-//										}
-//										
-//										if(setMutable(x)){
-//											typesChanged = true;
-//										}
-										
 										if (x.taggedWith(XCSG.InstanceVariable)) {
 											if (ImmutabilityPreferences.isAllowAddMutableInstanceVariablesEnabled()) {
 												addMutable(x); // doesn't count as a type change
 											}
 										}
-										
 										if(ImmutabilityPreferences.isAllowDefaultMutableInstancesVariablesEnabled() || ImmutabilityPreferences.isAllowAddMutableInstanceVariablesEnabled()){
 											if(XEqualsYConstraintSolver.satisfty(x, ImmutabilityTypes.MUTABLE)){
 												typesChanged = true;
@@ -373,15 +342,6 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 						Node instanceVariableAccessed = instanceVariableAccessedEdges.predecessors(Common.toQ(instanceVariableAssignment)).eval().nodes().getFirst();
 						AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(instanceVariableAccessed);
 						for(Node x : xReferences){
-//							// if x is an instance variable it may need a mutable type
-//							if(x.taggedWith(XCSG.InstanceVariable)){
-//								if (ImmutabilityPreferences.isSetMutableInstancesVariablesEnabled()) {
-//									if(setMutable(x)){
-//										typesChanged = true;
-//									}
-//								}
-//							}
-
 							if(FieldAssignmentChecker.handleFieldWrite(x, f, y)){
 								typesChanged = true;
 							}
