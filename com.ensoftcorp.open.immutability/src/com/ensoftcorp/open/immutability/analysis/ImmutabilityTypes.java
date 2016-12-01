@@ -38,21 +38,23 @@ public enum ImmutabilityTypes {
 	 */
 	public static ImmutabilityTypes getAdaptedFieldViewpoint(ImmutabilityTypes context, ImmutabilityTypes declaration){
 //		// see https://github.com/SoftwareEngineeringToolDemos/FSE-2012-ReImInfer/blob/master/inference-framework/checker-framework/checkers/src/checkers/inference/reim/ReimChecker.java#L216
-//		if(declaration == ImmutabilityTypes.READONLY){
-//			// q and READONLY = READONLY
-//			return ImmutabilityTypes.READONLY;
-//		} else if(declaration == ImmutabilityTypes.MUTABLE){
-//			// q and MUTABLE = q
-//			return context;
-//		} else {
-//			// declared must be ImmutabilityTypes.POLYREAD
-//			// q and POLYREAD = q
-//			return context;
-//		}
+		// FOOL2012 implementation
+		if(declaration == ImmutabilityTypes.READONLY){
+			// q and READONLY = READONLY
+			return ImmutabilityTypes.READONLY;
+		} else if(declaration == ImmutabilityTypes.MUTABLE){
+			// q and MUTABLE = q
+			return context;
+		} else {
+			// declared must be ImmutabilityTypes.POLYREAD
+			// q and POLYREAD = q
+			return context;
+		}
 		
-		// using the more accurate ReIm' definition of field viewpoint adaptation
+		// vanilla OOPSLA implementation
+		//  ReIm' definition of field viewpoint adaptation
 		// see https://github.com/proganalysis/type-inference/blob/master/inference-framework/checker-framework/checkers/src/checkers/inference2/reim/ReimChecker.java#L272
-		return getAdaptedMethodViewpoint(context, declaration);
+//		return getAdaptedMethodViewpoint(context, declaration);
 	}
 	
 	/**

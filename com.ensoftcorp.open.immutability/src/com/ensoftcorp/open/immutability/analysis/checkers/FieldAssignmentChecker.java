@@ -36,13 +36,18 @@ public class FieldAssignmentChecker {
 			if (ImmutabilityPreferences.isAllowAddMutableInstanceVariablesEnabled()) {
 				addMutable(x); // doesn't count as a type change
 			}
-		}	
-		if(ImmutabilityPreferences.isAllowDefaultMutableInstancesVariablesEnabled() || ImmutabilityPreferences.isAllowAddMutableInstanceVariablesEnabled()){
-			if(XEqualsYConstraintSolver.satisfty(x, ImmutabilityTypes.MUTABLE)){
-				typesChanged = true;
+			if(ImmutabilityPreferences.isAllowDefaultMutableInstancesVariablesEnabled() || ImmutabilityPreferences.isAllowAddMutableInstanceVariablesEnabled()){
+				if(XEqualsYConstraintSolver.satisfty(x, ImmutabilityTypes.MUTABLE)){
+					typesChanged = true;
+				}
+			} else {
+				// vanilla paper description
+				if(removeTypes(x, ImmutabilityTypes.READONLY)){
+					typesChanged = true;
+				}
 			}
 		} else {
-			if(removeTypes(x, ImmutabilityTypes.READONLY)){
+			if(XEqualsYConstraintSolver.satisfty(x, ImmutabilityTypes.MUTABLE)){
 				typesChanged = true;
 			}
 		}

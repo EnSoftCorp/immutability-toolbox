@@ -271,13 +271,18 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 											if (ImmutabilityPreferences.isAllowAddMutableInstanceVariablesEnabled()) {
 												addMutable(x); // doesn't count as a type change
 											}
-										}
-										if(ImmutabilityPreferences.isAllowDefaultMutableInstancesVariablesEnabled() || ImmutabilityPreferences.isAllowAddMutableInstanceVariablesEnabled()){
-											if(XEqualsYConstraintSolver.satisfty(x, ImmutabilityTypes.MUTABLE)){
-												typesChanged = true;
+											if(ImmutabilityPreferences.isAllowDefaultMutableInstancesVariablesEnabled() || ImmutabilityPreferences.isAllowAddMutableInstanceVariablesEnabled()){
+												if(XEqualsYConstraintSolver.satisfty(x, ImmutabilityTypes.MUTABLE)){
+													typesChanged = true;
+												}
+											} else {
+												// vanilla paper description
+												if(removeTypes(x, ImmutabilityTypes.READONLY)){
+													typesChanged = true;
+												}
 											}
 										} else {
-											if(removeTypes(x, ImmutabilityTypes.READONLY)){
+											if(XEqualsYConstraintSolver.satisfty(x, ImmutabilityTypes.MUTABLE)){
 												typesChanged = true;
 											}
 										}
@@ -287,12 +292,15 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 											// TODO: should this be like a basic assignment constraint 
 											// between each parent container field or just all are not readonly???
 											// for now going with the latter since its easier to implement...
+											
 											for(Node container : AnalysisUtilities.getAccessedContainers(arrayIdentity)){
-												if(ImmutabilityPreferences.isDebugLoggingEnabled()) {
-													Log.info("A mutation to " + arrayIdentity.getAttr(XCSG.name).toString() + " mutated container " + container.getAttr(XCSG.name).toString());
-												}
-												if(removeTypes(container, ImmutabilityTypes.READONLY)){
-													typesChanged = true;
+												for(Node containerReference : AnalysisUtilities.parseReferences(container)){
+													if(ImmutabilityPreferences.isDebugLoggingEnabled()) {
+														Log.info("A mutation to " + arrayIdentity.getAttr(XCSG.name).toString() + " mutated container " + containerReference.getAttr(XCSG.name).toString());
+													}
+													if(removeTypes(containerReference, ImmutabilityTypes.READONLY)){
+														typesChanged = true;
+													}
 												}
 											}
 										}
@@ -312,11 +320,6 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 											typesChanged = true;
 										}
 									}
-								}
-							} else {
-								// local reference was mutated directly, can't be polyread either
-								if(removeTypes(arrayIdentity, ImmutabilityTypes.POLYREAD)){
-									typesChanged = true;
 								}
 							}
 						}
@@ -353,11 +356,13 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 									// between each parent container field or just all are not readonly???
 									// for now going with the latter since its easier to implement...
 									for(Node container : AnalysisUtilities.getAccessedContainers(to)){
-										if(ImmutabilityPreferences.isDebugLoggingEnabled()) {
-											Log.info("A mutation to " + to.getAttr(XCSG.name).toString() + " mutated container " + container.getAttr(XCSG.name).toString());
-										}
-										if(removeTypes(container, ImmutabilityTypes.READONLY)){
-											typesChanged = true;
+										for(Node containerReference : AnalysisUtilities.parseReferences(container)){
+											if(ImmutabilityPreferences.isDebugLoggingEnabled()) {
+												Log.info("A mutation to " + to.getAttr(XCSG.name).toString() + " mutated container " + containerReference.getAttr(XCSG.name).toString());
+											}
+											if(removeTypes(containerReference, ImmutabilityTypes.READONLY)){
+												typesChanged = true;
+											}
 										}
 									}
 								}
@@ -523,11 +528,13 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 										// between each parent container field or just all are not readonly???
 										// for now going with the latter since its easier to implement...
 										for(Node container : AnalysisUtilities.getAccessedContainers(reciever)){
-											if(ImmutabilityPreferences.isDebugLoggingEnabled()) {
-												Log.info("A mutation to " + reciever.getAttr(XCSG.name).toString() + " mutated container " + container.getAttr(XCSG.name).toString());
-											}
-											if(removeTypes(container, ImmutabilityTypes.READONLY)){
-												typesChanged = true;
+											for(Node containerReference : AnalysisUtilities.parseReferences(container)){
+												if(ImmutabilityPreferences.isDebugLoggingEnabled()) {
+													Log.info("A mutation to " + reciever.getAttr(XCSG.name).toString() + " mutated container " + containerReference.getAttr(XCSG.name).toString());
+												}
+												if(removeTypes(containerReference, ImmutabilityTypes.READONLY)){
+													typesChanged = true;
+												}
 											}
 										}
 									}
@@ -578,6 +585,21 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 				for(Node x : xReferences){
 					AtlasSet<Node> yReferences = AnalysisUtilities.parseReferences(from);;
 					for(Node y : yReferences){
+						
+						
+						if(to.taggedWith(XCSG.ParameterPass) && from.taggedWith(XCSG.InstanceVariableValue)){
+							Set<ImmutabilityTypes> xTypes = getTypes(x);
+							Set<ImmutabilityTypes> yTypes = getTypes(y);
+							if(!yTypes.contains(ImmutabilityTypes.READONLY)){
+								continue;
+								// fields without readonly cause parameters to be non-mutable
+								// but mutions to parameters must be mutable which causes untyped references
+								// so this constraint is too strong...
+								// TODO: could potentially be fixed by revised viewpoint adaptations 
+								// specific to fields and callsites as is done in the FOOL2012 paper
+							}
+						}
+						
 						if(BasicAssignmentChecker.handleAssignment(x, y)){
 							typesChanged = true;
 						}

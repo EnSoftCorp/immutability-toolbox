@@ -180,6 +180,12 @@ public class CallChecker {
 			Node z = parametersPassedEdge.getNode(EdgeDirection.FROM);
 			Node p = parametersPassedEdge.getNode(EdgeDirection.TO);
 			
+			if(ImmutabilityPreferences.isDebugLoggingEnabled()) {
+				Log.info("x = m(z->p), x:" + AnalysisUtilities.getTypes(x).toString() 
+						+ ", z:" + AnalysisUtilities.getTypes(z).toString() 
+						+ ", p:" + AnalysisUtilities.getTypes(p).toString());
+			}
+			
 			// qz <: qx adapt qp
 			// = qx adapt qp :> qz
 			if(XAdaptYGreaterThanEqualZConstraintSolver.satisify(x, p, z)){
@@ -195,11 +201,13 @@ public class CallChecker {
 							// between each parent container field or just all are not readonly???
 							// for now going with the latter since its easier to implement...
 							for(Node container : AnalysisUtilities.getAccessedContainers(instanceVariableAccess)){
-								if(ImmutabilityPreferences.isDebugLoggingEnabled()) {
-									Log.info("A mutation to " + paramValue.getAttr(XCSG.name).toString() + " mutated container " + container.getAttr(XCSG.name).toString());
-								}
-								if(removeTypes(container, ImmutabilityTypes.READONLY)){
-									typesChanged = true;
+								for(Node containerReference : AnalysisUtilities.parseReferences(container)){
+									if(ImmutabilityPreferences.isDebugLoggingEnabled()) {
+										Log.info("A mutation to " + paramValue.getAttr(XCSG.name).toString() + " mutated container " + containerReference.getAttr(XCSG.name).toString());
+									}
+									if(removeTypes(containerReference, ImmutabilityTypes.READONLY)){
+										typesChanged = true;
+									}
 								}
 							}
 						}
