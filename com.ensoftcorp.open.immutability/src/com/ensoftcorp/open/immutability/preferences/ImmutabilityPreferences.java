@@ -123,7 +123,7 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 	 * Enable/disable whether instance variables may be set to mutable
 	 */
 	public static final String ALLOW_ADD_MUTABLE_INSTANCE_VARIABLES = "ALLOW_MUTABLE_INSTANCE_VARIABLES";
-	public static final Boolean ALLOW_ADD_MUTABLE_INSTANCE_VARIABLES_DEFAULT = true;
+	public static final Boolean ALLOW_ADD_MUTABLE_INSTANCE_VARIABLES_DEFAULT = false;
 	private static boolean allowAddMutableInstanceVariablesValue = ALLOW_ADD_MUTABLE_INSTANCE_VARIABLES_DEFAULT;
 	
 	public static boolean isAllowAddMutableInstanceVariablesEnabled(){
