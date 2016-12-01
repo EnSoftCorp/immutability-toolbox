@@ -1,4 +1,4 @@
-package com.ensoftcorp.open.immutability.analysis.codegen;
+package com.ensoftcorp.open.immutability.experimental;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -9,7 +9,7 @@ import java.util.Set;
 
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
 
-public class AAdaptBGreaterThanEqualCAdaptDConstraintSolverGenerator {
+public class AFieldAdaptBGreaterThanEqualCFieldAdaptDConstraintSolverGenerator {
 
 	// all possible sets, 3 choose 3, 3 choose 2, and 3 choose 1
 	private static final EnumSet<ImmutabilityTypes> SET1 = EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY);

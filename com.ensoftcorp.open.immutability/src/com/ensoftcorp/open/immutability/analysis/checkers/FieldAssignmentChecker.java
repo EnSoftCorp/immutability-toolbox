@@ -7,9 +7,9 @@ import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.remove
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
-import com.ensoftcorp.open.immutability.analysis.solvers.XAdaptYGreaterThanEqualZConstraintSolver;
+import com.ensoftcorp.open.immutability.analysis.solvers.XFieldAdaptYGreaterThanEqualZConstraintSolver;
 import com.ensoftcorp.open.immutability.analysis.solvers.XEqualsYConstraintSolver;
-import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYAdaptZConstraintSolver;
+import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYFieldAdaptZConstraintSolver;
 import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYConstraintSolver;
 import com.ensoftcorp.open.immutability.log.Log;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
@@ -54,7 +54,7 @@ public class FieldAssignmentChecker {
 		
 		// qy <: qx adapt qf
 		// = qx adapt qf :> qy
-		if(XAdaptYGreaterThanEqualZConstraintSolver.satisify(x, f, y)){
+		if(XFieldAdaptYGreaterThanEqualZConstraintSolver.satisify(x, f, y)){
 			typesChanged = true;
 		}
 		
@@ -79,7 +79,7 @@ public class FieldAssignmentChecker {
 		
 		// qy adapt qf <: qx
 		// = qx :> qy adapt qf
-		if(XGreaterThanEqualYAdaptZConstraintSolver.satisify(x, y, f)){
+		if(XGreaterThanEqualYFieldAdaptZConstraintSolver.satisify(x, y, f)){
 			typesChanged = true;
 		}
 		

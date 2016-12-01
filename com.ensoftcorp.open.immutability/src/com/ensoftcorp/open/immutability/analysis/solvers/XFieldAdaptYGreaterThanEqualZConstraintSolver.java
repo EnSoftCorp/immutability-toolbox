@@ -11,7 +11,7 @@ import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.log.Log;
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
 
-public class XAdaptYGreaterThanEqualZConstraintSolver {
+public class XFieldAdaptYGreaterThanEqualZConstraintSolver {
 
 	// all possible sets, 3 choose 3, 3 choose 2, and 3 choose 1
 	private static final ArrayList<EnumSet<ImmutabilityTypes>> sets = new ArrayList<EnumSet<ImmutabilityTypes>>();
@@ -903,7 +903,6 @@ public class XAdaptYGreaterThanEqualZConstraintSolver {
 		default:
 			throw new IllegalArgumentException("Unhandled case: xTypes=" + xTypes.toString() + ", yTypes=" + yTypes.toString() + ", zTypes=" + zTypes.toString());
 		}
-
 	}
 
 }

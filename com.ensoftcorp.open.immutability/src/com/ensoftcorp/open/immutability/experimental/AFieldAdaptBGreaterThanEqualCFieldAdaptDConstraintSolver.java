@@ -1,4 +1,4 @@
-package com.ensoftcorp.open.immutability.analysis.solvers;
+package com.ensoftcorp.open.immutability.experimental;
 
 import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.getTypes;
 import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.removeTypes;
@@ -11,7 +11,7 @@ import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.log.Log;
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
 
-public class AAdaptBGreaterThanEqualCAdaptDConstraintSolver {
+public class AFieldAdaptBGreaterThanEqualCFieldAdaptDConstraintSolver {
 
 	// all possible sets, 3 choose 3, 3 choose 2, and 3 choose 1
 	private static final ArrayList<EnumSet<ImmutabilityTypes>> sets = new ArrayList<EnumSet<ImmutabilityTypes>>();

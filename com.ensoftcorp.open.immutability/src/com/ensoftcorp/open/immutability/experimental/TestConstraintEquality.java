@@ -1,4 +1,4 @@
-package com.ensoftcorp.open.immutability.analysis.solvers;
+package com.ensoftcorp.open.immutability.experimental;
 
 import java.util.ArrayList;
 import java.util.EnumSet;

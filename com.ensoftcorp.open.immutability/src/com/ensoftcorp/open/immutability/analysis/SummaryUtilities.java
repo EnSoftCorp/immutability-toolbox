@@ -24,6 +24,7 @@ import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
+import com.ensoftcorp.open.immutability.constants.ImmutabilityTags;
 import com.ensoftcorp.open.immutability.log.Log;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
 import com.ensoftcorp.open.java.commons.wishful.JavaStopGap;
@@ -269,7 +270,7 @@ public class SummaryUtilities {
 				qualifiers.add(ImmutabilityTypes.MUTABLE);
 			} else {
 				Log.warning("Importing untyped qualifier for node: " + node.address().toAddressString());
-				node.tag(ImmutabilityAnalysis.UNTYPED);
+				node.tag(ImmutabilityTags.UNTYPED);
 			}
 		}
 		return qualifiers;
@@ -287,7 +288,7 @@ public class SummaryUtilities {
 		writer.writeAttribute("atlas", atlasVersion.getMajor() + "." + atlasVersion.getMinor() + "." + atlasVersion.getMicro());
 		writer.writeAttribute("immutability-toolbox", immutabilityToolboxVersion.getMajor() + "." + immutabilityToolboxVersion.getMinor() + "." + immutabilityToolboxVersion.getMicro());
 		
-		for(Node field : Common.universe().nodesTaggedWithAny(XCSG.Field).nodesTaggedWithAny(ImmutabilityAnalysis.READONLY, ImmutabilityAnalysis.POLYREAD, ImmutabilityAnalysis.MUTABLE, ImmutabilityAnalysis.UNTYPED).eval().nodes()){
+		for(Node field : Common.universe().nodesTaggedWithAny(XCSG.Field).nodesTaggedWithAny(ImmutabilityTags.READONLY, ImmutabilityTags.POLYREAD, ImmutabilityTags.MUTABLE, ImmutabilityTags.UNTYPED).eval().nodes()){
 			try {
 				serializeField(field, writer);
 			} catch (Exception e){
@@ -298,7 +299,7 @@ public class SummaryUtilities {
 			fieldsSummarized++;
 		}
 		
-		for(Node method : Common.universe().nodesTaggedWithAny(XCSG.Method).nodesTaggedWithAny(ImmutabilityAnalysis.READONLY, ImmutabilityAnalysis.POLYREAD, ImmutabilityAnalysis.MUTABLE, ImmutabilityAnalysis.UNTYPED).eval().nodes()){
+		for(Node method : Common.universe().nodesTaggedWithAny(XCSG.Method).nodesTaggedWithAny(ImmutabilityTags.READONLY, ImmutabilityTags.POLYREAD, ImmutabilityTags.MUTABLE, ImmutabilityTags.UNTYPED).eval().nodes()){
 			try {
 				serializeMethod(method, writer);
 			} catch (Exception e){
@@ -433,20 +434,20 @@ public class SummaryUtilities {
 	private static String stringifyImmutabilityTags(Node node) {
 		String prefix = "";
 		String immutabilityTags = "";
-		if(node.taggedWith(ImmutabilityAnalysis.READONLY)){
-			immutabilityTags += ImmutabilityAnalysis.READONLY;
+		if(node.taggedWith(ImmutabilityTags.READONLY)){
+			immutabilityTags += ImmutabilityTags.READONLY;
 			prefix = ",";
 		}
-		if(node.taggedWith(ImmutabilityAnalysis.POLYREAD)){
-			immutabilityTags += (prefix + ImmutabilityAnalysis.POLYREAD);
+		if(node.taggedWith(ImmutabilityTags.POLYREAD)){
+			immutabilityTags += (prefix + ImmutabilityTags.POLYREAD);
 			prefix = ",";
 		}
-		if(node.taggedWith(ImmutabilityAnalysis.MUTABLE)){
-			immutabilityTags += (prefix + ImmutabilityAnalysis.MUTABLE);
+		if(node.taggedWith(ImmutabilityTags.MUTABLE)){
+			immutabilityTags += (prefix + ImmutabilityTags.MUTABLE);
 			prefix = ",";
 		}
-		if(node.taggedWith(ImmutabilityAnalysis.UNTYPED)){
-			immutabilityTags += (prefix + ImmutabilityAnalysis.UNTYPED);
+		if(node.taggedWith(ImmutabilityTags.UNTYPED)){
+			immutabilityTags += (prefix + ImmutabilityTags.UNTYPED);
 		}
 		return immutabilityTags;
 	}

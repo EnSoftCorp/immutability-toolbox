@@ -13,8 +13,8 @@ import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.analysis.StandardQueries;
 import com.ensoftcorp.open.immutability.analysis.AnalysisUtilities;
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
-import com.ensoftcorp.open.immutability.analysis.solvers.XAdaptYGreaterThanEqualZConstraintSolver;
-import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYAdaptZConstraintSolver;
+import com.ensoftcorp.open.immutability.analysis.solvers.XFieldAdaptYGreaterThanEqualZConstraintSolver;
+import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYFieldAdaptZConstraintSolver;
 import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYConstraintSolver;
 import com.ensoftcorp.open.immutability.log.Log;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
@@ -45,7 +45,7 @@ public class CallChecker {
 		
 		/////////////////////// start qy <: qx adapt qthis /////////////////////// 
 		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Constraint qy <: qx adapt qthis");
-		if(XAdaptYGreaterThanEqualZConstraintSolver.satisify(x, identity, y)){
+		if(XFieldAdaptYGreaterThanEqualZConstraintSolver.satisify(x, identity, y)){
 			typesChanged = true;
 		}
 		/////////////////////// end qy <: qx adapt qthis ///////////////////////
@@ -161,7 +161,7 @@ public class CallChecker {
 
 		// qm' <: qx adapt qm
 		// = qx adapt qm :> qm'
-		return XAdaptYGreaterThanEqualZConstraintSolver.satisify(x, method, containingMethod);
+		return XFieldAdaptYGreaterThanEqualZConstraintSolver.satisify(x, method, containingMethod);
 	}
 	
 	/**
@@ -188,7 +188,7 @@ public class CallChecker {
 			
 			// qz <: qx adapt qp
 			// = qx adapt qp :> qz
-			if(XAdaptYGreaterThanEqualZConstraintSolver.satisify(x, p, z)){
+			if(XFieldAdaptYGreaterThanEqualZConstraintSolver.satisify(x, p, z)){
 				typesChanged = true;
 				
 				if(ImmutabilityPreferences.isContainerConsiderationEnabled()){
@@ -240,7 +240,7 @@ public class CallChecker {
 		
 		// qx adapt qret <: qx
 		// = qx :> qx adapt qret
-		return XGreaterThanEqualYAdaptZConstraintSolver.satisify(x, x, ret);
+		return XGreaterThanEqualYFieldAdaptZConstraintSolver.satisify(x, x, ret);
 	}
 	
 }

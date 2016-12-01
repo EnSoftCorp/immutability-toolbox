@@ -10,6 +10,7 @@ import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
+import com.ensoftcorp.open.immutability.constants.ImmutabilityTags;
 import com.ensoftcorp.open.immutability.log.Log;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
 
@@ -23,36 +24,6 @@ import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
  * @author Ben Holland, Ganesh Santhanam
  */
 public abstract class ImmutabilityAnalysis {
-
-	/**
-	 * Tag applied to "pure" methods
-	 */
-	public static final String PURE_METHOD = "PURE";
-	
-	/**
-	 * Tag applied to fields, parameters, variables, etc. denoting a "readonly" immutability
-	 * Readonly means that in any context the reference is readonly (never mutated)
-	 */
-	public static final String READONLY = "READONLY";
-	
-	/**
-	 * Tag applied to fields, parameters, variables, etc. denoting a "polyread" immutability
-	 * Polyread means that depending on the context a reference may be mutable or readonly
-	 */
-	public static final String POLYREAD = "POLYREAD";
-	
-	/**
-	 * Tag applied to fields, parameters, variables, etc. denoting a "mutable" immutability
-	 * Mutable means that in any context the reference is mutable
-	 */
-	public static final String MUTABLE = "MUTABLE";
-	
-	/**
-	 * Tag applied to references that resulted in no immutability types
-	 * This tag should ideally never be applied and represents and error in the 
-	 * type system or implementation
-	 */
-	public static final String UNTYPED = "UNTYPED";
 	
 	/**
 	 * Helper for formatting decimal strings
@@ -91,10 +62,10 @@ public abstract class ImmutabilityAnalysis {
 			if(ImmutabilityPreferences.isGenerateSummariesEnabled()){
 				Log.info("Immutability analysis completed in " + FORMAT.format(runtime) + " ms\n");
 			} else {
-				long numReadOnly = Common.universe().nodesTaggedWithAny(READONLY).eval().nodes().size();
-				long numPolyRead = Common.universe().nodesTaggedWithAny(POLYREAD).eval().nodes().size();
-				long numMutable = Common.universe().nodesTaggedWithAny(MUTABLE).eval().nodes().size();
-				long numPure = Common.universe().nodesTaggedWithAny(PURE_METHOD).eval().nodes().size();
+				long numReadOnly = Common.universe().nodesTaggedWithAny(ImmutabilityTags.READONLY).eval().nodes().size();
+				long numPolyRead = Common.universe().nodesTaggedWithAny(ImmutabilityTags.POLYREAD).eval().nodes().size();
+				long numMutable = Common.universe().nodesTaggedWithAny(ImmutabilityTags.MUTABLE).eval().nodes().size();
+				long numPure = Common.universe().nodesTaggedWithAny(ImmutabilityTags.PURE_METHOD).eval().nodes().size();
 				String summary = "READONLY: " + numReadOnly + ", POLYREAD: " + numPolyRead + ", MUTABLE: " + numMutable  + ", PURE: " + numPure;
 				Log.info("Immutability analysis completed in " + FORMAT.format(runtime) + " ms\n" + summary);
 			}
@@ -110,11 +81,11 @@ public abstract class ImmutabilityAnalysis {
 		AtlasSet<Node> methods = Common.universe().nodesTaggedWithAny(XCSG.Method).eval().nodes();
 		for(GraphElement method : methods){
 			if(isPureMethod(method)){
-				method.tag(PURE_METHOD);
+				method.tag(ImmutabilityTags.PURE_METHOD);
 			}
-			method.tags().remove(READONLY);
-			method.tags().remove(POLYREAD);
-			method.tags().remove(MUTABLE);
+			method.tags().remove(ImmutabilityTags.READONLY);
+			method.tags().remove(ImmutabilityTags.POLYREAD);
+			method.tags().remove(ImmutabilityTags.MUTABLE);
 		}
 	}
 	
@@ -134,18 +105,18 @@ public abstract class ImmutabilityAnalysis {
 			// 1) it does not mutate (not readonly or polyread) prestates reachable through parameters
 			// this includes the formal parameters and implicit "this" parameter
 			Q parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter);
-			Q mutableParameters = parameters.nodesTaggedWithAny(MUTABLE);
+			Q mutableParameters = parameters.nodesTaggedWithAny(ImmutabilityTags.MUTABLE);
 			if(mutableParameters.eval().nodes().size() > 0){
 				return false;
 			}
-			Q mutableIdentity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).nodesTaggedWithAny(MUTABLE);
+			Q mutableIdentity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).nodesTaggedWithAny(ImmutabilityTags.MUTABLE);
 			if(mutableIdentity.eval().nodes().size() > 0){
 				return false;
 			}
 			
 			// 2) it does not mutate prestates reachable through static fields
 			// (its static type is not readonly or polyread)
-			if(method.taggedWith(MUTABLE)){
+			if(method.taggedWith(ImmutabilityTags.MUTABLE)){
 				return false;
 			}
 			

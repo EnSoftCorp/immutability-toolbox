@@ -6,7 +6,7 @@ import java.util.Set;
 
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
 
-public class XAdaptYGreaterThanEqualZConstraintSolverGenerator {
+public class XMethodAdaptYGreaterThanEqualZConstraintSolverGenerator {
 
 	// all possible sets, 3 choose 3, 3 choose 2, and 3 choose 1
 	private static final EnumSet<ImmutabilityTypes> SET1 = EnumSet.of(ImmutabilityTypes.MUTABLE, ImmutabilityTypes.POLYREAD, ImmutabilityTypes.READONLY);
@@ -115,7 +115,7 @@ public class XAdaptYGreaterThanEqualZConstraintSolverGenerator {
 			satisfied:
 			for(ImmutabilityTypes yType : yTypes){
 				for(ImmutabilityTypes zType : zTypes){
-					ImmutabilityTypes xAdaptedY = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, yType);
+					ImmutabilityTypes xAdaptedY = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, yType);
 					if(xAdaptedY.compareTo(zType) >= 0){
 						isSatisfied = true;
 						break satisfied;
@@ -134,7 +134,7 @@ public class XAdaptYGreaterThanEqualZConstraintSolverGenerator {
 			satisfied:
 			for(ImmutabilityTypes xType : xTypes){
 				for(ImmutabilityTypes zType : zTypes){
-					ImmutabilityTypes xAdaptedY = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, yType);
+					ImmutabilityTypes xAdaptedY = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, yType);
 					if(xAdaptedY.compareTo(zType) >= 0){
 						isSatisfied = true;
 						break satisfied;
@@ -153,7 +153,7 @@ public class XAdaptYGreaterThanEqualZConstraintSolverGenerator {
 			satisfied:
 			for(ImmutabilityTypes xType : xTypes){
 				for(ImmutabilityTypes yType : yTypes){
-					ImmutabilityTypes xAdaptedY = ImmutabilityTypes.getAdaptedFieldViewpoint(xType, yType);
+					ImmutabilityTypes xAdaptedY = ImmutabilityTypes.getAdaptedMethodViewpoint(xType, yType);
 					if(xAdaptedY.compareTo(zType) >= 0){
 						isSatisfied = true;
 						break satisfied;

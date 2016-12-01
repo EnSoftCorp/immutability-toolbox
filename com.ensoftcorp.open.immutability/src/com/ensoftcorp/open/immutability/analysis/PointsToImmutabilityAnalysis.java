@@ -18,6 +18,7 @@ import com.ensoftcorp.atlas.core.log.Log;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
+import com.ensoftcorp.open.immutability.constants.ImmutabilityTags;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
 import com.ensoftcorp.open.pointsto.common.PointsToAnalysis;
 import com.ensoftcorp.open.pointsto.preferences.PointsToPreferences;
@@ -71,7 +72,7 @@ public class PointsToImmutabilityAnalysis extends ImmutabilityAnalysis {
 			boolean isSane = true;
 			
 			// the points-to analysis should not produce untyped references
-			AtlasSet<Node> untypedReferences = Common.universe().nodesTaggedWithAny(ImmutabilityAnalysis.UNTYPED).eval().nodes();
+			AtlasSet<Node> untypedReferences = Common.universe().nodesTaggedWithAny(ImmutabilityTags.UNTYPED).eval().nodes();
 			if(!untypedReferences.isEmpty()){
 				isSane = false;
 				Log.warning("The points-to analysis reported untyped references!");
@@ -124,7 +125,7 @@ public class PointsToImmutabilityAnalysis extends ImmutabilityAnalysis {
 			ArrayList<ImmutabilityTypes> orderedTypes = new ArrayList<ImmutabilityTypes>(types.size());
 			orderedTypes.addAll(types);
 			if(orderedTypes.isEmpty()){
-				attributedNode.tag(UNTYPED);
+				attributedNode.tag(ImmutabilityTags.UNTYPED);
 			} else {
 				Collections.sort(orderedTypes);
 				ImmutabilityTypes maximalType = orderedTypes.get(orderedTypes.size()-1);
@@ -147,7 +148,7 @@ public class PointsToImmutabilityAnalysis extends ImmutabilityAnalysis {
 		Q classVariables = Common.universe().nodesTaggedWithAny(XCSG.ClassVariable);
 		// note local variables may also get tracked, but only if need be during the analysis
 		Q trackedItems = literals.union(parameters, returnValues, instanceVariables, thisNodes, classVariables);
-		Q untouchedTrackedItems = trackedItems.difference(trackedItems.nodesTaggedWithAny(READONLY, POLYREAD, MUTABLE), Common.toQ(attributedNodes));
+		Q untouchedTrackedItems = trackedItems.difference(trackedItems.nodesTaggedWithAny(ImmutabilityTags.READONLY, ImmutabilityTags.POLYREAD, ImmutabilityTags.MUTABLE), Common.toQ(attributedNodes));
 		AtlasSet<Node> itemsToTrack = new AtlasHashSet<Node>();
 		itemsToTrack.addAll(untouchedTrackedItems.eval().nodes());
 		return itemsToTrack;

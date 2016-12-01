@@ -11,8 +11,8 @@ import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.immutability.analysis.AnalysisUtilities;
-import com.ensoftcorp.open.immutability.analysis.ImmutabilityAnalysis;
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
+import com.ensoftcorp.open.immutability.constants.ImmutabilityTags;
 import com.ensoftcorp.open.immutability.log.Log;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
 
@@ -60,7 +60,7 @@ public class SanityChecks {
 		long missingTags = 0;
 		Q identities = Common.universe().nodesTaggedWithAny(XCSG.Identity);
 		for(Node identity : identities.eval().nodes()){
-			if(!(identity.taggedWith(ImmutabilityAnalysis.READONLY) || identity.taggedWith(ImmutabilityAnalysis.POLYREAD) || identity.taggedWith(ImmutabilityAnalysis.MUTABLE))){
+			if(!(identity.taggedWith(ImmutabilityTags.READONLY) || identity.taggedWith(ImmutabilityTags.POLYREAD) || identity.taggedWith(ImmutabilityTags.MUTABLE))){
 				missingTags++;
 			}
 		}
@@ -74,7 +74,7 @@ public class SanityChecks {
 		long missingTags = 0;
 		Q parameters = Common.universe().nodesTaggedWithAny(XCSG.Parameter);
 		for(Node parameter : parameters.eval().nodes()){
-			if(!(parameter.taggedWith(ImmutabilityAnalysis.READONLY) || parameter.taggedWith(ImmutabilityAnalysis.POLYREAD) || parameter.taggedWith(ImmutabilityAnalysis.MUTABLE))){
+			if(!(parameter.taggedWith(ImmutabilityTags.READONLY) || parameter.taggedWith(ImmutabilityTags.POLYREAD) || parameter.taggedWith(ImmutabilityTags.MUTABLE))){
 				missingTags++;
 			}
 		}
@@ -88,7 +88,7 @@ public class SanityChecks {
 		long missingTags = 0;
 		Q fields = Common.universe().nodesTaggedWithAny(XCSG.Field);
 		for(Node field : fields.eval().nodes()){
-			if(!(field.taggedWith(ImmutabilityAnalysis.READONLY) || field.taggedWith(ImmutabilityAnalysis.POLYREAD) || field.taggedWith(ImmutabilityAnalysis.MUTABLE))){
+			if(!(field.taggedWith(ImmutabilityTags.READONLY) || field.taggedWith(ImmutabilityTags.POLYREAD) || field.taggedWith(ImmutabilityTags.MUTABLE))){
 				missingTags++;
 			}
 		}
@@ -104,10 +104,10 @@ public class SanityChecks {
 	 */
 	private static boolean methodsDoNotHaveImmutabilityTypes(){
 		long unexpectedTypes = 0;
-		unexpectedTypes += Common.universe().nodesTaggedWithAll(XCSG.Method, ImmutabilityAnalysis.READONLY).eval().nodes().size();
-		unexpectedTypes += Common.universe().nodesTaggedWithAll(XCSG.Method, ImmutabilityAnalysis.POLYREAD).eval().nodes().size();
-		unexpectedTypes += Common.universe().nodesTaggedWithAll(XCSG.Method, ImmutabilityAnalysis.MUTABLE).eval().nodes().size();
-		unexpectedTypes += Common.universe().nodesTaggedWithAll(XCSG.Method, ImmutabilityAnalysis.UNTYPED).eval().nodes().size();
+		unexpectedTypes += Common.universe().nodesTaggedWithAll(XCSG.Method, ImmutabilityTags.READONLY).eval().nodes().size();
+		unexpectedTypes += Common.universe().nodesTaggedWithAll(XCSG.Method, ImmutabilityTags.POLYREAD).eval().nodes().size();
+		unexpectedTypes += Common.universe().nodesTaggedWithAll(XCSG.Method, ImmutabilityTags.MUTABLE).eval().nodes().size();
+		unexpectedTypes += Common.universe().nodesTaggedWithAll(XCSG.Method, ImmutabilityTags.UNTYPED).eval().nodes().size();
 		boolean hasUnexpectedTypes = unexpectedTypes > 0;
 		if(hasUnexpectedTypes) Log.warning("There are " + unexpectedTypes + " methods that were expected to not to have immutability types that do.");
 		return hasUnexpectedTypes;
@@ -154,13 +154,13 @@ public class SanityChecks {
 //			if(ge.taggedWith(XCSG.Operator)){
 //				// we only need to consider operators on-demand so not all operators will actually be typed
 //				// but if they are they'd better not be typed as anything but readonly
-//				if(ge.taggedWith(ImmutabilityAnalysis.POLYREAD) || ge.taggedWith(ImmutabilityAnalysis.MUTABLE) || ge.taggedWith(ImmutabilityAnalysis.UNTYPED)){
+//				if(ge.taggedWith(ImmutabilityTags.POLYREAD) || ge.taggedWith(ImmutabilityTags.MUTABLE) || ge.taggedWith(ImmutabilityAnalysis.UNTYPED)){
 //					if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.warning("Readonly type " + ge.address().toAddressString() + " is not readonly.");
 //					unexpectedTypes++;
 //				}
 //				continue;
 //			}
-//			if(!ge.taggedWith(ImmutabilityAnalysis.READONLY)){
+//			if(!ge.taggedWith(ImmutabilityTags.READONLY)){
 //				if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.warning("Readonly type " + ge.address().toAddressString() + " is not readonly.");
 //				unexpectedTypes++;
 //			}
@@ -174,13 +174,13 @@ public class SanityChecks {
 		int unexpectedTypes = 0;
 		for(GraphElement ge : Common.resolve(new NullProgressMonitor(), Common.universe().nodesTaggedWithAny(tags).eval()).nodes()){
 			Set<ImmutabilityTypes> defaultTypes = AnalysisUtilities.getDefaultTypes(ge);
-			if(ge.taggedWith(ImmutabilityAnalysis.READONLY) && !defaultTypes.contains(ImmutabilityTypes.READONLY)){
+			if(ge.taggedWith(ImmutabilityTags.READONLY) && !defaultTypes.contains(ImmutabilityTypes.READONLY)){
 				if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.warning("GraphElement " + ge.address().toAddressString() + " is tagged as READONLY but READONLY is not a valid default for this element.");
 				unexpectedTypes++;
-			} else if(ge.taggedWith(ImmutabilityAnalysis.POLYREAD) && !defaultTypes.contains(ImmutabilityTypes.POLYREAD)){
+			} else if(ge.taggedWith(ImmutabilityTags.POLYREAD) && !defaultTypes.contains(ImmutabilityTypes.POLYREAD)){
 				if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.warning("GraphElement " + ge.address().toAddressString() + " is tagged as POLYREAD but POLYREAD is not a valid default for this element.");
 				unexpectedTypes++;
-			} else if(ge.taggedWith(ImmutabilityAnalysis.MUTABLE) && !defaultTypes.contains(ImmutabilityTypes.MUTABLE)){
+			} else if(ge.taggedWith(ImmutabilityTags.MUTABLE) && !defaultTypes.contains(ImmutabilityTypes.MUTABLE)){
 				if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.warning("GraphElement " + ge.address().toAddressString() + " is tagged as MUTABLE but MUTABLE is not a valid default for this element.");
 				unexpectedTypes++;
 			}
@@ -197,22 +197,22 @@ public class SanityChecks {
 	private static boolean isDoubleTagged() {
 		boolean isDoubleTagged = false;
 		
-		AtlasSet<Node> readonlyPolyread = Common.universe().nodesTaggedWithAll(ImmutabilityAnalysis.READONLY, ImmutabilityAnalysis.POLYREAD).eval().nodes();
+		AtlasSet<Node> readonlyPolyread = Common.universe().nodesTaggedWithAll(ImmutabilityTags.READONLY, ImmutabilityTags.POLYREAD).eval().nodes();
 		if(readonlyPolyread.size() > 0){
 			isDoubleTagged = true;
-			Log.warning("There are " + readonlyPolyread.size() + " nodes that are tagged as " + ImmutabilityAnalysis.READONLY + " and " + ImmutabilityAnalysis.POLYREAD);
+			Log.warning("There are " + readonlyPolyread.size() + " nodes that are tagged as " + ImmutabilityTags.READONLY + " and " + ImmutabilityTags.POLYREAD);
 		}
 		
-		AtlasSet<Node> readonlyMutable = Common.universe().nodesTaggedWithAll(ImmutabilityAnalysis.READONLY, ImmutabilityAnalysis.MUTABLE).eval().nodes();
+		AtlasSet<Node> readonlyMutable = Common.universe().nodesTaggedWithAll(ImmutabilityTags.READONLY, ImmutabilityTags.MUTABLE).eval().nodes();
 		if(readonlyMutable.size() > 0){
 			isDoubleTagged = true;
-			Log.warning("There are " + readonlyMutable.size() + " nodes that are tagged as " + ImmutabilityAnalysis.READONLY + " and " + ImmutabilityAnalysis.MUTABLE);
+			Log.warning("There are " + readonlyMutable.size() + " nodes that are tagged as " + ImmutabilityTags.READONLY + " and " + ImmutabilityTags.MUTABLE);
 		}
 		
-		AtlasSet<Node> polyreadMutable = Common.universe().nodesTaggedWithAll(ImmutabilityAnalysis.POLYREAD, ImmutabilityAnalysis.MUTABLE).eval().nodes();
+		AtlasSet<Node> polyreadMutable = Common.universe().nodesTaggedWithAll(ImmutabilityTags.POLYREAD, ImmutabilityTags.MUTABLE).eval().nodes();
 		if(polyreadMutable.size() > 0){
 			isDoubleTagged = true;
-			Log.warning("There are " + polyreadMutable.size() + " nodes that are tagged as " + ImmutabilityAnalysis.POLYREAD + " and " + ImmutabilityAnalysis.MUTABLE);
+			Log.warning("There are " + polyreadMutable.size() + " nodes that are tagged as " + ImmutabilityTags.POLYREAD + " and " + ImmutabilityTags.MUTABLE);
 		}
 		
 		return isDoubleTagged;
@@ -224,7 +224,7 @@ public class SanityChecks {
 	 */
 	private static boolean hasUntypedReferences(){
 		boolean hasUntypedReferences = false;
-		AtlasSet<Node> untypedReferences = Common.universe().nodesTaggedWithAny(ImmutabilityAnalysis.UNTYPED).eval().nodes();
+		AtlasSet<Node> untypedReferences = Common.universe().nodesTaggedWithAny(ImmutabilityTags.UNTYPED).eval().nodes();
 		if(untypedReferences.size() > 0){
 			hasUntypedReferences = true;
 			Log.warning("There are " + untypedReferences.size() + " references with no immutability types!");

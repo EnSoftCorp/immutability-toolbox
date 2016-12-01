@@ -1,5 +1,7 @@
 package com.ensoftcorp.open.immutability.analysis;
 
+import com.ensoftcorp.open.immutability.constants.ImmutabilityTags;
+
 /**
  * Encodes the immutability qualifications as types 
  * 
@@ -10,7 +12,7 @@ public enum ImmutabilityTypes {
 	// <: denotes a subtype relationship
 	// MUTABLE is a subtype of POLYREAD and POLYREAD is a subtype of READONLY
 	// MUTABLE is the most specific type and READONLY is the most generic type
-	MUTABLE(ImmutabilityAnalysis.MUTABLE), POLYREAD(ImmutabilityAnalysis.POLYREAD), READONLY(ImmutabilityAnalysis.READONLY);
+	MUTABLE(ImmutabilityTags.MUTABLE), POLYREAD(ImmutabilityTags.POLYREAD), READONLY(ImmutabilityTags.READONLY);
 	
 	private String name;
 	

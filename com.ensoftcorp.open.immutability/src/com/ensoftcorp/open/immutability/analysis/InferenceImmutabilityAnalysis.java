@@ -35,6 +35,7 @@ import com.ensoftcorp.open.immutability.analysis.checkers.CallChecker;
 import com.ensoftcorp.open.immutability.analysis.checkers.FieldAssignmentChecker;
 import com.ensoftcorp.open.immutability.analysis.checkers.SanityChecks;
 import com.ensoftcorp.open.immutability.analysis.solvers.XEqualsYConstraintSolver;
+import com.ensoftcorp.open.immutability.constants.ImmutabilityTags;
 import com.ensoftcorp.open.immutability.log.Log;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
 import com.ensoftcorp.open.java.commons.wishful.JavaStopGap;
@@ -585,15 +586,13 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 				for(Node x : xReferences){
 					AtlasSet<Node> yReferences = AnalysisUtilities.parseReferences(from);;
 					for(Node y : yReferences){
-						
-						
+
 						if(to.taggedWith(XCSG.ParameterPass) && from.taggedWith(XCSG.InstanceVariableValue)){
-							Set<ImmutabilityTypes> xTypes = getTypes(x);
 							Set<ImmutabilityTypes> yTypes = getTypes(y);
 							if(!yTypes.contains(ImmutabilityTypes.READONLY)){
 								continue;
 								// fields without readonly cause parameters to be non-mutable
-								// but mutions to parameters must be mutable which causes untyped references
+								// but mutions to parameters must be mutable which causes ImmutabilityTags.UNTYPED references
 								// so this constraint is too strong...
 								// TODO: could potentially be fixed by revised viewpoint adaptations 
 								// specific to fields and callsites as is done in the FOOL2012 paper
@@ -620,7 +619,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 		for(GraphElement attributedNode : attributedNodes){
 			Set<ImmutabilityTypes> types = getTypes(attributedNode);
 			if(types.isEmpty()){
-				attributedNode.tag(UNTYPED);
+				attributedNode.tag(ImmutabilityTags.UNTYPED);
 			} else {
 				for(ImmutabilityTypes type : types){
 					attributedNode.tag(type.toString());
@@ -664,7 +663,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 			ArrayList<ImmutabilityTypes> orderedTypes = new ArrayList<ImmutabilityTypes>(types.size());
 			orderedTypes.addAll(types);
 			if(orderedTypes.isEmpty()){
-				attributedNode.tag(UNTYPED);
+				attributedNode.tag(ImmutabilityTags.UNTYPED);
 			} else {
 				Collections.sort(orderedTypes);
 				ImmutabilityTypes maximalType = orderedTypes.get(orderedTypes.size()-1);
@@ -687,7 +686,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 		Q classVariables = Common.universe().nodesTaggedWithAny(XCSG.ClassVariable);
 		// note local variables may also get tracked, but only if need be during the analysis
 		Q trackedItems = literals.union(parameters, returnValues, instanceVariables, thisNodes, classVariables);
-		Q untouchedTrackedItems = trackedItems.difference(trackedItems.nodesTaggedWithAny(READONLY, POLYREAD, MUTABLE), Common.toQ(attributedNodes));
+		Q untouchedTrackedItems = trackedItems.difference(trackedItems.nodesTaggedWithAny(ImmutabilityTags.READONLY, ImmutabilityTags.POLYREAD, ImmutabilityTags.MUTABLE), Common.toQ(attributedNodes));
 		AtlasSet<Node> itemsToTrack = new AtlasHashSet<Node>();
 		itemsToTrack.addAll(untouchedTrackedItems.eval().nodes());
 		return itemsToTrack;
