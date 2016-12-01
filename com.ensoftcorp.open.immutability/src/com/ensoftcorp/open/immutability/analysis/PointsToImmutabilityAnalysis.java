@@ -42,21 +42,15 @@ public class PointsToImmutabilityAnalysis extends ImmutabilityAnalysis {
 			for(Node objectInstantiation : objectInstantiations.eval().nodes()){
 				Q aliases = Common.toQ(PointsToAnalysis.getAliases(objectInstantiation)).difference(objectInstantiations);
 				boolean readonly = instanceVariableWrittenEdges.predecessors(instanceVariableAssignments).intersection(aliases).eval().nodes().isEmpty();
-				for(Node alias : aliases.eval().nodes()){
-					// since we are only placing types for the convenience of client analyses
-					// we will only place types on references that would be typed in the reiminfer system
-					// note: we actually known something more important (whether any of the aliases could
-					// mutate the object they reference), this is just record now
-					if(AnalysisUtilities.isTypable(alias)){
-						Set<ImmutabilityTypes> types = AnalysisUtilities.getTypes(alias);
-						if(!readonly) {
-							types.remove(ImmutabilityTypes.READONLY);
-						}
-					}
+				markMutableAliases(aliases, readonly);
+				if(objectInstantiation.taggedWith(XCSG.ArrayInstantiation)){
+					Node arrayInstantiation = objectInstantiation;
+					Q arrayMemoryModelAliases = Common.toQ(PointsToAnalysis.getArrayMemoryModelAliases(arrayInstantiation)).difference(objectInstantiations);
+					readonly = instanceVariableWrittenEdges.predecessors(instanceVariableAssignments).intersection(arrayMemoryModelAliases).eval().nodes().isEmpty();
+					// mutations to the array components mutate the array itself
+					markMutableAliases(aliases, readonly);
 				}
 			}
-			
-			// TODO: handle array components
 			
 			// flattens the type hierarchy to the maximal types
 			if(ImmutabilityPreferences.isGeneralLoggingEnabled()) Log.info("Extracting maximal types...");
@@ -88,6 +82,21 @@ public class PointsToImmutabilityAnalysis extends ImmutabilityAnalysis {
 			Log.error("Points-to analysis must be enabled to run points-to immutability analysis.",
 					new IllegalArgumentException());
 			return false;
+		}
+	}
+
+	private void markMutableAliases(Q aliases, boolean readonly) {
+		for(Node alias : aliases.eval().nodes()){
+			// since we are only placing types for the convenience of client analyses
+			// we will only place types on references that would be typed in the reiminfer system
+			// note: we actually known something more important (whether any of the aliases could
+			// mutate the object they reference), this is just record now
+			if(AnalysisUtilities.isTypable(alias)){
+				Set<ImmutabilityTypes> types = AnalysisUtilities.getTypes(alias);
+				if(!readonly) {
+					types.remove(ImmutabilityTypes.READONLY);
+				}
+			}
 		}
 	}
 	
