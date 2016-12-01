@@ -266,39 +266,70 @@ public class AnalysisUtilities {
 		return removeTypes(node, typesToRemove);
 	}
 	
-//	/**
-//	 * Adds a type qualifier for a graph element
-//	 * USE EXTREME CAUTION WHEN USING THIS METHOD!!!!
-//	 * ADDING TYPES CAN BREAK FIXED POINT GUARENTEES!!!
-//	 * @param node
-//	 * @param qualifier
-//	 * @return Returns true if the type qualifier changed
-//	 */
-//	public static boolean addTypes(Node node, ImmutabilityTypes... types){
-//		EnumSet<ImmutabilityTypes> typesToAdd = EnumSet.noneOf(ImmutabilityTypes.class);
-//		for(ImmutabilityTypes type : types){
-//			typesToAdd.add(type);
-//		}
-//		return addTypes(node, typesToAdd);
-//	}
-//	
-//	/**
-//	 * Sets the type qualifier for a graph element
-//	 * USE EXTREME CAUTION WHEN USING THIS METHOD!!!!
-//	 * ADDING TYPES CAN BREAK FIXED POINT GUARENTEES!!!
-//	 * @param node
-//	 * @param qualifier
-//	 * @return Returns true if the type qualifier changed
-//	 */
-//	public static boolean addTypes(Node node, Set<ImmutabilityTypes> typesToAdd){
-//		Set<ImmutabilityTypes> typeSet = getTypes(node);
-//		String logMessage = "Add: " + typesToAdd.toString() + " to " + typeSet.toString() + " for " + node.getAttr(XCSG.name);
-//		boolean typesChanged = typeSet.addAll(typesToAdd);
-//		if(typesChanged){
-//			if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info(logMessage);
-//		}
-//		return typesChanged;
-//	}
+	/**
+	 * Adds the MUTABLE type qualifier for a graph element
+	 * USE EXTREME CAUTION WHEN USING THIS METHOD!!!!
+	 * ADDING TYPES CAN BREAK FIXED POINT GUARENTEES!!!
+	 * @param node
+	 * @param qualifier
+	 * @return Returns true if the type qualifier changed
+	 */
+	public static boolean addMutable(Node node){
+		return addTypes(node, ImmutabilityTypes.MUTABLE);
+	}
+	
+	/**
+	 * Sets the MUTABLE type qualifier for a graph element
+	 * USE EXTREME CAUTION WHEN USING THIS METHOD!!!!
+	 * ADDING TYPES CAN BREAK FIXED POINT GUARENTEES!!!
+	 * @param node
+	 * @param qualifier
+	 * @return Returns true if the type qualifier changed
+	 */
+	public static boolean setMutable(Node node){
+		Set<ImmutabilityTypes> types = getTypes(node); 
+		if(types.size() == 1 && types.contains(ImmutabilityTypes.MUTABLE)){
+			return false;
+		} else{
+			types.clear();
+			types.add(ImmutabilityTypes.MUTABLE);
+			return true;
+		}
+	}
+	
+	/**
+	 * Adds a type qualifier for a graph element
+	 * USE EXTREME CAUTION WHEN USING THIS METHOD!!!!
+	 * ADDING TYPES CAN BREAK FIXED POINT GUARENTEES!!!
+	 * @param node
+	 * @param qualifier
+	 * @return Returns true if the type qualifier changed
+	 */
+	public static boolean addTypes(Node node, ImmutabilityTypes... types){
+		EnumSet<ImmutabilityTypes> typesToAdd = EnumSet.noneOf(ImmutabilityTypes.class);
+		for(ImmutabilityTypes type : types){
+			typesToAdd.add(type);
+		}
+		return addTypes(node, typesToAdd);
+	}
+	
+	/**
+	 * Sets the type qualifier for a graph element
+	 * USE EXTREME CAUTION WHEN USING THIS METHOD!!!!
+	 * ADDING TYPES CAN BREAK FIXED POINT GUARENTEES!!!
+	 * @param node
+	 * @param qualifier
+	 * @return Returns true if the type qualifier changed
+	 */
+	public static boolean addTypes(Node node, Set<ImmutabilityTypes> typesToAdd){
+		Set<ImmutabilityTypes> typeSet = getTypes(node);
+		String logMessage = "Add: " + typesToAdd.toString() + " to " + typeSet.toString() + " for " + node.getAttr(XCSG.name);
+		boolean typesChanged = typeSet.addAll(typesToAdd);
+		if(typesChanged){
+			if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info(logMessage);
+		}
+		return typesChanged;
+	}
 	
 	@SuppressWarnings("unchecked")
 	public static Set<ImmutabilityTypes> getTypes(GraphElement ge){
@@ -562,17 +593,19 @@ public class AnalysisUtilities {
 			// "Fields are initialized to S(f) = {readonly, polyread}"
 			qualifiers.add(ImmutabilityTypes.READONLY);
 			qualifiers.add(ImmutabilityTypes.POLYREAD);
-			// according to Reference 1 this should not be a default type,
-			// but looking at the reiminfer reference implementation there
-			// are several cases where the mutable type gets "added" during 
-			// constraint checking. Since mutable is the most specific type
-			// a polyread will always be chosen over it if there is one, so
-			// instead of adding hacks all over its better to just admit the 
-			// issue with the type system and add mutable to the default type
-			// of fields...we could promote mutables to polyread after the 
-			// fact if we wanted to clean things up
-			// Reference: https://github.com/proganalysis/type-inference/blob/master/object-immutability/src/edu/rpi/reim/ReimTransformer.java#L250
-			qualifiers.add(ImmutabilityTypes.MUTABLE);
+//			// according to Reference 1 this should not be a default type,
+//			// but looking at the reiminfer reference implementation there
+//			// are several cases where the mutable type gets "added" during 
+//			// constraint checking. Since mutable is the most specific type
+//			// a polyread will always be chosen over it if there is one, so
+//			// instead of adding hacks all over its better to just admit the 
+//			// issue with the type system and add mutable to the default type
+//			// of fields...we could promote mutables to polyread after the 
+//			// fact if we wanted to clean things up
+//			// Reference: https://github.com/proganalysis/type-inference/blob/master/object-immutability/src/edu/rpi/reim/ReimTransformer.java#L250
+			if(ImmutabilityPreferences.isAllowDefaultMutableInstancesVariablesEnabled()){
+				qualifiers.add(ImmutabilityTypes.MUTABLE);
+			}
 		} else if(ge.taggedWith(XCSG.ClassVariable)){
 			// Section 3 of Reference 1
 			// static fields are initialized to S(sf) = {readonly, mutable}

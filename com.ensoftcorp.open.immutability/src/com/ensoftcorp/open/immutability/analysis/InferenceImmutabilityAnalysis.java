@@ -1,5 +1,6 @@
 package com.ensoftcorp.open.immutability.analysis;
 
+import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.addMutable;
 import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.getTypes;
 import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.removeTypes;
 
@@ -33,6 +34,7 @@ import com.ensoftcorp.open.immutability.analysis.checkers.BasicAssignmentChecker
 import com.ensoftcorp.open.immutability.analysis.checkers.CallChecker;
 import com.ensoftcorp.open.immutability.analysis.checkers.FieldAssignmentChecker;
 import com.ensoftcorp.open.immutability.analysis.checkers.SanityChecks;
+import com.ensoftcorp.open.immutability.analysis.solvers.XEqualsYConstraintSolver;
 import com.ensoftcorp.open.immutability.log.Log;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
 import com.ensoftcorp.open.java.commons.wishful.JavaStopGap;
@@ -264,26 +266,55 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 								AtlasSet<Node> instanceVariablesAccessed = instanceVariableAccessedEdges.predecessors(Common.toQ(arrayIdentity)).eval().nodes();
 								for(Node instanceVariableAccessed : instanceVariablesAccessed){
 									for(Node x : AnalysisUtilities.parseReferences(instanceVariableAccessed)){
-										// if x is a reference it must be mutable
-										// if x is a field it must be polyread
+										// x must be mutable
 										// TWRITE precondition, however for arrays we 
 										// don't enforce qy <: qx adapt qf because
 										// that constraint would be applied to the array component
-										
 										// note if x is an instance variable, a mutable type is added to fix the type system
-										// compensated by adding mutable as a default type instead of this on the fly hack
-										// left hack here for posterity
-//										if(x.taggedWith(XCSG.InstanceVariable)){
-//											if(addTypes(x, ImmutabilityTypes.MUTABLE)){
+//										if (x.taggedWith(XCSG.InstanceVariable)) {
+//											if (ImmutabilityPreferences.isSetMutableInstancesVariablesEnabled()) {
+//												if(setMutable(x)){
+//													typesChanged = true;
+//												}
+//											} 
+//											
+//											if (ImmutabilityPreferences.isAllowDefaultMutableInstancesVariablesEnabled()) {
+//												if (removeTypes(x, ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)) {
+//													typesChanged = true;
+//												}
+//											} else {
+//												if (removeTypes(x, ImmutabilityTypes.READONLY)) {
+//													typesChanged = true;
+//												}
+//											}
+//										} else {
+//											if (removeTypes(x, ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)) {
 //												typesChanged = true;
 //											}
 //										}
-										if(removeTypes(x, ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)){
-											typesChanged = true;
+//										
+//										if(setMutable(x)){
+//											typesChanged = true;
+//										}
+										
+										if (x.taggedWith(XCSG.InstanceVariable)) {
+											if (ImmutabilityPreferences.isAllowAddMutableInstanceVariablesEnabled()) {
+												addMutable(x); // doesn't count as a type change
+											}
 										}
 										
+										if(ImmutabilityPreferences.isAllowDefaultMutableInstancesVariablesEnabled() || ImmutabilityPreferences.isAllowAddMutableInstanceVariablesEnabled()){
+											if(XEqualsYConstraintSolver.satisfty(x, ImmutabilityTypes.MUTABLE)){
+												typesChanged = true;
+											}
+										} else {
+											if(removeTypes(x, ImmutabilityTypes.READONLY)){
+												typesChanged = true;
+											}
+										}
+		
+										// each instance containing x has been mutated as well
 										if(ImmutabilityPreferences.isContainerConsiderationEnabled()){
-											// each instance containing x has been mutated as well
 											// TODO: should this be like a basic assignment constraint 
 											// between each parent container field or just all are not readonly???
 											// for now going with the latter since its easier to implement...
@@ -342,13 +373,15 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 						Node instanceVariableAccessed = instanceVariableAccessedEdges.predecessors(Common.toQ(instanceVariableAssignment)).eval().nodes().getFirst();
 						AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(instanceVariableAccessed);
 						for(Node x : xReferences){
-							// compensated by adding mutable as a default type instead of this on the fly hack
-							// left hack here for posterity
+//							// if x is an instance variable it may need a mutable type
 //							if(x.taggedWith(XCSG.InstanceVariable)){
-//								if(addTypes(x, ImmutabilityTypes.MUTABLE)){
-//									typesChanged = true;
+//								if (ImmutabilityPreferences.isSetMutableInstancesVariablesEnabled()) {
+//									if(setMutable(x)){
+//										typesChanged = true;
+//									}
 //								}
 //							}
+
 							if(FieldAssignmentChecker.handleFieldWrite(x, f, y)){
 								typesChanged = true;
 							}
@@ -439,8 +472,8 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 					// I don't think we ever needed this, but adding it here for posterity 
 					// left possible hack here for posterity
 //					if(x.taggedWith(XCSG.InstanceVariable)){
-//						if(addTypes(x, ImmutabilityTypes.MUTABLE)){
-//							typesChanged = true;
+//						if (ImmutabilityPreferences.isAllowMutableInstancesVariablesEnabled()) {
+//							typesChanged = addMutable(x);
 //						}
 //					}
 					
@@ -487,12 +520,12 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 						Node reciever = localDataFlowEdges.predecessors(Common.toQ(identityPass)).eval().nodes().getFirst();
 						AtlasSet<Node> yReferences = AnalysisUtilities.parseReferences(reciever);
 						for(Node y : yReferences){
-							
-							// compensated by adding mutable as a default type instead of this on the fly hack
-							// left hack here for posterity
+//							// if y is an instance variable it may need a mutable type
 //							if(y.taggedWith(XCSG.InstanceVariable)){
-//								if(addTypes(y, ImmutabilityTypes.MUTABLE)){
-//									typesChanged = true;
+//								if (ImmutabilityPreferences.isSetMutableInstancesVariablesEnabled()) {
+//									if(setMutable(y)){
+//										typesChanged = true;
+//									}
 //								}
 //							}
 							

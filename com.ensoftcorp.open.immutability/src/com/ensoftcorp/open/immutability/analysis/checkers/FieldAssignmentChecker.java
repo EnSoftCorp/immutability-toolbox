@@ -1,11 +1,14 @@
 package com.ensoftcorp.open.immutability.analysis.checkers;
 
+import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.addMutable;
 import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.removeTypes;
+//import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.setMutable;
 
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
 import com.ensoftcorp.open.immutability.analysis.solvers.XAdaptYGreaterThanEqualZConstraintSolver;
+import com.ensoftcorp.open.immutability.analysis.solvers.XEqualsYConstraintSolver;
 import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYAdaptZConstraintSolver;
 import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYConstraintSolver;
 import com.ensoftcorp.open.immutability.log.Log;
@@ -28,9 +31,36 @@ public class FieldAssignmentChecker {
 		
 		boolean typesChanged = false;
 		
-		// x must be mutable
-		if(removeTypes(x, ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)){
-			typesChanged = true;
+//		// x must be mutable
+//		if (ImmutabilityPreferences.isSetMutableInstancesVariablesEnabled()) {
+//			if (removeTypes(x, ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD)) {
+//				typesChanged = true;
+//			}
+//		} else {
+//			// removing polyread and readonly would leave instance variables untyped...so we must allow polyread
+//			if (removeTypes(x, ImmutabilityTypes.READONLY)) {
+//				typesChanged = true;
+//			}
+//		}
+//		
+//		if(setMutable(x)){
+//			typesChanged = true;
+//		}
+
+		if (x.taggedWith(XCSG.InstanceVariable)) {
+			if (ImmutabilityPreferences.isAllowAddMutableInstanceVariablesEnabled()) {
+				addMutable(x); // doesn't count as a type change
+			}
+		}
+		
+		if(ImmutabilityPreferences.isAllowDefaultMutableInstancesVariablesEnabled() || ImmutabilityPreferences.isAllowAddMutableInstanceVariablesEnabled()){
+			if(XEqualsYConstraintSolver.satisfty(x, ImmutabilityTypes.MUTABLE)){
+				typesChanged = true;
+			}
+		} else {
+			if(removeTypes(x, ImmutabilityTypes.READONLY)){
+				typesChanged = true;
+			}
 		}
 		
 		// qy <: qx adapt qf

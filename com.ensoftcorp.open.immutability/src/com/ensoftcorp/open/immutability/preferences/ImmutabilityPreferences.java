@@ -120,6 +120,34 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 	}
 	
 	/**
+	 * Enable/disable whether instance variables may be set to mutable
+	 */
+	public static final String ALLOW_ADD_MUTABLE_INSTANCE_VARIABLES = "ALLOW_MUTABLE_INSTANCE_VARIABLES";
+	public static final Boolean ALLOW_ADD_MUTABLE_INSTANCE_VARIABLES_DEFAULT = true;
+	private static boolean allowAddMutableInstanceVariablesValue = ALLOW_ADD_MUTABLE_INSTANCE_VARIABLES_DEFAULT;
+	
+	public static boolean isAllowAddMutableInstanceVariablesEnabled(){
+		if(!initialized){
+			loadPreferences();
+		}
+		return allowAddMutableInstanceVariablesValue;
+	}
+	
+	/**
+	 * Enable/disable whether instance variables may be include mutables by deafault
+	 */
+	public static final String ALLOW_DEFAULT_MUTABLE_INSTANCE_VARIABLES = "ALLOW_DEFAULT_MUTABLE_INSTANCE_VARIABLES";
+	public static final Boolean ALLOW_DEFAULT_MUTABLE_INSTANCE_VARIABLES_DEFAULT = true;
+	private static boolean allowDefaultMutableInstancesVariablesValue = ALLOW_DEFAULT_MUTABLE_INSTANCE_VARIABLES_DEFAULT;
+	
+	public static boolean isAllowDefaultMutableInstancesVariablesEnabled(){
+		if(!initialized){
+			loadPreferences();
+		}
+		return allowDefaultMutableInstancesVariablesValue;
+	}
+	
+	/**
 	 * Enable/disable container mutations
 	 */
 	public static final String CONSIDER_CONTAINERS = "CONSIDER_CONTAINERS";
@@ -157,6 +185,8 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 		preferences.setDefault(DEBUG_LOGGING, DEBUG_LOGGING_DEFAULT);
 		preferences.setDefault(GENERATE_SUMMARIES, GENERATE_SUMMARIES_DEFAULT);
 		preferences.setDefault(LOAD_SUMMARIES, LOAD_SUMMARIES_DEFAULT);
+		preferences.setDefault(ALLOW_ADD_MUTABLE_INSTANCE_VARIABLES, ALLOW_ADD_MUTABLE_INSTANCE_VARIABLES_DEFAULT);
+		preferences.setDefault(ALLOW_DEFAULT_MUTABLE_INSTANCE_VARIABLES, ALLOW_DEFAULT_MUTABLE_INSTANCE_VARIABLES_DEFAULT);
 		preferences.setDefault(CONSIDER_CONTAINERS, CONSIDER_CONTAINERS_DEFAULT);
 		preferences.setDefault(INFERENCE_RULE_LOGGING, INFERENCE_RULE_LOGGING_DEFAULT);
 	}
@@ -173,6 +203,8 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 			generalLoggingValue = preferences.getBoolean(GENERAL_LOGGING);
 			generateSummariesValue = preferences.getBoolean(GENERATE_SUMMARIES);
 			loadSummariesValue = preferences.getBoolean(LOAD_SUMMARIES);
+			allowAddMutableInstanceVariablesValue = preferences.getBoolean(ALLOW_ADD_MUTABLE_INSTANCE_VARIABLES);
+			allowDefaultMutableInstancesVariablesValue = preferences.getBoolean(ALLOW_DEFAULT_MUTABLE_INSTANCE_VARIABLES);
 			considerContainersValue = preferences.getBoolean(CONSIDER_CONTAINERS);
 			inferenceRuleLoggingValue = preferences.getBoolean(INFERENCE_RULE_LOGGING);
 			debugLoggingValue = preferences.getBoolean(DEBUG_LOGGING);
