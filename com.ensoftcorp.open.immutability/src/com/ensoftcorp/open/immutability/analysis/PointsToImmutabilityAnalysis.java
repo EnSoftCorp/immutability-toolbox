@@ -95,7 +95,11 @@ public class PointsToImmutabilityAnalysis extends ImmutabilityAnalysis {
 			if(AnalysisUtilities.isTypable(alias)){
 				Set<ImmutabilityTypes> types = AnalysisUtilities.getTypes(alias);
 				if(!readonly) {
-					types.remove(ImmutabilityTypes.READONLY);
+					if(alias.taggedWith(XCSG.InstanceVariable)){
+						AnalysisUtilities.removeTypes(alias, ImmutabilityTypes.READONLY);
+					} else {
+						AnalysisUtilities.removeTypes(alias, ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD);
+					}
 				}
 			}
 		}
