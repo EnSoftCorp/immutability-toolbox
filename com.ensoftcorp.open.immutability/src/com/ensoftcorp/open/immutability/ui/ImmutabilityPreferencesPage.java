@@ -28,12 +28,13 @@ public class ImmutabilityPreferencesPage extends FieldEditorPreferencePage imple
 	private static final String RUN_SANITY_CHECKS_DESCRIPTION = "Run sanity checks";
 	private static final String GENERAL_LOGGING_DESCRIPTION = "Enable General Logging";
 	private static final String DEBUG_LOGGING_DESCRIPTION = "Enable Debug Logging";
+	private static final String ALLOW_DEFAULT_MUTABLE_INSTANCE_VARIABLES_DESCRIPTION = "Allows instance variables to include mutable types by default";
 	
 	private static final String GENERATE_SUMMARIES_DESCRIPTION = "Generate summaries (partial program analysis)";
 	private static final String LOAD_SUMMARIES_DESCRIPTION = "Load summaries (partial program analysis)";
-	private static final String ALLOW_DEFAULT_MUTABLE_INSTANCE_VARIABLES_DESCRIPTION = "Allows instance variables to include mutable types by default";
 	private static final String ALLOW_ADD_MUTABLE_INSTANCE_VARIABLES_DESCRIPTION = "Allows mutable types to be added to instance variables at runtime";
 	private static final String CONSIDER_CONTAINERS_DESCRIPTION = "Consider mutations to parent container object instances (beta feature)";
+	private static final String USE_FIELD_ADAPTATIONS_DESCRIPTION = "Use field adaptations";
 	private static final String INFERENCE_RULE_LOGGING_DESCRIPTION = "Enable Inference Rule Logging";
 	
 	private static boolean changeListenerAdded = false;
@@ -85,14 +86,15 @@ public class ImmutabilityPreferencesPage extends FieldEditorPreferencePage imple
 		addField(new BooleanFieldEditor(ImmutabilityPreferences.RUN_SANITY_CHECKS, "&" + RUN_SANITY_CHECKS_DESCRIPTION, getFieldEditorParent()));
 		addField(new BooleanFieldEditor(ImmutabilityPreferences.GENERAL_LOGGING, "&" + GENERAL_LOGGING_DESCRIPTION, getFieldEditorParent()));
 		addField(new BooleanFieldEditor(ImmutabilityPreferences.DEBUG_LOGGING, "&" + DEBUG_LOGGING_DESCRIPTION, getFieldEditorParent()));
+		addField(new BooleanFieldEditor(ImmutabilityPreferences.ALLOW_DEFAULT_MUTABLE_INSTANCE_VARIABLES, "&" + ALLOW_DEFAULT_MUTABLE_INSTANCE_VARIABLES_DESCRIPTION, getFieldEditorParent()));
 		
 		addField(new SpacerFieldEditor(getFieldEditorParent()));
 		addField(new LabelFieldEditor("Inference Based Analysis Options", getFieldEditorParent()));
 		addField(new BooleanFieldEditor(ImmutabilityPreferences.GENERATE_SUMMARIES, "&" + GENERATE_SUMMARIES_DESCRIPTION, getFieldEditorParent()));
 		addField(new BooleanFieldEditor(ImmutabilityPreferences.LOAD_SUMMARIES, "&" + LOAD_SUMMARIES_DESCRIPTION, getFieldEditorParent()));
-		addField(new BooleanFieldEditor(ImmutabilityPreferences.ALLOW_DEFAULT_MUTABLE_INSTANCE_VARIABLES, "&" + ALLOW_DEFAULT_MUTABLE_INSTANCE_VARIABLES_DESCRIPTION, getFieldEditorParent()));
 		addField(new BooleanFieldEditor(ImmutabilityPreferences.ALLOW_ADD_MUTABLE_INSTANCE_VARIABLES, "&" + ALLOW_ADD_MUTABLE_INSTANCE_VARIABLES_DESCRIPTION, getFieldEditorParent()));
 		addField(new BooleanFieldEditor(ImmutabilityPreferences.CONSIDER_CONTAINERS, "&" + CONSIDER_CONTAINERS_DESCRIPTION, getFieldEditorParent()));
+		addField(new BooleanFieldEditor(ImmutabilityPreferences.USE_FIELD_ADAPTATIONS, "&" + USE_FIELD_ADAPTATIONS_DESCRIPTION, getFieldEditorParent()));
 		addField(new BooleanFieldEditor(ImmutabilityPreferences.INFERENCE_RULE_LOGGING, "&" + INFERENCE_RULE_LOGGING_DESCRIPTION, getFieldEditorParent()));
 	}
 

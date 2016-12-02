@@ -8,10 +8,12 @@ import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.remove
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
-import com.ensoftcorp.open.immutability.analysis.solvers.XFieldAdaptYGreaterThanEqualZConstraintSolver;
 import com.ensoftcorp.open.immutability.analysis.solvers.XEqualsYConstraintSolver;
-import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYFieldAdaptZConstraintSolver;
+import com.ensoftcorp.open.immutability.analysis.solvers.XFieldAdaptYGreaterThanEqualZConstraintSolver;
 import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYConstraintSolver;
+import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYFieldAdaptZConstraintSolver;
+import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYMethodAdaptZConstraintSolver;
+import com.ensoftcorp.open.immutability.analysis.solvers.XMethodAdaptYGreaterThanEqualZConstraintSolver;
 import com.ensoftcorp.open.immutability.log.Log;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
 
@@ -59,10 +61,20 @@ public class FieldAssignmentChecker {
 			}
 		}
 		
-		// qy <: MUTABLE fadapt qf
-		// = MUTABLE fadapt qf :> qy
-		if(XFieldAdaptYGreaterThanEqualZConstraintSolver.satisify(ImmutabilityTypes.MUTABLE, f, y)){
-			typesChanged = true;
+		if(ImmutabilityPreferences.isFieldAdaptationsEnabled()){
+			// qy <: MUTABLE fadapt qf
+			// = MUTABLE fadapt qf :> qy
+			// FSE 2012 implementation
+			if(XFieldAdaptYGreaterThanEqualZConstraintSolver.satisify(ImmutabilityTypes.MUTABLE, f, y)){
+				typesChanged = true;
+			}
+		} else {
+			// qy <: MUTABLE fadapt qf
+			// = MUTABLE madapt qf :> qy
+			// vanilla OOPSLA 2012 implementation
+			if(XMethodAdaptYGreaterThanEqualZConstraintSolver.satisify(x, f, y)){
+				typesChanged = true;
+			}
 		}
 		
 		return typesChanged;
@@ -85,10 +97,20 @@ public class FieldAssignmentChecker {
 		
 		boolean typesChanged = false;
 		
-		// qy adapt qf <: qx
-		// = qx :> qy adapt qf
-		if(XGreaterThanEqualYFieldAdaptZConstraintSolver.satisify(x, y, f)){
-			typesChanged = true;
+		if(ImmutabilityPreferences.isFieldAdaptationsEnabled()){
+			// qy adapt qf <: qx
+			// = qx :> qy adapt qf
+			// FSE 2012 version
+			if(XGreaterThanEqualYFieldAdaptZConstraintSolver.satisify(x, y, f)){
+				typesChanged = true;
+			}
+		} else {
+			// qy adapt qf <: qx
+			// = qx :> qy adapt qf
+			// vanilla OOPSLA 2012 version
+			if(XGreaterThanEqualYMethodAdaptZConstraintSolver.satisify(x, y, f)){
+				typesChanged = true;
+			}
 		}
 		
 		return typesChanged;

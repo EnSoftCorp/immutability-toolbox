@@ -162,6 +162,20 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 	}
 	
 	/**
+	 * Enable/disable container mutations
+	 */
+	public static final String USE_FIELD_ADAPTATIONS = "CONSIDER_CONTAINERS";
+	public static final Boolean USE_FIELD_ADAPTATIONS_DEFAULT = true;
+	private static boolean useFieldAdaptationsValue = USE_FIELD_ADAPTATIONS_DEFAULT;
+	
+	public static boolean isFieldAdaptationsEnabled(){
+		if(!initialized){
+			loadPreferences();
+		}
+		return useFieldAdaptationsValue;
+	}
+	
+	/**
 	 * Enables/disables inference rule logging to the Atlas log
 	 */
 	public static final String INFERENCE_RULE_LOGGING = "INFERENCE_RULE_LOGGING";
@@ -183,11 +197,12 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 		preferences.setDefault(RUN_SANITY_CHECKS, RUN_SANITY_CHECKS_DEFAULT);
 		preferences.setDefault(GENERAL_LOGGING, GENERAL_LOGGING_DEFAULT);
 		preferences.setDefault(DEBUG_LOGGING, DEBUG_LOGGING_DEFAULT);
+		preferences.setDefault(ALLOW_DEFAULT_MUTABLE_INSTANCE_VARIABLES, ALLOW_DEFAULT_MUTABLE_INSTANCE_VARIABLES_DEFAULT);
 		preferences.setDefault(GENERATE_SUMMARIES, GENERATE_SUMMARIES_DEFAULT);
 		preferences.setDefault(LOAD_SUMMARIES, LOAD_SUMMARIES_DEFAULT);
 		preferences.setDefault(ALLOW_ADD_MUTABLE_INSTANCE_VARIABLES, ALLOW_ADD_MUTABLE_INSTANCE_VARIABLES_DEFAULT);
-		preferences.setDefault(ALLOW_DEFAULT_MUTABLE_INSTANCE_VARIABLES, ALLOW_DEFAULT_MUTABLE_INSTANCE_VARIABLES_DEFAULT);
 		preferences.setDefault(CONSIDER_CONTAINERS, CONSIDER_CONTAINERS_DEFAULT);
+		preferences.setDefault(USE_FIELD_ADAPTATIONS, USE_FIELD_ADAPTATIONS_DEFAULT);
 		preferences.setDefault(INFERENCE_RULE_LOGGING, INFERENCE_RULE_LOGGING_DEFAULT);
 	}
 	
@@ -201,13 +216,14 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 			analysisModeValue = preferences.getString(IMMUTABILITY_ANALYSIS_MODE);
 			runSanityChecksValue = preferences.getBoolean(RUN_SANITY_CHECKS);
 			generalLoggingValue = preferences.getBoolean(GENERAL_LOGGING);
+			debugLoggingValue = preferences.getBoolean(DEBUG_LOGGING);
+			allowDefaultMutableInstancesVariablesValue = preferences.getBoolean(ALLOW_DEFAULT_MUTABLE_INSTANCE_VARIABLES);
 			generateSummariesValue = preferences.getBoolean(GENERATE_SUMMARIES);
 			loadSummariesValue = preferences.getBoolean(LOAD_SUMMARIES);
 			allowAddMutableInstanceVariablesValue = preferences.getBoolean(ALLOW_ADD_MUTABLE_INSTANCE_VARIABLES);
-			allowDefaultMutableInstancesVariablesValue = preferences.getBoolean(ALLOW_DEFAULT_MUTABLE_INSTANCE_VARIABLES);
 			considerContainersValue = preferences.getBoolean(CONSIDER_CONTAINERS);
 			inferenceRuleLoggingValue = preferences.getBoolean(INFERENCE_RULE_LOGGING);
-			debugLoggingValue = preferences.getBoolean(DEBUG_LOGGING);
+			useFieldAdaptationsValue = preferences.getBoolean(USE_FIELD_ADAPTATIONS);
 		} catch (Exception e){
 			Log.warning("Error accessing immutability analysis preferences, using defaults...", e);
 		}
