@@ -35,19 +35,19 @@ public class XGreaterThanEqualYFieldAdaptZConstraintSolver {
 	public static boolean satisify(Node x, Node y, Node z) {
 		Set<ImmutabilityTypes> xTypes = getTypes(x);
 		if(xTypes.isEmpty()){
-			Log.warning("x [" + x.address().toAddressString() + "] is untyped, constraint 'qx :> qy adapt qz' cannot be satisfied", new IllegalArgumentException());
+			Log.warning("x [" + x.address().toAddressString() + "] is untyped, constraint 'qx :> qy fadapt qz' cannot be satisfied", new IllegalArgumentException());
 			return false;
 		}
 		
 		Set<ImmutabilityTypes> yTypes = getTypes(y);
 		if(yTypes.isEmpty()){
-			Log.warning("y [" + y.address().toAddressString() + "] is untyped, constraint 'qx :> qy adapt qz' cannot be satisfied", new IllegalArgumentException());
+			Log.warning("y [" + y.address().toAddressString() + "] is untyped, constraint 'qx :> qy fadapt qz' cannot be satisfied", new IllegalArgumentException());
 			return false;
 		}
 		
 		Set<ImmutabilityTypes> zTypes = getTypes(z);
 		if(zTypes.isEmpty()){
-			Log.warning("z [" + z.address().toAddressString() + "] is untyped, constraint 'qx :> qy adapt qz' cannot be satisfied", new IllegalArgumentException());
+			Log.warning("z [" + z.address().toAddressString() + "] is untyped, constraint 'qx :> qy fadapt qz' cannot be satisfied", new IllegalArgumentException());
 			return false;
 		}
 		

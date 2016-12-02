@@ -1,5 +1,7 @@
 package com.ensoftcorp.open.immutability.analysis.checkers;
 
+import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.getTypes;
+
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYConstraintSolver;
@@ -27,7 +29,10 @@ public class BasicAssignmentChecker {
 			return false;
 		}
 		
-		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()) Log.info("TASSIGN (x=y, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")");
+		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()) {
+			String values = "x:" + getTypes(x).toString() + ", y:" + getTypes(y).toString();
+			Log.info("TASSIGN (x=y, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")\n" + values);
+		}
 
 		return XGreaterThanEqualYConstraintSolver.satisify(x, y);
 	}

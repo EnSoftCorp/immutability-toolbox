@@ -32,22 +32,40 @@ public class XFieldAdaptYGreaterThanEqualZConstraintSolver {
 		sets.add(SET7);
 	}
 
-	public static boolean satisify(Node x, Node y, Node z) {
-		Set<ImmutabilityTypes> xTypes = getTypes(x);
-		if (xTypes.isEmpty()) {
-			Log.warning("x [" + x.address().toAddressString() + "] is untyped, constraint 'qx adapt zy :> qz' cannot be satisfied", new IllegalArgumentException());
-			return false;
-		}
-
+	public static boolean satisify(ImmutabilityTypes x, Node y, Node z) {
 		Set<ImmutabilityTypes> yTypes = getTypes(y);
 		if (yTypes.isEmpty()) {
-			Log.warning("y [" + y.address().toAddressString() + "] is untyped, constraint 'qx adapt zy :> qz' cannot be satisfied", new IllegalArgumentException());
+			Log.warning("y [" + y.address().toAddressString() + "] is untyped, constraint 'XTYPE adapt zy :> qz' cannot be satisfied", new IllegalArgumentException());
 			return false;
 		}
 
 		Set<ImmutabilityTypes> zTypes = getTypes(z);
 		if (zTypes.isEmpty()) {
-			Log.warning("z [" + z.address().toAddressString() + "] is untyped, constraint 'qx adapt zy :> qz' cannot be satisfied", new IllegalArgumentException());
+			Log.warning("z [" + z.address().toAddressString() + "] is untyped, constraint 'XTYPE adapt zy :> qz' cannot be satisfied", new IllegalArgumentException());
+			return false;
+		}
+		
+		EnumSet<ImmutabilityTypes> xTypes = EnumSet.of(x);
+		
+		return satisify(null, xTypes, y, yTypes, z, zTypes);
+	}
+	
+	public static boolean satisify(Node x, Node y, Node z) {
+		Set<ImmutabilityTypes> xTypes = getTypes(x);
+		if (xTypes.isEmpty()) {
+			Log.warning("x [" + x.address().toAddressString() + "] is untyped, constraint 'qx fadapt zy :> qz' cannot be satisfied", new IllegalArgumentException());
+			return false;
+		}
+
+		Set<ImmutabilityTypes> yTypes = getTypes(y);
+		if (yTypes.isEmpty()) {
+			Log.warning("y [" + y.address().toAddressString() + "] is untyped, constraint 'qx fadapt zy :> qz' cannot be satisfied", new IllegalArgumentException());
+			return false;
+		}
+
+		Set<ImmutabilityTypes> zTypes = getTypes(z);
+		if (zTypes.isEmpty()) {
+			Log.warning("z [" + z.address().toAddressString() + "] is untyped, constraint 'qx fadapt zy :> qz' cannot be satisfied", new IllegalArgumentException());
 			return false;
 		}
 

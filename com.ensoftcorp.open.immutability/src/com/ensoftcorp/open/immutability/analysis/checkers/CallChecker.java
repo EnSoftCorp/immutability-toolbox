@@ -1,5 +1,6 @@
 package com.ensoftcorp.open.immutability.analysis.checkers;
 
+import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.getTypes;
 import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.removeTypes;
 
 import com.ensoftcorp.atlas.core.db.graph.Edge;
@@ -13,9 +14,9 @@ import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.analysis.StandardQueries;
 import com.ensoftcorp.open.immutability.analysis.AnalysisUtilities;
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
-import com.ensoftcorp.open.immutability.analysis.solvers.XFieldAdaptYGreaterThanEqualZConstraintSolver;
-import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYFieldAdaptZConstraintSolver;
 import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYConstraintSolver;
+import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYMethodAdaptZConstraintSolver;
+import com.ensoftcorp.open.immutability.analysis.solvers.XMethodAdaptYGreaterThanEqualZConstraintSolver;
 import com.ensoftcorp.open.immutability.log.Log;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
 
@@ -33,28 +34,34 @@ public class CallChecker {
 	 * @return
 	 */
 	public static boolean handleCall(Node x, Node y, Node identity, Node method, Node ret, AtlasSet<Edge> parametersPassedEdges, Node containingMethod) {
-		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()) Log.info("TCALL (x=y.m(z), x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", m=" + method.getAttr("##signature") + ")");
+		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()) {
+			String values = "x:" + getTypes(x).toString() + ", y:" + getTypes(y).toString() + ", this:" + getTypes(identity).toString() + ", return:" + getTypes(ret).toString() + ", m':" + getTypes(containingMethod).toString();
+			Log.info("TCALL (x=y.m(z), x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", m=" + method.getAttr("##signature") + ")\n" + values);
+		}
 		
 		boolean typesChanged = false;
 		
-		/////////////////////// start qx adapt qret <: qx /////////////////////// 
+		/////////////////////// start qx madapt qret <: qx /////////////////////// 
 		if(processReturnAssignmentConstraints(x, ret)){
 			typesChanged = true;
 		}
-		/////////////////////// end qx adapt qret <: qx ///////////////////////  
+		/////////////////////// end qx madapt qret <: qx ///////////////////////  
 		
-		/////////////////////// start qy <: qx adapt qthis /////////////////////// 
-		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Constraint qy <: qx adapt qthis");
-		if(XFieldAdaptYGreaterThanEqualZConstraintSolver.satisify(x, identity, y)){
+		/////////////////////// start qy <: qx madapt qthis /////////////////////// 
+		if(ImmutabilityPreferences.isDebugLoggingEnabled()) {
+			String values = "x:" + getTypes(x).toString() + ", y:" + getTypes(y).toString() + ", this:" + getTypes(identity).toString();
+			Log.info("Process TCALL Identity Constraint qy <: qx madapt qthis\n" + values);
+		}
+		if(XMethodAdaptYGreaterThanEqualZConstraintSolver.satisify(x, identity, y)){
 			typesChanged = true;
 		}
-		/////////////////////// end qy <: qx adapt qthis ///////////////////////
+		/////////////////////// end qy <: qx madapt qthis ///////////////////////
 
-		/////////////////////// start qz <: qx adapt qp ///////////////////////
+		/////////////////////// start qz <: qx madapt qp ///////////////////////
 		if(processParameterConstraints(x, parametersPassedEdges)){
 			typesChanged = true;
 		}
-		/////////////////////// end qz <: qx adapt qp /////////////////////////
+		/////////////////////// end qz <: qx madapt qp /////////////////////////
 		
 		// check if method overrides another method (of course this will be empty for static methods)
 		Q overridesEdges = Common.universe().edgesTaggedWithAny(XCSG.Overrides);
@@ -66,7 +73,7 @@ public class CallChecker {
 			Node overriddenRet = Common.toQ(overriddenMethod).children().nodesTaggedWithAny(XCSG.ReturnValue).eval().nodes().getFirst();
 			
 			// constraint: overriddenReturn <: return
-			if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Constraint overriddenReturn <: return");
+			if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Override Return Constraint overriddenReturn <: return");
 			
 			if(XGreaterThanEqualYConstraintSolver.satisify(ret, overriddenRet)){
 				typesChanged = true;
@@ -76,7 +83,7 @@ public class CallChecker {
 			Node overriddenMethodIdentity = Common.toQ(overriddenMethod).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
 
 			// constraint: this <: overriddenThis 
-			if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Constraint this <: overriddenThis");
+			if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Override Identity Constraint this <: overriddenThis");
 			
 			if(XGreaterThanEqualYConstraintSolver.satisify(overriddenMethodIdentity, identity)){
 				typesChanged = true;
@@ -90,7 +97,7 @@ public class CallChecker {
 					
 			// for each parameter and overridden parameter pair
 			// constraint: p <: pOverriden
-			if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Constraint p <: pOverriden");
+			if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Override Parameter Constraint p <: pOverriden");
 			long numParams = parameters.size();
 			long numOverriddenParams = overriddenMethodParameters.size();
 			if(numParams == numOverriddenParams){
@@ -129,49 +136,54 @@ public class CallChecker {
 	 */
 	public static boolean handleStaticCall(Node x, Node callsite, Node method, Node ret, AtlasSet<Edge> parametersPassedEdges) {
 		
-		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()) Log.info("TSCALL (x=y.m(z), x=" + x.getAttr(XCSG.name) + ", m=" + method.getAttr("##signature") + ")");
+		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()) {
+			Log.info("TSCALL (x=y.m(z), x=" + x.getAttr(XCSG.name) + ", m=" + method.getAttr("##signature") + ")");
+		}
 		
 		boolean typesChanged = false;
 		
-		/////////////////////// start qx adapt qret <: qx /////////////////////// 
+		/////////////////////// start qx madapt qret <: qx /////////////////////// 
 		if(processReturnAssignmentConstraints(x, ret)){
 			typesChanged = true;
 		}
-		/////////////////////// end qx adapt qret <: qx ///////////////////////// 
+		/////////////////////// end qx madapt qret <: qx ///////////////////////// 
 
-		/////////////////////// start qz <: qx adapt qp /////////////////////////
+		/////////////////////// start qz <: qx madapt qp /////////////////////////
 		if(processParameterConstraints(x, parametersPassedEdges)){
 			typesChanged = true;
 		}
-		/////////////////////// end qz <: qx adapt qp ///////////////////////////
+		/////////////////////// end qz <: qx madapt qp ///////////////////////////
 		
-		/////////////////////// start qm' <: qx adapt qm /////////////////////////
+		/////////////////////// start qm' <: qx madapt qm /////////////////////////
 		// m' is the method that contains the callsite m()
 		Node containingMethod = StandardQueries.getContainingFunction(callsite);
 		if(processStaticDispatchConstraints(x, method, containingMethod)){
 			typesChanged = true;
 		}
-		/////////////////////// end qm' <: qx adapt qm ///////////////////////////
+		/////////////////////// end qm' <: qx madapt qm ///////////////////////////
 		
 		return typesChanged;
 	}
 
 	private static boolean processStaticDispatchConstraints(Node x, Node method, Node containingMethod) {
-		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Static Dispatch Constraint qm' <: qx adapt qm");
+		if(ImmutabilityPreferences.isDebugLoggingEnabled()) {
+			String values = "x:" + getTypes(x).toString() + ", m:" + getTypes(method).toString() + ", m':" + getTypes(containingMethod).toString();
+			Log.info("Process Static Dispatch Constraint qm' <: qx madapt qm\n" + values);
+		}
 
-		// qm' <: qx adapt qm
-		// = qx adapt qm :> qm'
-		return XFieldAdaptYGreaterThanEqualZConstraintSolver.satisify(x, method, containingMethod);
+		// qm' <: qx madapt qm
+		// = qx madapt qm :> qm'
+		return XMethodAdaptYGreaterThanEqualZConstraintSolver.satisify(x, method, containingMethod);
 	}
 	
 	/**
-	 * qz <: qx adapt qp
+	 * qz <: qx madapt qp
 	 * @param x
 	 * @param parametersPassedEdges
 	 * @return
 	 */
 	private static boolean processParameterConstraints(Node x, AtlasSet<Edge> parametersPassedEdges) {
-		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Constraint qz <: qx adapt qp");
+		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Parameter Constraint qz <: qx madapt qp");
 
 		boolean typesChanged = false;
 		
@@ -186,12 +198,16 @@ public class CallChecker {
 						+ ", p:" + AnalysisUtilities.getTypes(p).toString());
 			}
 			
-			// qz <: qx adapt qp
-			// = qx adapt qp :> qz
-			if(XFieldAdaptYGreaterThanEqualZConstraintSolver.satisify(x, p, z)){
+			// qz <: qx madapt qp
+			// = qx madapt qp :> qz
+			if(XMethodAdaptYGreaterThanEqualZConstraintSolver.satisify(x, p, z)){
 				typesChanged = true;
-				
-				if(ImmutabilityPreferences.isContainerConsiderationEnabled()){
+			}
+			
+			
+			// TODO: case mutation to parameter mutates a field which is a part of a container
+			if(ImmutabilityPreferences.isContainerConsiderationEnabled()){
+				if(!getTypes(p).contains(ImmutabilityTypes.READONLY)){
 					Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
 					for(Node paramValue : localDataFlowEdges.predecessors(Common.toQ(z)).eval().nodes()){
 						if(paramValue.taggedWith(XCSG.InstanceVariableAccess)){
@@ -220,14 +236,16 @@ public class CallChecker {
 	}
 	
 	/**
-	 * qx adapt qret <: qx
+	 * qx madapt qret <: qx
 	 * @param x
 	 * @param ret
 	 * @return
 	 */
 	private static boolean processReturnAssignmentConstraints(Node x, Node ret) {
-		
-		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Constraint qx adapt qret <: qx");
+		if(ImmutabilityPreferences.isDebugLoggingEnabled()) {
+			String values = "x:" + getTypes(x).toString() + ", return:" + getTypes(ret).toString();
+			Log.info("Process TCALL Return Constraint qx madapt qret <: qx\n" + values);
+		}
 
 //		// TODO: how should this be handled?
 		// follow up question, does it need to be handled?
@@ -238,9 +256,9 @@ public class CallChecker {
 //			return false;
 //		}
 		
-		// qx adapt qret <: qx
-		// = qx :> qx adapt qret
-		return XGreaterThanEqualYFieldAdaptZConstraintSolver.satisify(x, x, ret);
+		// qx madapt qret <: qx
+		// = qx :> qx madapt qret
+		return XGreaterThanEqualYMethodAdaptZConstraintSolver.satisify(x, x, ret);
 	}
 	
 }

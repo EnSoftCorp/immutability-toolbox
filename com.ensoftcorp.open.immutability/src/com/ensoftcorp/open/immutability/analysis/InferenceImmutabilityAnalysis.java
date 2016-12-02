@@ -253,6 +253,9 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 						Q arrayIdentityForEdges = Common.universe().edgesTaggedWithAny(XCSG.ArrayIdentityFor);
 						Q arrayWrite = interproceduralDataFlowEdges.predecessors(Common.toQ(arrayComponents));
 						for(Node arrayIdentity : arrayIdentityForEdges.predecessors(arrayWrite).eval().nodes()){
+							if(ImmutabilityPreferences.isDebugLoggingEnabled()){
+								Log.info("Array components were updated which mutated array: " + arrayIdentity.getAttr(XCSG.name).toString());
+							}
 							// the array has been mutated
 							for(Node arrayReference : AnalysisUtilities.parseReferences(arrayIdentity)){
 								if(AnalysisUtilities.removeTypes(arrayReference, ImmutabilityTypes.READONLY)){
@@ -273,7 +276,10 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 												addMutable(x); // doesn't count as a type change
 											}
 											if(ImmutabilityPreferences.isAllowDefaultMutableInstancesVariablesEnabled() || ImmutabilityPreferences.isAllowAddMutableInstanceVariablesEnabled()){
-												if(XEqualsYConstraintSolver.satisfty(x, ImmutabilityTypes.MUTABLE)){
+												if(XEqualsYConstraintSolver.satisfy(x, ImmutabilityTypes.MUTABLE)){
+													if(ImmutabilityPreferences.isAllowAddMutableInstanceVariablesEnabled() && getTypes(x).isEmpty()){
+														addMutable(x);
+													}
 													typesChanged = true;
 												}
 											} else {
@@ -283,7 +289,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 												}
 											}
 										} else {
-											if(XEqualsYConstraintSolver.satisfty(x, ImmutabilityTypes.MUTABLE)){
+											if(XEqualsYConstraintSolver.satisfy(x, ImmutabilityTypes.MUTABLE)){
 												typesChanged = true;
 											}
 										}
@@ -322,6 +328,10 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 										}
 									}
 								}
+							}
+							// local reference or parameter
+							else {
+								removeTypes(arrayIdentity, ImmutabilityTypes.POLYREAD);
 							}
 						}
 						continue; // no further constraints apply to this reference
@@ -587,17 +597,18 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 					AtlasSet<Node> yReferences = AnalysisUtilities.parseReferences(from);;
 					for(Node y : yReferences){
 
-						if(to.taggedWith(XCSG.ParameterPass) && from.taggedWith(XCSG.InstanceVariableValue)){
-							Set<ImmutabilityTypes> yTypes = getTypes(y);
-							if(!yTypes.contains(ImmutabilityTypes.READONLY)){
-								continue;
-								// fields without readonly cause parameters to be non-mutable
-								// but mutions to parameters must be mutable which causes ImmutabilityTags.UNTYPED references
-								// so this constraint is too strong...
-								// TODO: could potentially be fixed by revised viewpoint adaptations 
-								// specific to fields and callsites as is done in the FOOL2012 paper
-							}
-						}
+//						if(to.taggedWith(XCSG.ParameterPass) && from.taggedWith(XCSG.InstanceVariableValue)){
+//							continue; // don't touch fields they are scary....
+////							Set<ImmutabilityTypes> yTypes = getTypes(y);
+////							if(!yTypes.contains(ImmutabilityTypes.READONLY)){
+////								continue;
+////								// fields without readonly cause parameters to be non-mutable
+////								// but mutions to parameters must be mutable which causes ImmutabilityTags.UNTYPED references
+////								// so this constraint is too strong...
+////								// TODO: could potentially be fixed by revised viewpoint adaptations 
+////								// specific to fields and callsites as is done in the FOOL2012 paper
+////							}
+//						}
 						
 						if(BasicAssignmentChecker.handleAssignment(x, y)){
 							typesChanged = true;

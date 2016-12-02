@@ -239,17 +239,21 @@ public class AnalysisUtilities {
 	 * @return Returns true if the type qualifier changed
 	 */
 	public static boolean removeTypes(Node node, Set<ImmutabilityTypes> typesToRemove){
-		Set<ImmutabilityTypes> typeSet = getTypes(node);
-		String logMessage = "Remove: " + typesToRemove.toString() + " from " + typeSet.toString() + " for " + node.getAttr(XCSG.name);
-		boolean typesChanged = typeSet.removeAll(typesToRemove);
-		if(typesChanged){
-			if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info(logMessage);
-			if(ImmutabilityPreferences.isDebugLoggingEnabled() && typeSet.isEmpty()) {
-				Log.warning("Remove on '" + node.getAttr(XCSG.name).toString() + "' resulted in an empty type set.", 
-					new RuntimeException(node.getAttr(XCSG.name).toString() + " is untyped."));
+		if(node != null){
+			Set<ImmutabilityTypes> typeSet = getTypes(node);
+			String logMessage = "Remove: " + typesToRemove.toString() + " from " + typeSet.toString() + " for " + node.getAttr(XCSG.name);
+			boolean typesChanged = typeSet.removeAll(typesToRemove);
+			if(typesChanged){
+				if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info(logMessage);
+				if(ImmutabilityPreferences.isDebugLoggingEnabled() && getTypes(node).isEmpty()) {
+					Log.warning("Remove on '" + node.getAttr(XCSG.name).toString() + "' resulted in an empty type set.", 
+						new RuntimeException(node.getAttr(XCSG.name).toString() + " is untyped."));
+				}
 			}
+			return typesChanged;
+		} else {
+			return false;
 		}
-		return typesChanged;
 	}
 	
 	/**
@@ -259,11 +263,15 @@ public class AnalysisUtilities {
 	 * @return Returns true if the type qualifier changed
 	 */
 	public static boolean removeTypes(Node node, ImmutabilityTypes... types){
-		EnumSet<ImmutabilityTypes> typesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
-		for(ImmutabilityTypes type : types){
-			typesToRemove.add(type);
+		if(node != null){
+			EnumSet<ImmutabilityTypes> typesToRemove = EnumSet.noneOf(ImmutabilityTypes.class);
+			for(ImmutabilityTypes type : types){
+				typesToRemove.add(type);
+			}
+			return removeTypes(node, typesToRemove);
+		} else {
+			return false;
 		}
-		return removeTypes(node, typesToRemove);
 	}
 	
 	/**
@@ -275,27 +283,35 @@ public class AnalysisUtilities {
 	 * @return Returns true if the type qualifier changed
 	 */
 	public static boolean addMutable(Node node){
-		return addTypes(node, ImmutabilityTypes.MUTABLE);
-	}
-	
-	/**
-	 * Sets the MUTABLE type qualifier for a graph element
-	 * USE EXTREME CAUTION WHEN USING THIS METHOD!!!!
-	 * ADDING TYPES CAN BREAK FIXED POINT GUARENTEES!!!
-	 * @param node
-	 * @param qualifier
-	 * @return Returns true if the type qualifier changed
-	 */
-	public static boolean setMutable(Node node){
-		Set<ImmutabilityTypes> types = getTypes(node); 
-		if(types.size() == 1 && types.contains(ImmutabilityTypes.MUTABLE)){
+		if(node != null){
+			return addTypes(node, ImmutabilityTypes.MUTABLE);
+		} else {
 			return false;
-		} else{
-			types.clear();
-			types.add(ImmutabilityTypes.MUTABLE);
-			return true;
 		}
 	}
+	
+//	/**
+//	 * Sets the MUTABLE type qualifier for a graph element
+//	 * USE EXTREME CAUTION WHEN USING THIS METHOD!!!!
+//	 * ADDING TYPES CAN BREAK FIXED POINT GUARENTEES!!!
+//	 * @param node
+//	 * @param qualifier
+//	 * @return Returns true if the type qualifier changed
+//	 */
+//	public static boolean setMutable(Node node){
+//		if(node != null){
+//			Set<ImmutabilityTypes> types = getTypes(node); 
+//			if(types.size() == 1 && types.contains(ImmutabilityTypes.MUTABLE)){
+//				return false;
+//			} else{
+//				types.clear();
+//				types.add(ImmutabilityTypes.MUTABLE);
+//				return true;
+//			}
+//		} else {
+//			return false;
+//		}
+//	}
 	
 	/**
 	 * Adds a type qualifier for a graph element
@@ -306,11 +322,15 @@ public class AnalysisUtilities {
 	 * @return Returns true if the type qualifier changed
 	 */
 	public static boolean addTypes(Node node, ImmutabilityTypes... types){
-		EnumSet<ImmutabilityTypes> typesToAdd = EnumSet.noneOf(ImmutabilityTypes.class);
-		for(ImmutabilityTypes type : types){
-			typesToAdd.add(type);
+		if(node != null){
+			EnumSet<ImmutabilityTypes> typesToAdd = EnumSet.noneOf(ImmutabilityTypes.class);
+			for(ImmutabilityTypes type : types){
+				typesToAdd.add(type);
+			}
+			return addTypes(node, typesToAdd);
+		} else {
+			return false;
 		}
-		return addTypes(node, typesToAdd);
 	}
 	
 	/**
@@ -322,13 +342,17 @@ public class AnalysisUtilities {
 	 * @return Returns true if the type qualifier changed
 	 */
 	public static boolean addTypes(Node node, Set<ImmutabilityTypes> typesToAdd){
+		if(node != null){
 		Set<ImmutabilityTypes> typeSet = getTypes(node);
-		String logMessage = "Add: " + typesToAdd.toString() + " to " + typeSet.toString() + " for " + node.getAttr(XCSG.name);
-		boolean typesChanged = typeSet.addAll(typesToAdd);
-		if(typesChanged){
-			if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info(logMessage);
+			String logMessage = "Add: " + typesToAdd.toString() + " to " + typeSet.toString() + " for " + node.getAttr(XCSG.name);
+			boolean typesChanged = typeSet.addAll(typesToAdd);
+			if(typesChanged){
+				if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info(logMessage);
+			}
+			return typesChanged;
+		} else {
+			return false;
 		}
-		return typesChanged;
 	}
 	
 	@SuppressWarnings("unchecked")

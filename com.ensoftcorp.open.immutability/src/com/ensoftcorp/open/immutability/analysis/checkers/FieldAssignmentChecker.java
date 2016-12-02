@@ -1,6 +1,7 @@
 package com.ensoftcorp.open.immutability.analysis.checkers;
 
 import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.addMutable;
+import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.getTypes;
 import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.removeTypes;
 //import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.setMutable;
 
@@ -27,7 +28,10 @@ public class FieldAssignmentChecker {
 	 */
 	public static boolean handleFieldWrite(Node x, Node f, Node y) {
 
-		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()) Log.info("TWRITE (x.f=y, x=" + x.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")");
+		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()) {
+			String values = "x:" + getTypes(x).toString() + ", f:" + getTypes(f).toString() + ", y:" + getTypes(y).toString();
+			Log.info("TWRITE (x.f=y, x=" + x.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")\n" + values);
+		}
 		
 		boolean typesChanged = false;
 		
@@ -37,7 +41,10 @@ public class FieldAssignmentChecker {
 				addMutable(x); // doesn't count as a type change
 			}
 			if(ImmutabilityPreferences.isAllowDefaultMutableInstancesVariablesEnabled() || ImmutabilityPreferences.isAllowAddMutableInstanceVariablesEnabled()){
-				if(XEqualsYConstraintSolver.satisfty(x, ImmutabilityTypes.MUTABLE)){
+				if(XEqualsYConstraintSolver.satisfy(x, ImmutabilityTypes.MUTABLE)){
+					if(ImmutabilityPreferences.isAllowAddMutableInstanceVariablesEnabled() && getTypes(x).isEmpty()){
+						addMutable(x);
+					}
 					typesChanged = true;
 				}
 			} else {
@@ -47,14 +54,14 @@ public class FieldAssignmentChecker {
 				}
 			}
 		} else {
-			if(XEqualsYConstraintSolver.satisfty(x, ImmutabilityTypes.MUTABLE)){
+			if(XEqualsYConstraintSolver.satisfy(x, ImmutabilityTypes.MUTABLE)){
 				typesChanged = true;
 			}
 		}
 		
-		// qy <: qx adapt qf
-		// = qx adapt qf :> qy
-		if(XFieldAdaptYGreaterThanEqualZConstraintSolver.satisify(x, f, y)){
+		// qy <: MUTABLE fadapt qf
+		// = MUTABLE fadapt qf :> qy
+		if(XFieldAdaptYGreaterThanEqualZConstraintSolver.satisify(ImmutabilityTypes.MUTABLE, f, y)){
 			typesChanged = true;
 		}
 		
@@ -72,7 +79,8 @@ public class FieldAssignmentChecker {
 	 */
 	public static boolean handleFieldRead(Node x, Node y, Node f) {
 		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()){
-			Log.info("TREAD (x=y.f, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ")");
+			String values = "x:" + getTypes(x).toString() + ", f:" + getTypes(f).toString() + ", y:" + getTypes(y).toString();
+			Log.info("TREAD (x=y.f, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ")\n" + values);
 		}
 		
 		boolean typesChanged = false;
@@ -98,7 +106,8 @@ public class FieldAssignmentChecker {
 	 */
 	public static boolean handleStaticFieldWrite(Node sf, Node x, Node m) {
 		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()){
-			Log.info("TSWRITE (sf=x in m, sf=" + sf.getAttr(XCSG.name) + ", x=" + x.getAttr(XCSG.name) + ", m=" + m.getAttr(XCSG.name) + ")");
+			String values = "x:" + getTypes(x).toString() + ", sf:" + getTypes(sf).toString() + ", m:" + getTypes(m).toString();
+			Log.info("TSWRITE (sf=x in m, sf=" + sf.getAttr(XCSG.name) + ", x=" + x.getAttr(XCSG.name) + ", m=" + m.getAttr(XCSG.name) + ")\n" + values);
 		}
 		// a write to a static field means the containing method cannot be pure (readonly or polyread)
 		return removeTypes(m, ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD);
@@ -115,7 +124,8 @@ public class FieldAssignmentChecker {
 	 */
 	public static boolean handleStaticFieldRead(Node x, Node sf, Node m) {
 		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()){
-			Log.info("TSREAD (x=sf in m, x=" + x.getAttr(XCSG.name) + ", sf=" + sf.getAttr(XCSG.name) + ", m=" + m.getAttr(XCSG.name) + ")");
+			String values = "x:" + getTypes(x).toString() + ", sf:" + getTypes(sf).toString() + ", m:" + getTypes(m).toString();
+			Log.info("TSREAD (x=sf in m, x=" + x.getAttr(XCSG.name) + ", sf=" + sf.getAttr(XCSG.name) + ", m=" + m.getAttr(XCSG.name) + ")\n" + values);
 		}
 		// m <: x
 		// = x :> m
