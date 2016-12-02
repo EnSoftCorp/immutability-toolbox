@@ -598,7 +598,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 					for(Node y : yReferences){
 
 						if(to.taggedWith(XCSG.ParameterPass) && from.taggedWith(XCSG.InstanceVariableValue)){
-							continue; // don't touch fields they are scary....
+							continue; // don't touch fields they are scary....container logic handles this...
 //							Set<ImmutabilityTypes> yTypes = getTypes(y);
 //							if(!yTypes.contains(ImmutabilityTypes.READONLY)){
 //								continue;
