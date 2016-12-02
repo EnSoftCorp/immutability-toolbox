@@ -596,20 +596,6 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 				for(Node x : xReferences){
 					AtlasSet<Node> yReferences = AnalysisUtilities.parseReferences(from);;
 					for(Node y : yReferences){
-
-						if(to.taggedWith(XCSG.ParameterPass) && from.taggedWith(XCSG.InstanceVariableValue)){
-							continue; // don't touch fields they are scary....container logic handles this...
-//							Set<ImmutabilityTypes> yTypes = getTypes(y);
-//							if(!yTypes.contains(ImmutabilityTypes.READONLY)){
-//								continue;
-//								// fields without readonly cause parameters to be non-mutable
-//								// but mutions to parameters must be mutable which causes ImmutabilityTags.UNTYPED references
-//								// so this constraint is too strong...
-//								// TODO: could potentially be fixed by revised viewpoint adaptations 
-//								// specific to fields and callsites as is done in the FOOL2012 paper
-//							}
-						}
-						
 						if(BasicAssignmentChecker.handleAssignment(x, y)){
 							typesChanged = true;
 						}
