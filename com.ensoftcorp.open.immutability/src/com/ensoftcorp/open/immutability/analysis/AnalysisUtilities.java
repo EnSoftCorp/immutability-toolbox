@@ -246,7 +246,7 @@ public class AnalysisUtilities {
 			if(typesChanged){
 				if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info(logMessage);
 				if(ImmutabilityPreferences.isDebugLoggingEnabled() && getTypes(node).isEmpty()) {
-					Log.warning("Remove on '" + node.getAttr(XCSG.name).toString() + "' resulted in an empty type set.", 
+					Log.warning("Remove on '" + node.getAttr(XCSG.name).toString() + "' resulted in an empty type set.\n" + node.toString(), 
 						new RuntimeException(node.getAttr(XCSG.name).toString() + " is untyped."));
 				}
 			}
