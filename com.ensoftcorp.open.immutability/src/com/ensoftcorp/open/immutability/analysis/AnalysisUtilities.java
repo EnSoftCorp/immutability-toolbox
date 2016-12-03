@@ -584,15 +584,21 @@ public class AnalysisUtilities {
 			qualifiers.add(ImmutabilityTypes.POLYREAD);
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		} else if(ge.taggedWith(XCSG.Null)){
-			// assignments of nulls to a field can still mutate an object
+			// null does not modify the stack or heap so it is readonly
+			// however in order to satisfy constraints the other types should be initialized
+			// note that assignments of nulls to a field can still mutate an object
+			qualifiers.add(ImmutabilityTypes.READONLY);
+			qualifiers.add(ImmutabilityTypes.POLYREAD);
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		} else if(ge.taggedWith(XCSG.Literal) || ge.taggedWith(XCSG.Type)){
-			// literals should be treated as object instantiation and default to mutable
-			// an XCSG.Type here represents a class literal
+			// several java objects are readonly for all practical purposes
+			// however in order to satisfy constraints the other types should be initialized
 			// Note that at least in Jimple its possible for a Type -> Literal -> Formal Parameter
 			// not the normal Type -> Literal -> Actual Parameter -> Formal Parameter
 			// so in this case the Type graph element should be treated as the type literal
 			// and hence readonly...TODO: bug EnSoft to see if this graph pattern is expected!
+			qualifiers.add(ImmutabilityTypes.READONLY);
+			qualifiers.add(ImmutabilityTypes.POLYREAD);
 			qualifiers.add(ImmutabilityTypes.MUTABLE);
 		} else if(ge.taggedWith(XCSG.Instantiation) || ge.taggedWith(XCSG.ArrayInstantiation)){
 			// Type Rule 1 - TNEW

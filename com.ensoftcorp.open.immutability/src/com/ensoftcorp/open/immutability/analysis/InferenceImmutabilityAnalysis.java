@@ -635,11 +635,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 	
 	private ImmutabilityTypes getDefaultMaximalType(GraphElement ge) {
 		ImmutabilityTypes maximalType;
-		if(ge.taggedWith(XCSG.Instantiation) 
-			|| ge.taggedWith(XCSG.ArrayInstantiation) 
-			|| ge.taggedWith(XCSG.Null) 
-			|| ge.taggedWith(XCSG.Literal) 
-			|| ge.taggedWith(XCSG.Type)){
+		if(ge.taggedWith(XCSG.Instantiation) || ge.taggedWith(XCSG.ArrayInstantiation)){
 			maximalType = ImmutabilityTypes.MUTABLE;
 		} else {
 			// all other cases default to readonly as the maximal type
