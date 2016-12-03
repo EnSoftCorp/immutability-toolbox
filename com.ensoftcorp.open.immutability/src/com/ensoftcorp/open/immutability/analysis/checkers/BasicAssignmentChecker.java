@@ -4,7 +4,6 @@ import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.getTyp
 
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
-import com.ensoftcorp.open.immutability.analysis.solvers.XFieldAdaptYGreaterThanEqualZConstraintSolver;
 import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYConstraintSolver;
 import com.ensoftcorp.open.immutability.log.Log;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
@@ -20,33 +19,51 @@ public class BasicAssignmentChecker {
 	 * @return
 	 */
 	public static boolean handleAssignment(Node x, Node y) {
+		// x and y should be non-null
 		if(x==null){
-			Log.warning("x is null!");
-			return false;
+			throw new IllegalArgumentException("x is null");
 		}
-		
 		if(y==null){
-			Log.warning("y is null!");
-			return false;
+			throw new IllegalArgumentException("y is null");
 		}
 		
+		// x and y should not be fields
+		if(x.taggedWith(XCSG.Field) || y.taggedWith(XCSG.Field)){
+			String message = "Basic assignment cannot involve fields!";
+			IllegalArgumentException e = new IllegalArgumentException(message);;
+			Log.error(message + "\n\nx:\n" + x.toString() + "\n\ny:\n" + y.toString(), e);
+			throw e;
+		}
+		
+		// x and y should not be callsites
+		if(x.taggedWith(XCSG.CallSite) || y.taggedWith(XCSG.CallSite)){
+			String message = "Basic assignment cannot involve callsites!";
+			IllegalArgumentException e = new IllegalArgumentException(message);;
+			Log.error(message + "\n\nx:\n" + x.toString() + "\n\ny:\n" + y.toString(), e);
+			throw e;
+		}
+		
+		// x and y should not be parameter passes 
+		// (assignments to parameters or assignments to stack parameters)
+		if(x.taggedWith(XCSG.ParameterPass) || y.taggedWith(XCSG.ParameterPass)){
+			String message = "Basic assignment cannot involve parameter passing!";
+			IllegalArgumentException e = new IllegalArgumentException(message);;
+			Log.error(message + "\n\nx:\n" + x.toString() + "\n\ny:\n" + y.toString(), e);
+			throw e;
+		}
+		
+		// inference rule logging
 		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()) {
 			String values = "x:" + getTypes(x).toString() + ", y:" + getTypes(y).toString();
 			Log.info("TASSIGN (x=y, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")\n" + values);
 		}
-		
-		if(y.taggedWith(XCSG.InstanceVariable) && ImmutabilityPreferences.isFieldAdaptationsEnabled()){
-			// treat x :> y, as x fadapt y :> y
-			if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()) {
-				Log.info("Processing Instance Variable Assignment Constraint x fadapt y :> y");
-			}
-			return XFieldAdaptYGreaterThanEqualZConstraintSolver.satisify(x, y, y);
-		} else {
-			if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()) {
-				Log.info("Processing Constraint x :> y");
-			}
-			return XGreaterThanEqualYConstraintSolver.satisify(x, y);
+
+		// debug logging
+		if(ImmutabilityPreferences.isDebugLoggingEnabled()) {
+			Log.info("Processing Constraint x :> y");
 		}
+		
+		return XGreaterThanEqualYConstraintSolver.satisify(x, y);
 	}
 	
 }

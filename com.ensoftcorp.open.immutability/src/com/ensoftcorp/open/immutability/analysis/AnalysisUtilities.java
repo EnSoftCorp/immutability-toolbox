@@ -19,48 +19,6 @@ import com.ensoftcorp.open.jimple.commons.wishful.JimpleStopGap;
 
 public class AnalysisUtilities {
 	
-//	// caching for some common graph types
-//	private static boolean cacheInitialized = false;
-//	private static AtlasSet<GraphElement> defaultReadonlyTypes;
-//	
-//	private static void initializeCache(IProgressMonitor monitor) {
-//		// initialize the cache of default readonly types
-//		defaultReadonlyTypes = new AtlasHashSet<GraphElement>();
-//		
-//		// autoboxing
-//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Integer").eval().nodes().getFirst());
-//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Long").eval().nodes().getFirst());
-//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Short").eval().nodes().getFirst());
-//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Boolean").eval().nodes().getFirst());
-//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Byte").eval().nodes().getFirst());
-//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Double").eval().nodes().getFirst());
-//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Float").eval().nodes().getFirst());
-//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Character").eval().nodes().getFirst());
-//		
-//		// a few other objects are special cases for all practical purposes
-//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "String").eval().nodes().getFirst());
-//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Number").eval().nodes().getFirst());
-//		defaultReadonlyTypes.add(Common.typeSelect("java.util.concurrent.atomic", "AtomicInteger").eval().nodes().getFirst());
-//		defaultReadonlyTypes.add(Common.typeSelect("java.util.concurrent.atomic", "AtomicLong").eval().nodes().getFirst());
-//		defaultReadonlyTypes.add(Common.typeSelect("java.math", "BigDecimal").eval().nodes().getFirst());
-//		defaultReadonlyTypes.add(Common.typeSelect("java.math", "BigInteger").eval().nodes().getFirst());
-//	}
-//	
-//	/**
-//	 * Returns true if the given type is a default readonly type
-//	 * @param type
-//	 * @return
-//	 */
-//	public static boolean isDefaultReadonlyType(GraphElement type) {
-//		if(type == null){
-//			return false;
-//		}
-//		if(!cacheInitialized){
-//			initializeCache(new NullProgressMonitor());
-//		}
-//		return type.taggedWith(XCSG.Primitive) || defaultReadonlyTypes.contains(type);
-//	}
-	
 	/**
 	 * Used as an attribute key to temporarily compute the potential immutability qualifiers
 	 */
@@ -372,14 +330,13 @@ public class AnalysisUtilities {
 	}
 	
 	public static AtlasSet<Node> parseReferences(Node node){
-//		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Parsing reference for " + node.address().toAddressString());
+		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Parsing reference for " + node.address().toAddressString());
 		
 		AtlasSet<Node> parsedReferences = new AtlasHashSet<Node>();
 		AtlasHashSet<Node> worklist = new AtlasHashSet<Node>();
 		worklist.add(node);
 		
 		Q dataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.DataFlow_Edge);
-		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
 		
 		while(!worklist.isEmpty()){
 			GraphElement reference = worklist.getFirst();
@@ -396,50 +353,6 @@ public class AnalysisUtilities {
 					for(Node workItem : JimpleStopGap.getDisplayNodeReferences(reference)){
 						worklist.add(workItem);
 					}
-					continue;
-				}
-				
-				if(reference.taggedWith(XCSG.CallSite)){
-					// parse return, a callsite on a callsite must be a callsite on the resulting object from the first callsite
-					Node method = AnalysisUtilities.getInvokedMethodSignature(reference);
-					worklist.add(Common.toQ(method).children().nodesTaggedWithAny(XCSG.ReturnValue).eval().nodes().getFirst());
-					continue;
-				}
-				
-				// get the field for instance and class variable assignments
-				if(reference.taggedWith(XCSG.InstanceVariableAssignment) || reference.taggedWith(JavaStopGap.CLASS_VARIABLE_ASSIGNMENT)){
-					for(Node workItem : interproceduralDataFlowEdges.successors(Common.toQ(reference)).eval().nodes()){
-						worklist.add(workItem);
-					}
-					continue;
-				}
-				
-				// get the field for instance and class variable values
-				if(reference.taggedWith(XCSG.InstanceVariableValue) || reference.taggedWith(JavaStopGap.CLASS_VARIABLE_VALUE)){
-					for(Node workItem : interproceduralDataFlowEdges.predecessors(Common.toQ(reference)).eval().nodes()){
-						worklist.add(workItem);
-					}
-					continue;
-				}
-				
-				// get the array components being written to
-				if(reference.taggedWith(XCSG.ArrayWrite)){
-					for(Node workItem : interproceduralDataFlowEdges.successors(Common.toQ(reference)).eval().nodes()){
-						worklist.add(workItem);
-					}
-					continue;
-				}
-				
-				// get the array components being read from
-				if(reference.taggedWith(XCSG.ArrayRead)){
-					for(Node workItem : interproceduralDataFlowEdges.predecessors(Common.toQ(reference)).eval().nodes()){
-						worklist.add(workItem);
-					}
-					continue;
-				}
-				
-				if(reference.getAttr(XCSG.name).toString().contains("$")){
-					Log.warning("Inner classes are currently unsupported, skipping assignment statement...");
 					continue;
 				}
 				
@@ -463,26 +376,27 @@ public class AnalysisUtilities {
 	}
 	
 	private static boolean needsProcessing(GraphElement ge){
-		if(ge.taggedWith(JimpleStopGap.DATAFLOW_DISPLAY_NODE)){
-			return true;
-		}
-		
 		if(ge.taggedWith(XCSG.Cast)){
 			return true;
 		}
 		
+		if(ge.taggedWith(JimpleStopGap.DATAFLOW_DISPLAY_NODE)){
+			return true;
+		}
+
+		// don't process callsites, field accesses, or array accesses
+		// they will be handled in the main inference routine
 		if(ge.taggedWith(XCSG.CallSite)){
-			return true;
+			return false;
 		}
-		
 		if(ge.taggedWith(XCSG.InstanceVariableAccess) || ge.taggedWith(JavaStopGap.CLASS_VARIABLE_ACCESS)){
-			return true;
+			return false;
 		}
-		
 		if(ge.taggedWith(XCSG.ArrayAccess)){
-			return true;
+			return false;
 		}
 		
+		// if the reference is typeable then no processing is needed
 		return !isTypable(ge);
 	}
 	
@@ -559,10 +473,6 @@ public class AnalysisUtilities {
 				return true;
 			}
 		}
-		
-//		if(isDefaultReadonlyType(getObjectType(ge))){
-//			return true;
-//		}
 		
 		// something made it through the gap...
 		return false;
