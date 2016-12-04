@@ -29,7 +29,6 @@ public class FieldAssignmentChecker {
 	 * @return Returns true if the graph element's ImmutabilityTypes have changed
 	 */
 	public static boolean handleFieldWrite(Node x, Node f, Node y) {
-
 		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()) {
 			String values = "x:" + getTypes(x).toString() + ", f:" + getTypes(f).toString() + ", y:" + getTypes(y).toString();
 			Log.info("TWRITE (x.f=y, x=" + x.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")\n" + values);
@@ -42,21 +41,21 @@ public class FieldAssignmentChecker {
 			typesChanged = true;
 		}
 		
-		if(ImmutabilityPreferences.isFieldAdaptationsEnabled()){
-			// qy <: MUTABLE fadapt qf
-			// = MUTABLE fadapt qf :> qy
-			// FSE 2012 implementation
-			if(XFieldAdaptYGreaterThanEqualZConstraintSolver.satisify(ImmutabilityTypes.MUTABLE, f, y)){
-				typesChanged = true;
-			}
-		} else {
-			// qy <: MUTABLE fadapt qf
+//		if(ImmutabilityPreferences.isFieldAdaptationsEnabled()){
+//			// qy <: MUTABLE fadapt qf
+//			// = MUTABLE fadapt qf :> qy
+//			// FSE 2012 implementation
+//			if(XFieldAdaptYGreaterThanEqualZConstraintSolver.satisify(ImmutabilityTypes.MUTABLE, f, y)){
+//				typesChanged = true;
+//			}
+//		} else {
+			// qy <: MUTABLE madapt qf
 			// = MUTABLE madapt qf :> qy
 			// OOPSLA 2012 implementation
 			if(XMethodAdaptYGreaterThanEqualZConstraintSolver.satisify(x, f, y)){
 				typesChanged = true;
 			}
-		}
+//		}
 		
 		return typesChanged;
 	}
