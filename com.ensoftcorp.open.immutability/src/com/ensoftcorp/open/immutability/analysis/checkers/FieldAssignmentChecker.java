@@ -1,17 +1,12 @@
 package com.ensoftcorp.open.immutability.analysis.checkers;
 
-import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.addMutable;
 import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.getTypes;
-import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.removeTypes;
-//import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.setMutable;
 
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
 import com.ensoftcorp.open.immutability.analysis.solvers.XEqualsYConstraintSolver;
-import com.ensoftcorp.open.immutability.analysis.solvers.XFieldAdaptYGreaterThanEqualZConstraintSolver;
 import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYConstraintSolver;
-import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYFieldAdaptZConstraintSolver;
 import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYMethodAdaptZConstraintSolver;
 import com.ensoftcorp.open.immutability.analysis.solvers.XMethodAdaptYGreaterThanEqualZConstraintSolver;
 import com.ensoftcorp.open.immutability.log.Log;
@@ -29,6 +24,18 @@ public class FieldAssignmentChecker {
 	 * @return Returns true if the graph element's ImmutabilityTypes have changed
 	 */
 	public static boolean handleFieldWrite(Node x, Node f, Node y) {
+		// x, y, and f should be non-null
+		if(x==null){
+			throw new IllegalArgumentException("x is null");
+		}
+		if(y==null){
+			throw new IllegalArgumentException("y is null");
+		}
+		if(f==null){
+			throw new IllegalArgumentException("f is null");
+		}
+		
+		// log inference rule
 		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()) {
 			String values = "x:" + getTypes(x).toString() + ", f:" + getTypes(f).toString() + ", y:" + getTypes(y).toString();
 			Log.info("TWRITE (x.f=y, x=" + x.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")\n" + values);
@@ -70,6 +77,18 @@ public class FieldAssignmentChecker {
 	 * @return Returns true if the graph element's ImmutabilityTypes have changed
 	 */
 	public static boolean handleFieldRead(Node x, Node y, Node f) {
+		// x, y, and f should be non-null
+		if(x==null){
+			throw new IllegalArgumentException("x is null");
+		}
+		if(y==null){
+			throw new IllegalArgumentException("y is null");
+		}
+		if(f==null){
+			throw new IllegalArgumentException("f is null");
+		}
+		
+		// log inference rule
 		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()){
 			String values = "x:" + getTypes(x).toString() + ", f:" + getTypes(f).toString() + ", y:" + getTypes(y).toString();
 			Log.info("TREAD (x=y.f, x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ")\n" + values);
@@ -77,21 +96,21 @@ public class FieldAssignmentChecker {
 		
 		boolean typesChanged = false;
 		
-		if(ImmutabilityPreferences.isFieldAdaptationsEnabled()){
-			// qy adapt qf <: qx
-			// = qx :> qy adapt qf
-			// FSE 2012 version
-			if(XGreaterThanEqualYFieldAdaptZConstraintSolver.satisify(x, y, f)){
-				typesChanged = true;
-			}
-		} else {
+//		if(ImmutabilityPreferences.isFieldAdaptationsEnabled()){
+//			// qy adapt qf <: qx
+//			// = qx :> qy adapt qf
+//			// FSE 2012 version
+//			if(XGreaterThanEqualYFieldAdaptZConstraintSolver.satisify(x, y, f)){
+//				typesChanged = true;
+//			}
+//		} else {
 			// qy adapt qf <: qx
 			// = qx :> qy adapt qf
 			// vanilla OOPSLA 2012 version
 			if(XGreaterThanEqualYMethodAdaptZConstraintSolver.satisify(x, y, f)){
 				typesChanged = true;
 			}
-		}
+//		}
 		
 		return typesChanged;
 	}
@@ -107,12 +126,26 @@ public class FieldAssignmentChecker {
 	 * @return
 	 */
 	public static boolean handleStaticFieldWrite(Node sf, Node x, Node m) {
+		// x, sf, and m should be non-null
+		if(x==null){
+			throw new IllegalArgumentException("x is null");
+		}
+		if(sf==null){
+			throw new IllegalArgumentException("sf is null");
+		}
+		if(m==null){
+			throw new IllegalArgumentException("m is null");
+		}
+		
+		// log inference rule
 		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()){
 			String values = "x:" + getTypes(x).toString() + ", sf:" + getTypes(sf).toString() + ", m:" + getTypes(m).toString();
 			Log.info("TSWRITE (sf=x in m, sf=" + sf.getAttr(XCSG.name) + ", x=" + x.getAttr(XCSG.name) + ", m=" + m.getAttr(XCSG.name) + ")\n" + values);
 		}
-		// a write to a static field means the containing method cannot be pure (readonly or polyread)
-		return removeTypes(m, ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD);
+		
+		// check constraint
+		// a write to a static field means the containing method cannot be pure
+		return XEqualsYConstraintSolver.satisfy(m, ImmutabilityTypes.MUTABLE);
 	}
 	
 	/**
@@ -125,10 +158,24 @@ public class FieldAssignmentChecker {
 	 * @return
 	 */
 	public static boolean handleStaticFieldRead(Node x, Node sf, Node m) {
+		// x, sf, and m should be non-null
+		if(x==null){
+			throw new IllegalArgumentException("x is null");
+		}
+		if(sf==null){
+			throw new IllegalArgumentException("sf is null");
+		}
+		if(m==null){
+			throw new IllegalArgumentException("m is null");
+		}
+		
+		// log inference rule
 		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()){
 			String values = "x:" + getTypes(x).toString() + ", sf:" + getTypes(sf).toString() + ", m:" + getTypes(m).toString();
 			Log.info("TSREAD (x=sf in m, x=" + x.getAttr(XCSG.name) + ", sf=" + sf.getAttr(XCSG.name) + ", m=" + m.getAttr(XCSG.name) + ")\n" + values);
 		}
+		
+		// check constraint
 		// m <: x
 		// = x :> m
 		return XGreaterThanEqualYConstraintSolver.satisify(x, m);
