@@ -287,17 +287,17 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 			// TODO: implement
 		}
 		
+		// TSWRITE
+		if(to.taggedWith(JavaStopGap.CLASS_VARIABLE_ASSIGNMENT)){
+			involvesField = true;
+			// TODO: implement
+		}
+		
 		// TSREAD
 		if(from.taggedWith(JavaStopGap.CLASS_VARIABLE_VALUE)){
 			involvesField = true;
 			// TODO: implement
 		}
-		
-		// TSWRITE
-		if(to.taggedWith(JavaStopGap.CLASS_VARIABLE_ASSIGNMENT)){
-			involvesField = true;
-			// TODO: implement
-		}	
 		
 		// TCALL
 		if(from.taggedWith(XCSG.DynamicDispatchCallSite)){
