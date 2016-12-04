@@ -232,7 +232,6 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 		
 		Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
 		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
-		Q instanceVariableAccessedEdges = Common.universe().edgesTaggedWithAny(XCSG.InstanceVariableAccessed);
 		Q identityPassedToEdges = Common.universe().edgesTaggedWithAny(XCSG.IdentityPassedTo);
 		Q arrayIdentityForEdges = Common.universe().edgesTaggedWithAny(XCSG.ArrayIdentityFor);
 
@@ -273,9 +272,13 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 		boolean involvesField = false;
 		boolean involvesCallsite = false;
 		
-		// TWRITE
+		// Type Rule 3 - TWRITE
+		// let, x.f = y
 		if(to.taggedWith(XCSG.InstanceVariableAssignment)){
 			involvesField = true;
+			if(processAssignmentToInstanceVariable(to, from, typesChanged)){
+				typesChanged = true;
+			}
 		}
 		
 		// TREAD
@@ -308,6 +311,68 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 		if((!involvesField && !involvesCallsite)){
 			if(BasicAssignmentChecker.handleAssignment(to, from)){
 				typesChanged = true;
+			}
+		}
+		
+		return typesChanged;
+	}
+
+	private static boolean processAssignmentToInstanceVariable(Node to, Node from, boolean typesChanged) {
+		Node instanceVariableAssignment = to; // (f=)
+		Node y = from;
+		
+		if(y.taggedWith(XCSG.InstanceVariableValue)){
+			// y is an instance variable
+			// TODO: implement
+//			Log.info("Y IS AN INSTANCE VARIABLE, skipping...");
+		} else if(y.taggedWith(JavaStopGap.CLASS_VARIABLE_VALUE)){
+			// y is a class variable
+			// TODO: implement
+//			Log.info("Y IS A CLASS VARIABLE, skipping...");
+		} else if(y.taggedWith(XCSG.DynamicDispatchCallSite)){
+			// y is a dynamic dispatch callsite
+			// TODO: implement
+//			Log.info("Y IS A DYNAMIC DISPATCH CALLSITE, skipping...");
+		} else if(y.taggedWith(XCSG.StaticDispatchCallSite)){
+			// y is a static dispatch callsite
+			// TODO: implement
+//			Log.info("Y IS A STATIC DISPATCH CALLSITE, skipping...");
+		} else if(y.taggedWith(XCSG.Java.EnclosingInstanceParameter)){
+			// y is an enclosing instance parameter
+			// occurs when there are inner classes
+			// TODO: implement
+//			Log.info("Y IS AN ENCLOSING INSTANCE PARAMETER, skipping...");
+		} else {
+			// InstanceVariableAssignment (f=) -InterproceduralDataFlow-> InstanceVariable (f)
+			Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
+			for(Node f : interproceduralDataFlowEdges.successors(Common.toQ(instanceVariableAssignment)).eval().nodes()){
+				// Reference (x) -InstanceVariableAccessed-> InstanceVariableAssignment (f=)
+				Q instanceVariableAccessedEdges = Common.universe().edgesTaggedWithAny(XCSG.InstanceVariableAccessed);
+				for(Node x : instanceVariableAccessedEdges.predecessors(Common.toQ(instanceVariableAssignment)).eval().nodes()){
+					if(x.taggedWith(XCSG.InstanceVariableValue)){
+						// x is an instance variable
+						// TODO: implement
+//						Log.info("X IS AN INSTANCE VARIABLE, skipping...");
+					} else if(x.taggedWith(JavaStopGap.CLASS_VARIABLE_VALUE)){
+						// x is a class variable
+						// TODO: implement
+//						Log.info("X IS A CLASS VARIABLE, skipping...");
+					} else if(x.taggedWith(XCSG.DynamicDispatchCallSite)){
+						// x is a dynamic dispatch callsite
+						// TODO: implement
+//						Log.info("X IS A DYNAMIC DISPATCH CALLSITE, skipping...");
+					} else if(x.taggedWith(XCSG.StaticDispatchCallSite)){
+						// x is a static dispatch callsite
+						// TODO: implement
+//						Log.info("X IS A STATIC DISPATCH CALLSITE, skipping...");
+					} else {
+						// this is the standard case
+						// x is a local reference, y is a local reference, f is an instance variable
+						if(FieldAssignmentChecker.handleFieldWrite(x, f, y)){
+							typesChanged = true;
+						}
+					}
+				}
 			}
 		}
 		

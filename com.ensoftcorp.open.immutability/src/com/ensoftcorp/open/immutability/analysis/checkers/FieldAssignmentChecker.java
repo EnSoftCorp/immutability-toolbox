@@ -38,27 +38,8 @@ public class FieldAssignmentChecker {
 		boolean typesChanged = false;
 		
 		// x must be mutable
-		if (x.taggedWith(XCSG.InstanceVariable)) {
-			if (ImmutabilityPreferences.isAllowAddMutableInstanceVariablesEnabled()) {
-				addMutable(x); // doesn't count as a type change
-			}
-			if(ImmutabilityPreferences.isAllowDefaultMutableInstancesVariablesEnabled() || ImmutabilityPreferences.isAllowAddMutableInstanceVariablesEnabled()){
-				if(XEqualsYConstraintSolver.satisfy(x, ImmutabilityTypes.MUTABLE)){
-					if(ImmutabilityPreferences.isAllowAddMutableInstanceVariablesEnabled() && getTypes(x).isEmpty()){
-						addMutable(x);
-					}
-					typesChanged = true;
-				}
-			} else {
-				// vanilla paper description
-				if(removeTypes(x, ImmutabilityTypes.READONLY)){
-					typesChanged = true;
-				}
-			}
-		} else {
-			if(XEqualsYConstraintSolver.satisfy(x, ImmutabilityTypes.MUTABLE)){
-				typesChanged = true;
-			}
+		if(XEqualsYConstraintSolver.satisfy(x, ImmutabilityTypes.MUTABLE)){
+			typesChanged = true;
 		}
 		
 		if(ImmutabilityPreferences.isFieldAdaptationsEnabled()){
@@ -71,7 +52,7 @@ public class FieldAssignmentChecker {
 		} else {
 			// qy <: MUTABLE fadapt qf
 			// = MUTABLE madapt qf :> qy
-			// vanilla OOPSLA 2012 implementation
+			// OOPSLA 2012 implementation
 			if(XMethodAdaptYGreaterThanEqualZConstraintSolver.satisify(x, f, y)){
 				typesChanged = true;
 			}
