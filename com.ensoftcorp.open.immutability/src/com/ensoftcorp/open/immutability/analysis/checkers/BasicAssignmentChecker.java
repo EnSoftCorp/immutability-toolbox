@@ -26,6 +26,9 @@ public class BasicAssignmentChecker {
 		if(y==null){
 			throw new IllegalArgumentException("y is null");
 		}
+		if(x.equals(y)){
+			throw new IllegalArgumentException("x and y are the same references");
+		}
 		
 		// x and y should not be fields
 		if(x.taggedWith(XCSG.Field) || y.taggedWith(XCSG.Field)){

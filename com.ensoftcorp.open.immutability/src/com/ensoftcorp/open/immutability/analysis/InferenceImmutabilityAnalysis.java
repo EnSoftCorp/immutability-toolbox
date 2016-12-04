@@ -234,6 +234,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
 		Q instanceVariableAccessedEdges = Common.universe().edgesTaggedWithAny(XCSG.InstanceVariableAccessed);
 		Q identityPassedToEdges = Common.universe().edgesTaggedWithAny(XCSG.IdentityPassedTo);
+		Q arrayIdentityForEdges = Common.universe().edgesTaggedWithAny(XCSG.ArrayIdentityFor);
 
 		// consider data flow edges
 		// incoming edges represent a read relationship in an assignment
@@ -241,55 +242,21 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 		Node to = workItem;
 		AtlasSet<Edge> inEdges = localDataFlowEdges.reverseStep(Common.toQ(to)).eval().edges();
 		for(GraphElement edge : inEdges){
-			for(Node from : AnalysisUtilities.parseReferences(edge.getNode(EdgeDirection.FROM))){
-				if(to.taggedWith(XCSG.ArrayWrite) || from.taggedWith(XCSG.ArrayRead)){
-					continue;
-				}
-				
-				// process constraints for assignments to references
-				boolean involvesField = false;
-				boolean involvesCallsite = false;
-				
-				// TWRITE
-				if(to.taggedWith(XCSG.InstanceVariableAssignment)){
-					involvesField = true;
-				}
-				
-				// TREAD
-				if(from.taggedWith(XCSG.InstanceVariableValue)){
-					involvesField = true;
-				}
-				
-				// TSREAD
-				if(from.taggedWith(JavaStopGap.CLASS_VARIABLE_VALUE)){
-					involvesField = true;
-				}
-				
-				// TSWRITE
-				if(to.taggedWith(JavaStopGap.CLASS_VARIABLE_ASSIGNMENT)){
-					involvesField = true;
-				}	
-				
-				// TCALL
-				if(from.taggedWith(XCSG.DynamicDispatchCallSite)){
-					involvesCallsite = true;
-				}
-				
-				// TSCALL
-				if(from.taggedWith(XCSG.StaticDispatchCallSite)){
-					involvesCallsite = true;
-				}
-				
-				// Type Rule 2 - TASSIGN
-				// let x = y
-				if((!involvesField && !involvesCallsite)){
-					AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(to);
-					for(Node x : xReferences){
-						AtlasSet<Node> yReferences = AnalysisUtilities.parseReferences(from);;
-						for(Node y : yReferences){
-							if(BasicAssignmentChecker.handleAssignment(x, y)){
+			if(to.taggedWith(XCSG.ArrayWrite)){
+				// handling array writes separately
+			} else {
+				for(Node from : AnalysisUtilities.parseReferences(edge.getNode(EdgeDirection.FROM))){
+					if(from.taggedWith(XCSG.ArrayRead)){
+						// from is an array component
+						// I don't think we need to process constraints on the read array identity
+						for(Node arrayComponent : interproceduralDataFlowEdges.predecessors(Common.toQ(from)).eval().nodes()){
+							if(processConstraints(to, arrayComponent)){
 								typesChanged = true;
 							}
+						}
+					} else {
+						if(processConstraints(to, from)){
+							typesChanged = true;
 						}
 					}
 				}
@@ -299,6 +266,54 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 		return typesChanged;
 	}
 	
+	private static boolean processConstraints(Node to, Node from) {
+		boolean typesChanged = false;
+		
+		// process constraints for assignments to references
+		boolean involvesField = false;
+		boolean involvesCallsite = false;
+		
+		// TWRITE
+		if(to.taggedWith(XCSG.InstanceVariableAssignment)){
+			involvesField = true;
+		}
+		
+		// TREAD
+		if(from.taggedWith(XCSG.InstanceVariableValue)){
+			involvesField = true;
+		}
+		
+		// TSREAD
+		if(from.taggedWith(JavaStopGap.CLASS_VARIABLE_VALUE)){
+			involvesField = true;
+		}
+		
+		// TSWRITE
+		if(to.taggedWith(JavaStopGap.CLASS_VARIABLE_ASSIGNMENT)){
+			involvesField = true;
+		}	
+		
+		// TCALL
+		if(from.taggedWith(XCSG.DynamicDispatchCallSite)){
+			involvesCallsite = true;
+		}
+		
+		// TSCALL
+		if(from.taggedWith(XCSG.StaticDispatchCallSite)){
+			involvesCallsite = true;
+		}
+		
+		// Type Rule 2 - TASSIGN
+		// let x = y
+		if((!involvesField && !involvesCallsite)){
+			if(BasicAssignmentChecker.handleAssignment(to, from)){
+				typesChanged = true;
+			}
+		}
+		
+		return typesChanged;
+	}
+
 	/**
 	 * Converts the immutability types to tags for partial program analysis
 	 */

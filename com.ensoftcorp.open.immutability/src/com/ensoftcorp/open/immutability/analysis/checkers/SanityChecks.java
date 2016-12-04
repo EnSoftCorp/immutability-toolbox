@@ -31,10 +31,6 @@ public class SanityChecks {
 									   XCSG.InstanceVariable, XCSG.ClassVariable,
 									   XCSG.Method);
 		
-		// this check is expensive and often wrong...type of edges pull in a lot of things
-//		if(ImmutabilityPreferences.isGeneralLoggingEnabled()) Log.info("Checking that known readonly types are typed as readonly...");
-//		resultsAreSane &= !defaultReadonlyTypesAreReadonly();
-		
 		if(!ImmutabilityPreferences.isGenerateSummariesEnabled()){
 			if(ImmutabilityPreferences.isGeneralLoggingEnabled()) Log.info("Checking for double tagged immutability types...");
 			resultsAreSane &= !isDoubleTagged();
@@ -87,6 +83,11 @@ public class SanityChecks {
 		// each field should be tagged
 		long missingTags = 0;
 		Q fields = Common.universe().nodesTaggedWithAny(XCSG.Field);
+		
+		// TODO: remove after Atlas bug is fixed (because this should never happen)
+		Q unknownFields = fields.difference(Common.universe().nodesTaggedWithAny(XCSG.ClassVariable, XCSG.InstanceVariable));
+		fields = fields.difference(unknownFields);
+		
 		for(Node field : fields.eval().nodes()){
 			if(!(field.taggedWith(ImmutabilityTags.READONLY) || field.taggedWith(ImmutabilityTags.POLYREAD) || field.taggedWith(ImmutabilityTags.MUTABLE))){
 				missingTags++;
@@ -113,63 +114,6 @@ public class SanityChecks {
 		return hasUnexpectedTypes;
 	}
 	
-//	/**
-//	 * Checks that readonly types are actually readonly
-//	 * @return
-//	 */
-//	private static boolean defaultReadonlyTypesAreReadonly(){
-//		Q readOnlyTypes = Common.typeSelect("java.lang", "Integer")
-//				.union(Common.typeSelect("java.lang", "Long"), 
-//					   Common.typeSelect("java.lang", "Short"), 
-//					   Common.typeSelect("java.lang", "Boolean"),
-//					   Common.typeSelect("java.lang", "Byte"),
-//					   Common.typeSelect("java.lang", "Double"),
-//					   Common.typeSelect("java.lang", "Float"),
-//					   Common.typeSelect("java.lang", "Character"),
-//					   Common.typeSelect("java.lang", "String"),
-//					   Common.typeSelect("java.lang", "Number"),
-//					   Common.typeSelect("java.util.concurrent.atomic", "AtomicInteger"),
-//					   Common.typeSelect("java.util.concurrent.atomic", "AtomicLong"),
-//					   Common.typeSelect("java.math", "BigDecimal"),
-//					   Common.typeSelect("java.math", "BigInteger"),
-//					   Common.universe().nodesTaggedWithAny(XCSG.Java.NullType));
-//
-//		Q typeOfEdges = Common.universe().edgesTaggedWithAny(XCSG.TypeOf);
-//		
-//		AtlasHashSet<GraphElement> defaultReadonlyTypes = new AtlasHashSet<GraphElement>();
-//		Q readonlyReferences = typeOfEdges.predecessors(readOnlyTypes);
-//		Q identities = readonlyReferences.nodesTaggedWithAny(XCSG.Identity);
-//		Q arrayComponents = readonlyReferences.nodesTaggedWithAny(XCSG.ArrayComponents);
-//		// consider constructors?
-//		defaultReadonlyTypes.addAll(readonlyReferences.difference(identities, arrayComponents).eval().nodes());
-//		defaultReadonlyTypes.addAll(Common.universe().nodesTaggedWithAny(XCSG.Null, XCSG.Literal, XCSG.Operator).eval().nodes());
-//		
-//		int unexpectedTypes = 0; 
-//		for(GraphElement ge : defaultReadonlyTypes){
-//			if(ge.taggedWith(XCSG.Null)){
-//				// null is a special case, mutations can happen to nulls but its a runtime exception
-//				// one might argue this does not change the program state but it does if a runtime exception is thrown!
-//				continue;
-//			}
-//			if(ge.taggedWith(XCSG.Operator)){
-//				// we only need to consider operators on-demand so not all operators will actually be typed
-//				// but if they are they'd better not be typed as anything but readonly
-//				if(ge.taggedWith(ImmutabilityTags.POLYREAD) || ge.taggedWith(ImmutabilityTags.MUTABLE) || ge.taggedWith(ImmutabilityAnalysis.UNTYPED)){
-//					if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.warning("Readonly type " + ge.address().toAddressString() + " is not readonly.");
-//					unexpectedTypes++;
-//				}
-//				continue;
-//			}
-//			if(!ge.taggedWith(ImmutabilityTags.READONLY)){
-//				if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.warning("Readonly type " + ge.address().toAddressString() + " is not readonly.");
-//				unexpectedTypes++;
-//			}
-//		}
-//		boolean hasUnexpectedTypes = unexpectedTypes > 0;
-//		if(hasUnexpectedTypes) Log.warning("There are " + unexpectedTypes + " nodes that were expected to be readonly types that are not.");
-//		return hasUnexpectedTypes;
-//	}
-
 	private static boolean gainedTypes(String... tags) {
 		int unexpectedTypes = 0;
 		for(GraphElement ge : Common.resolve(new NullProgressMonitor(), Common.universe().nodesTaggedWithAny(tags).eval()).nodes()){
