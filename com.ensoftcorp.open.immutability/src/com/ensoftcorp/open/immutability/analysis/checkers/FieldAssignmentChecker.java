@@ -43,16 +43,16 @@ public class FieldAssignmentChecker {
 		}
 		
 		// x or y could be instance variables
-		boolean adaptX = false;
+		boolean adaptXToY = false;
 		@SuppressWarnings("unused")
-		boolean adaptY = false;
+		boolean adaptYToX = false;
 		if (x.taggedWith(XCSG.InstanceVariableValue)) {
 			x = AnalysisUtilities.getInstanceVariableFromInstanceVariableValue(x);
-			adaptX = true;
+			adaptXToY = true;
 		}
 		if (y.taggedWith(XCSG.InstanceVariableValue)) {
 			y = AnalysisUtilities.getInstanceVariableFromInstanceVariableValue(y);
-			adaptY = true;
+			adaptYToX = true;
 		}
 		
 		// x or y could be class variables
@@ -99,7 +99,7 @@ public class FieldAssignmentChecker {
 		boolean typesChanged = false;
 		
 		// x must be mutable
-		if(XEqualsYConstraintSolver.satisfy(x, adaptX, ImmutabilityTypes.MUTABLE)){
+		if(XEqualsYConstraintSolver.satisfy(x, ImmutabilityTypes.MUTABLE, adaptXToY)){
 			typesChanged = true;
 		}
 		
@@ -219,7 +219,7 @@ public class FieldAssignmentChecker {
 		
 		// check constraint
 		// a write to a static field means the containing method cannot be pure
-		return XEqualsYConstraintSolver.satisfy(m, false, ImmutabilityTypes.MUTABLE);
+		return XEqualsYConstraintSolver.satisfy(m, ImmutabilityTypes.MUTABLE);
 	}
 	
 	/**
