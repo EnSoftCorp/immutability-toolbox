@@ -4,13 +4,15 @@ import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.getTyp
 
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
+import com.ensoftcorp.open.immutability.analysis.AnalysisUtilities;
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
-import com.ensoftcorp.open.immutability.analysis.solvers.XEqualsYConstraintSolver;
+import com.ensoftcorp.open.immutability.analysis.adaptive.solvers.XEqualsYConstraintSolver;
+import com.ensoftcorp.open.immutability.analysis.solvers.XFieldAdaptYGreaterThanEqualZConstraintSolver;
 import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYConstraintSolver;
-import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYMethodAdaptZConstraintSolver;
-import com.ensoftcorp.open.immutability.analysis.solvers.XMethodAdaptYGreaterThanEqualZConstraintSolver;
+import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYFieldAdaptZConstraintSolver;
 import com.ensoftcorp.open.immutability.log.Log;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
+import com.ensoftcorp.open.java.commons.wishful.JavaStopGap;
 
 public class FieldAssignmentChecker {
 
@@ -35,34 +37,76 @@ public class FieldAssignmentChecker {
 			throw new IllegalArgumentException("f is null");
 		}
 		
+		// f should always be an instance variable
+		if(!f.taggedWith(XCSG.InstanceVariable)){
+			throw new IllegalArgumentException("f is not an instance variable");
+		}
+		
+		// x or y could be instance variables
+		boolean adaptX = false;
+		@SuppressWarnings("unused")
+		boolean adaptY = false;
+		if (x.taggedWith(XCSG.InstanceVariableValue)) {
+			x = AnalysisUtilities.getInstanceVariableFromInstanceVariableValue(x);
+			adaptX = true;
+		}
+		if (y.taggedWith(XCSG.InstanceVariableValue)) {
+			y = AnalysisUtilities.getInstanceVariableFromInstanceVariableValue(y);
+			adaptY = true;
+		}
+		
+		// x or y could be class variables
+		if (x.taggedWith(JavaStopGap.CLASS_VARIABLE_VALUE)) {
+			x = AnalysisUtilities.getClassVariableFromClassVariableValue(x);
+		}
+		if (y.taggedWith(JavaStopGap.CLASS_VARIABLE_VALUE)) {
+			y = AnalysisUtilities.getClassVariableFromClassVariableValue(y);
+		}
+		
+		// x or y could by dynamic dispatches
+		if (x.taggedWith(XCSG.DynamicDispatchCallSite)) {
+			// TODO: implement
+			return false;
+		}
+		if (y.taggedWith(XCSG.DynamicDispatchCallSite)) {
+			// TODO: implement
+			return false;
+		}
+
+		// x or y could be static dispatches
+		if (x.taggedWith(XCSG.StaticDispatchCallSite)) {
+			// TODO: implement
+			return false;
+		}
+		if (y.taggedWith(XCSG.StaticDispatchCallSite)) {
+			// TODO: implement
+			return false;
+		}
+		
+		// y could be an enclosing instance parameter
+		if (y.taggedWith(XCSG.Java.EnclosingInstanceParameter)) {
+			// TODO: implement
+			return false;
+		}
+		
 		// log inference rule
 		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()) {
 			String values = "x:" + getTypes(x).toString() + ", f:" + getTypes(f).toString() + ", y:" + getTypes(y).toString();
-			Log.info("TWRITE (x.f=y, x=" + x.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")\n" + values);
+			String constraints = "x=mutable, qy <: mutable fadapt qf";
+			Log.info("TWRITE (x.f=y, x=" + x.getAttr(XCSG.name) + ", f=" + f.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ")\n" + constraints + "\n" + values);
 		}
 		
 		boolean typesChanged = false;
 		
 		// x must be mutable
-		if(XEqualsYConstraintSolver.satisfy(x, ImmutabilityTypes.MUTABLE)){
+		if(XEqualsYConstraintSolver.satisfy(x, adaptX, ImmutabilityTypes.MUTABLE)){
 			typesChanged = true;
 		}
 		
-//		if(ImmutabilityPreferences.isFieldAdaptationsEnabled()){
-//			// qy <: MUTABLE fadapt qf
-//			// = MUTABLE fadapt qf :> qy
-//			// FSE 2012 implementation
-//			if(XFieldAdaptYGreaterThanEqualZConstraintSolver.satisify(ImmutabilityTypes.MUTABLE, f, y)){
-//				typesChanged = true;
-//			}
-//		} else {
-			// qy <: MUTABLE madapt qf
-			// = MUTABLE madapt qf :> qy
-			// OOPSLA 2012 implementation
-			if(XMethodAdaptYGreaterThanEqualZConstraintSolver.satisify(x, f, y)){
-				typesChanged = true;
-			}
-//		}
+		// qy <: mutable fadapt qf
+		if(XFieldAdaptYGreaterThanEqualZConstraintSolver.satisify(ImmutabilityTypes.MUTABLE, f, y)){
+			typesChanged = true;
+		}
 		
 		return typesChanged;
 	}
@@ -88,6 +132,47 @@ public class FieldAssignmentChecker {
 			throw new IllegalArgumentException("f is null");
 		}
 		
+		// f should always be an instance variable
+		if(!f.taggedWith(XCSG.InstanceVariable)){
+			throw new IllegalArgumentException("f is not an instance variable");
+		}
+		
+		// x or y could be instance variables
+		if (x.taggedWith(XCSG.InstanceVariableValue)) {
+			x = AnalysisUtilities.getInstanceVariableFromInstanceVariableValue(x);
+		}
+		if (y.taggedWith(XCSG.InstanceVariableValue)) {
+			y = AnalysisUtilities.getInstanceVariableFromInstanceVariableValue(y);
+		}
+		
+		// x or y could be class variables
+		if (x.taggedWith(JavaStopGap.CLASS_VARIABLE_VALUE)) {
+			x = AnalysisUtilities.getClassVariableFromClassVariableValue(x);
+		}
+		if (y.taggedWith(JavaStopGap.CLASS_VARIABLE_VALUE)) {
+			y = AnalysisUtilities.getClassVariableFromClassVariableValue(y);
+		}
+		
+		// x or y could by dynamic dispatches
+		if (x.taggedWith(XCSG.DynamicDispatchCallSite)) {
+			// TODO: implement
+			return false;
+		}
+		if (y.taggedWith(XCSG.DynamicDispatchCallSite)) {
+			// TODO: implement
+			return false;
+		}
+
+		// x or y could be static dispatches
+		if (x.taggedWith(XCSG.StaticDispatchCallSite)) {
+			// TODO: implement
+			return false;
+		}
+		if (y.taggedWith(XCSG.StaticDispatchCallSite)) {
+			// TODO: implement
+			return false;
+		}
+		
 		// log inference rule
 		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()){
 			String values = "x:" + getTypes(x).toString() + ", f:" + getTypes(f).toString() + ", y:" + getTypes(y).toString();
@@ -96,21 +181,10 @@ public class FieldAssignmentChecker {
 		
 		boolean typesChanged = false;
 		
-//		if(ImmutabilityPreferences.isFieldAdaptationsEnabled()){
-//			// qy adapt qf <: qx
-//			// = qx :> qy adapt qf
-//			// FSE 2012 version
-//			if(XGreaterThanEqualYFieldAdaptZConstraintSolver.satisify(x, y, f)){
-//				typesChanged = true;
-//			}
-//		} else {
-			// qy adapt qf <: qx
-			// = qx :> qy adapt qf
-			// vanilla OOPSLA 2012 version
-			if(XGreaterThanEqualYMethodAdaptZConstraintSolver.satisify(x, y, f)){
-				typesChanged = true;
-			}
-//		}
+		// qy adapt qf <: qx
+		if(XGreaterThanEqualYFieldAdaptZConstraintSolver.satisify(x, y, f)){
+			typesChanged = true;
+		}
 		
 		return typesChanged;
 	}
@@ -145,7 +219,7 @@ public class FieldAssignmentChecker {
 		
 		// check constraint
 		// a write to a static field means the containing method cannot be pure
-		return XEqualsYConstraintSolver.satisfy(m, ImmutabilityTypes.MUTABLE);
+		return XEqualsYConstraintSolver.satisfy(m, false, ImmutabilityTypes.MUTABLE);
 	}
 	
 	/**

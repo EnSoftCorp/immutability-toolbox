@@ -330,8 +330,6 @@ public class AnalysisUtilities {
 	}
 	
 	public static AtlasSet<Node> parseReferences(Node node){
-		if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Parsing reference for " + node.address().toAddressString());
-		
 		AtlasSet<Node> parsedReferences = new AtlasHashSet<Node>();
 		AtlasHashSet<Node> worklist = new AtlasHashSet<Node>();
 		worklist.add(node);
@@ -621,6 +619,96 @@ public class AnalysisUtilities {
 		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
 		Q fieldsAccessed = interproceduralDataFlowEdges.predecessors(instanceVariablesAccessed.union(classVariablesAccessed));
 		return localVariables.union(fieldsAccessed).eval().nodes();
+	}
+	
+	public static Node getClassVariableFromClassVariableAssignment(Node classVariableAssignment) {
+		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
+		Node classVariable = null;
+		for(Node node : interproceduralDataFlowEdges.successors(Common.toQ(classVariableAssignment)).eval().nodes()){
+			if(classVariable != null){
+				// should only be one
+				throw new IllegalArgumentException("Unexpected class variable!");
+			} else {
+				classVariable = node;
+			}
+		}
+		if(classVariable != null){
+			return classVariable;
+		} else {
+			throw new IllegalArgumentException("Could not get class variable");
+		}
+	}
+	
+	public static Node getInstanceVariableFromInstanceVariableAssignment(Node instanceVariableAssignment) {
+		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
+		Node instanceVariable = null;
+		for(Node node : interproceduralDataFlowEdges.successors(Common.toQ(instanceVariableAssignment)).eval().nodes()){
+			if(instanceVariable != null){
+				// should only be one
+				throw new IllegalArgumentException("Unexpected instance variable!");
+			} else {
+				instanceVariable = node;
+			}
+		}
+		if(instanceVariable != null){
+			return instanceVariable;
+		} else {
+			throw new IllegalArgumentException("Could not get instance variable");
+		}
+	}
+	
+	public static Node getClassVariableFromClassVariableValue(Node classVariableValue) {
+		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
+		Node classVariable = null;
+		for(Node node : interproceduralDataFlowEdges.predecessors(Common.toQ(classVariableValue)).eval().nodes()){
+			if(classVariable != null){
+				// should only be one
+				throw new IllegalArgumentException("Unexpected class variable!");
+			} else {
+				classVariable = node;
+			}
+		}
+		if(classVariable != null){
+			return classVariable;
+		} else {
+			throw new IllegalArgumentException("Could not get class variable");
+		}
+	}
+	
+	public static Node getInstanceVariableFromInstanceVariableValue(Node instanceVariableValue) {
+		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
+		Node instanceVariable = null;
+		for(Node node : interproceduralDataFlowEdges.predecessors(Common.toQ(instanceVariableValue)).eval().nodes()){
+			if(instanceVariable != null){
+				// should only be one
+				throw new IllegalArgumentException("Unexpected instance variable!");
+			} else {
+				instanceVariable = node;
+			}
+		}
+		if(instanceVariable != null){
+			return instanceVariable;
+		} else {
+			throw new IllegalArgumentException("Could not get instance variable");
+		}
+	}
+	
+	public static Node getInstanceVariableAccessed(Node instanceVariableValue) {
+		Q instanceVariableAccessedEdges = Common.universe().edgesTaggedWithAny(XCSG.InstanceVariableAccessed);
+		Node instanceVariableAccessed = null;
+		for(Node node : instanceVariableAccessedEdges.predecessors(Common.toQ(instanceVariableValue)).eval().nodes()){
+			if(instanceVariableAccessed != null){
+				// should only be one
+				throw new IllegalArgumentException("Unexpected instance variable accessed!");
+			} else {
+				instanceVariableAccessed = node;
+			}
+		}
+		if(instanceVariableAccessed != null){
+			return instanceVariableAccessed;
+		} else {
+			throw new IllegalArgumentException("Could not get instance variable accessed");
+		}
 	}
 	
 }

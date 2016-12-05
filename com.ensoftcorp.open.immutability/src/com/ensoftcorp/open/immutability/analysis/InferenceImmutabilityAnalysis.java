@@ -1,8 +1,6 @@
 package com.ensoftcorp.open.immutability.analysis;
 
-import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.addMutable;
 import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.getTypes;
-import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.removeTypes;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -31,10 +29,8 @@ import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.analysis.StandardQueries;
 import com.ensoftcorp.open.commons.utilities.DisplayUtils;
 import com.ensoftcorp.open.immutability.analysis.checkers.BasicAssignmentChecker;
-import com.ensoftcorp.open.immutability.analysis.checkers.CallChecker;
 import com.ensoftcorp.open.immutability.analysis.checkers.FieldAssignmentChecker;
 import com.ensoftcorp.open.immutability.analysis.checkers.SanityChecks;
-import com.ensoftcorp.open.immutability.analysis.solvers.XEqualsYConstraintSolver;
 import com.ensoftcorp.open.immutability.constants.ImmutabilityTags;
 import com.ensoftcorp.open.immutability.log.Log;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
@@ -282,10 +278,13 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 			}
 		}
 		
-		// TREAD
+		// Type Rule 4 - TREAD
+		// let, x = y.f
 		if(from.taggedWith(XCSG.InstanceVariableValue)){
 			involvesField = true;
-			// TODO: implement
+			if(processTREAD(to, from)){
+				typesChanged = true;
+			}
 		}
 		
 		// TSWRITE
@@ -327,8 +326,55 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 	}
 
 	/**
+	 * Parses and processes a TWRITE inference rule
+	 * x.f = y
+	 * 
+	 * @param to
+	 * @param from
+	 * @return
+	 */
+	private static boolean processTWRITE(Node to, Node from) {
+		if(!to.taggedWith(XCSG.InstanceVariableAssignment)){
+			throw new IllegalArgumentException("'to' [" + from.address().toAddressString() + "] is not an InstanceVariableAssignment");
+		}
+		
+		if(from.taggedWith(XCSG.Java.EnclosingInstanceParameter)){
+			// TODO: implement
+			// inner classes break the pattern for getting f
+			return false;
+		}
+		
+		Node y = from;
+		Node f = AnalysisUtilities.getInstanceVariableFromInstanceVariableAssignment(to);
+		Node x = AnalysisUtilities.getInstanceVariableAccessed(to);
+		
+		return FieldAssignmentChecker.handleFieldWrite(x, f, y);
+	}
+	
+	/**
+	 * Parses and processes a TREAD inference rule
+	 * x = y.f
+	 * 
+	 * @param to
+	 * @param from
+	 * @return
+	 */
+	private static boolean processTREAD(Node to, Node from) {
+		if(!from.taggedWith(XCSG.InstanceVariableValue)){
+			throw new IllegalArgumentException("'from' [" + from.address().toAddressString() + "] is not an InstanceVariableValue");
+		}
+		
+		Node x = to;
+		Node f = AnalysisUtilities.getInstanceVariableFromInstanceVariableValue(from);
+		Node y = AnalysisUtilities.getInstanceVariableAccessed(from);
+		
+		return FieldAssignmentChecker.handleFieldRead(x, y, f);
+	}
+
+	/**
 	 * Parses and processes a TSREAD inference rule
 	 * x = sf
+	 * 
 	 * @param to
 	 * @param from
 	 * @return
@@ -343,156 +389,32 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 		// ClassVariable (sf) -InterproceduralDataFlowEdge-> ClassVariableValue (.sf)
 		Node classVariableValue = from;
 		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
-		for(Node sf : interproceduralDataFlowEdges.predecessors(Common.toQ(classVariableValue)).eval().nodes()){
+		for (Node sf : interproceduralDataFlowEdges.predecessors(Common.toQ(classVariableValue)).eval().nodes()) {
 			// method containing assignment
 			Node m = StandardQueries.getContainingFunction(to);
-			if(x.taggedWith(XCSG.InstanceVariableAssignment)){
-				// x is an instance variable
+			
+			// x could be a field or callsite
+			if (x.taggedWith(XCSG.InstanceVariableAssignment)) {
 				// TODO: implement
-			} else if(x.taggedWith(JavaStopGap.CLASS_VARIABLE_ASSIGNMENT)){
-				// x is also a class variable
-				for(Node xsf : interproceduralDataFlowEdges.predecessors(Common.toQ(x)).eval().nodes()){
-					if(FieldAssignmentChecker.handleStaticFieldRead(xsf, sf, m)){
-						typesChanged = true;
-					}
-				}
-			} else if(x.taggedWith(XCSG.DynamicDispatchCallSite)){
-				// x is a dynamic dispatch callsite
+				return false;
+			}
+			if (x.taggedWith(JavaStopGap.CLASS_VARIABLE_ASSIGNMENT)) {
+				x = AnalysisUtilities.getClassVariableFromClassVariableAssignment(x);
+			}
+			if (x.taggedWith(XCSG.DynamicDispatchCallSite)) {
 				// TODO: implement
-			} else if(x.taggedWith(XCSG.StaticDispatchCallSite)){
-				// x is a static dispatch callsite
+				return false;
+			}
+			if (x.taggedWith(XCSG.StaticDispatchCallSite)) {
 				// TODO: implement
-			} else {
-				// this is the standard case
-				// x is a local reference, y is a class variable
-				if(FieldAssignmentChecker.handleStaticFieldRead(x, sf, m)){
-					typesChanged = true;
-				}
+				return false;
+			}
+			
+			if (FieldAssignmentChecker.handleStaticFieldRead(x, sf, m)) {
+				typesChanged = true;
 			}
 		}
-		return typesChanged;
-	}
 
-	/**
-	 * Parses and processes a TWRITE inference rule
-	 * x.f = y
-	 * @param to
-	 * @param from
-	 * @return
-	 */
-	private static boolean processTWRITE(Node to, Node from) {
-		if(!to.taggedWith(XCSG.InstanceVariableAssignment)){
-			throw new IllegalArgumentException("'to' [" + from.address().toAddressString() + "] is not an InstanceVariableAssignment");
-		}
-		
-		boolean typesChanged = false;
-		Node instanceVariableAssignment = to; // (f=)
-		Node y = from;
-		
-		// InstanceVariableAssignment (f=) -InterproceduralDataFlow-> InstanceVariable (f)
-		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
-		for(Node f : interproceduralDataFlowEdges.successors(Common.toQ(instanceVariableAssignment)).eval().nodes()){
-			// Reference (x) -InstanceVariableAccessed-> InstanceVariableAssignment (f=)
-			Q instanceVariableAccessedEdges = Common.universe().edgesTaggedWithAny(XCSG.InstanceVariableAccessed);
-			for(Node x : instanceVariableAccessedEdges.predecessors(Common.toQ(instanceVariableAssignment)).eval().nodes()){
-				// handle special cases (every pair of x,y for the following types of x and y)
-				// x=[XCSG.InstanceVariableValue, JavaStopGap.CLASS_VARIABLE_VALUE, XCSG.DynamicDispatchCallSite, XCSG.StaticDispatchCallSite]
-				// y=[XCSG.InstanceVariableValue, JavaStopGap.CLASS_VARIABLE_VALUE, XCSG.DynamicDispatchCallSite, XCSG.StaticDispatchCallSite,  XCSG.Java.EnclosingInstanceParameter]
-				if (x.taggedWith(XCSG.InstanceVariableValue) && y.taggedWith(XCSG.InstanceVariableValue)) {
-					// TODO: implement
-				} else if (x.taggedWith(XCSG.InstanceVariableValue) && y.taggedWith(JavaStopGap.CLASS_VARIABLE_VALUE)) {
-					// TODO: implement
-				} else if (x.taggedWith(XCSG.InstanceVariableValue) && y.taggedWith(XCSG.DynamicDispatchCallSite)) {
-					// TODO: implement
-				} else if (x.taggedWith(XCSG.InstanceVariableValue) && y.taggedWith(XCSG.StaticDispatchCallSite)) {
-					// TODO: implement
-				} else if (x.taggedWith(XCSG.InstanceVariableValue) && y.taggedWith(XCSG.Java.EnclosingInstanceParameter)) {
-					// TODO: implement
-				} else if (x.taggedWith(JavaStopGap.CLASS_VARIABLE_VALUE) && y.taggedWith(XCSG.InstanceVariableValue)) {
-					// TODO: implement
-				} else if (x.taggedWith(JavaStopGap.CLASS_VARIABLE_VALUE) && y.taggedWith(JavaStopGap.CLASS_VARIABLE_VALUE)) {
-					// TODO: implement
-				} else if (x.taggedWith(JavaStopGap.CLASS_VARIABLE_VALUE) && y.taggedWith(XCSG.DynamicDispatchCallSite)) {
-					// TODO: implement
-				} else if (x.taggedWith(JavaStopGap.CLASS_VARIABLE_VALUE) && y.taggedWith(XCSG.StaticDispatchCallSite)) {
-					// TODO: implement
-				} else if (x.taggedWith(JavaStopGap.CLASS_VARIABLE_VALUE) && y.taggedWith(XCSG.Java.EnclosingInstanceParameter)) {
-					// TODO: implement
-				} else if (x.taggedWith(XCSG.DynamicDispatchCallSite) && y.taggedWith(XCSG.InstanceVariableValue)) {
-					// TODO: implement
-				} else if (x.taggedWith(XCSG.DynamicDispatchCallSite) && y.taggedWith(JavaStopGap.CLASS_VARIABLE_VALUE)) {
-					// TODO: implement
-				} else if (x.taggedWith(XCSG.DynamicDispatchCallSite) && y.taggedWith(XCSG.DynamicDispatchCallSite)) {
-					// TODO: implement
-				} else if (x.taggedWith(XCSG.DynamicDispatchCallSite) && y.taggedWith(XCSG.StaticDispatchCallSite)) {
-					// TODO: implement
-				} else if (x.taggedWith(XCSG.DynamicDispatchCallSite) && y.taggedWith(XCSG.Java.EnclosingInstanceParameter)) {
-					// TODO: implement
-				} else if (x.taggedWith(XCSG.StaticDispatchCallSite) && y.taggedWith(XCSG.InstanceVariableValue)) {
-					// TODO: implement
-				} else if (x.taggedWith(XCSG.StaticDispatchCallSite) && y.taggedWith(JavaStopGap.CLASS_VARIABLE_VALUE)) {
-					// TODO: implement
-				} else if (x.taggedWith(XCSG.StaticDispatchCallSite) && y.taggedWith(XCSG.DynamicDispatchCallSite)) {
-					// TODO: implement
-				} else if (x.taggedWith(XCSG.StaticDispatchCallSite) && y.taggedWith(XCSG.StaticDispatchCallSite)) {
-					// TODO: implement
-				} else if (x.taggedWith(XCSG.StaticDispatchCallSite) && y.taggedWith(XCSG.Java.EnclosingInstanceParameter)) {
-					// TODO: implement
-				} else {
-					// either x or y is a local reference
-					if (x.taggedWith(XCSG.InstanceVariableValue)) {
-						// TODO: implement
-					} else if (x.taggedWith(JavaStopGap.CLASS_VARIABLE_VALUE)) {
-						// TODO: implement
-					} else if (x.taggedWith(XCSG.DynamicDispatchCallSite)) {
-						// TODO: implement
-					} else if (x.taggedWith(XCSG.StaticDispatchCallSite)) {
-						// TODO: implement
-					} else if (y.taggedWith(XCSG.InstanceVariableValue)) {
-						// TODO: implement
-					} else if (y.taggedWith(JavaStopGap.CLASS_VARIABLE_VALUE)) {
-						// x is a local reference, y is a class variable
-						// x.f = sf
-						Node m = StandardQueries.getContainingFunction(to);
-						for(Node sf : interproceduralDataFlowEdges.predecessors(Common.toQ(y)).eval().nodes()){
-							if(FieldAssignmentChecker.handleStaticFieldRead(x, sf, m)){
-								typesChanged = true;
-							}
-							if(FieldAssignmentChecker.handleFieldWrite(x, f, sf)){
-								typesChanged = true;
-							}
-						}
-					} else if (y.taggedWith(XCSG.DynamicDispatchCallSite)) {
-						// TODO: implement
-					} else if (y.taggedWith(XCSG.StaticDispatchCallSite)) {
-						// TODO: implement
-					} else if (y.taggedWith(XCSG.Java.EnclosingInstanceParameter)) {
-						// TODO: implement
-					} else {
-						// both x and y should be local references
-						// at this point neither x or y should be instance variable values, class variable values, callsites, or enclosing parameters
-						if (x.taggedWith(XCSG.InstanceVariableValue) || y.taggedWith(XCSG.InstanceVariableValue)) {
-							throw new IllegalArgumentException("Unexpected instance variable value");
-						}
-						if (x.taggedWith(JavaStopGap.CLASS_VARIABLE_VALUE) || y.taggedWith(JavaStopGap.CLASS_VARIABLE_VALUE)) {
-							throw new IllegalArgumentException("Unexpected class variable value");
-						}
-						if (x.taggedWith(XCSG.CallSite) || y.taggedWith(XCSG.CallSite)) {
-							throw new IllegalArgumentException("Unexpected callsite");
-						}
-						if (x.taggedWith(XCSG.Java.EnclosingInstanceParameter) || y.taggedWith(XCSG.Java.EnclosingInstanceParameter)) {
-							throw new IllegalArgumentException("Unexpected enclosing instance parameter");
-						}
-						// this is the standard case
-						// x is a local reference, y is a local reference, f is an instance variable
-						if (FieldAssignmentChecker.handleFieldWrite(x, f, y)) {
-							typesChanged = true;
-						}
-					}
-				}
-			}
-		}
-		
 		return typesChanged;
 	}
 
