@@ -30,8 +30,8 @@ public enum ImmutabilityTypes {
 	 * it deals with context-sensitivity issues.
 	 * 
 	 * Specifically, 
-	 * context=? and declaration=readonly => readonly
-	 * context=? and declaration=mutable => mutable
+	 * context=q and declaration=readonly => readonly
+	 * context=q and declaration=mutable => q
 	 * context=q and declaration=polyread => q
 	 * 
 	 * @param context
@@ -52,11 +52,6 @@ public enum ImmutabilityTypes {
 			// q and POLYREAD = q
 			return context;
 		}
-		
-		// vanilla OOPSLA implementation
-		//  ReIm' definition of field viewpoint adaptation
-		// see https://github.com/proganalysis/type-inference/blob/master/inference-framework/checker-framework/checkers/src/checkers/inference2/reim/ReimChecker.java#L272
-//		return getAdaptedMethodViewpoint(context, declaration);
 	}
 	
 	/**
@@ -64,8 +59,8 @@ public enum ImmutabilityTypes {
 	 * it deals with context-sensitivity issues.
 	 * 
 	 * Specifically, 
-	 * context=? and declaration=readonly => readonly
-	 * context=? and declaration=mutable => mutable
+	 * context=q and declaration=readonly => readonly
+	 * context=q and declaration=mutable => mutable
 	 * context=q and declaration=polyread => q
 	 * 
 	 * @param context
@@ -74,10 +69,10 @@ public enum ImmutabilityTypes {
 	 */
 	public static ImmutabilityTypes getAdaptedMethodViewpoint(ImmutabilityTypes context, ImmutabilityTypes declaration){
 		if(declaration == ImmutabilityTypes.READONLY){
-			// ? and READONLY = READONLY
+			// q and READONLY = READONLY
 			return ImmutabilityTypes.READONLY;
 		} else if(declaration == ImmutabilityTypes.MUTABLE){
-			// ? and MUTABLE = MUTABLE
+			// q and MUTABLE = MUTABLE
 			return ImmutabilityTypes.MUTABLE;
 		} else {
 			// declared must be ImmutabilityTypes.POLYREAD
