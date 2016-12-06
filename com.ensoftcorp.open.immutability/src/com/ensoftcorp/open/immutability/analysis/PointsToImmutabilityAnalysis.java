@@ -94,7 +94,7 @@ public class PointsToImmutabilityAnalysis extends ImmutabilityAnalysis {
 			// mutate the object they reference), this is just record now
 			if(AnalysisUtilities.isTypable(alias)){
 				if(!readonly) {
-					if(alias.taggedWith(XCSG.InstanceVariable)){
+					if(alias.taggedWith(XCSG.InstanceVariable) || alias.taggedWith(XCSG.ReturnValue)){
 						AnalysisUtilities.removeTypes(alias, ImmutabilityTypes.READONLY);
 					} else {
 						AnalysisUtilities.removeTypes(alias, ImmutabilityTypes.READONLY, ImmutabilityTypes.POLYREAD);
