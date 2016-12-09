@@ -18,8 +18,10 @@ import com.ensoftcorp.atlas.core.log.Log;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
+import com.ensoftcorp.open.commons.analysis.SetDefinitions;
 import com.ensoftcorp.open.immutability.constants.ImmutabilityTags;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
+import com.ensoftcorp.open.java.commons.wishful.JavaStopGap;
 import com.ensoftcorp.open.pointsto.common.PointsToAnalysis;
 import com.ensoftcorp.open.pointsto.preferences.PointsToPreferences;
 
@@ -36,12 +38,15 @@ public class PointsToImmutabilityAnalysis extends ImmutabilityAnalysis {
 			// considers primitives, String literals, and enum constants
 			// note: this set also includes null, but that case is explicitly handled in address creation
 			//       so all null literals are represented with a single address id to save on space
-			Q specialInstantiations = Common.universe().nodesTaggedWithAny(XCSG.Java.EnumConstant /*, XCSG.Literal*/).difference(Common.universe().nodesTaggedWithAny(XCSG.Null));
+			
+			Q context = SetDefinitions.app(); // only consider mutations inside the application
+			
+			Q specialInstantiations = Common.universe().nodesTaggedWithAny(XCSG.Java.EnumConstant).difference(Common.universe().nodesTaggedWithAny(XCSG.Null));
 			Q objectInstantiations = Common.universe().nodesTaggedWithAny(XCSG.Instantiation, XCSG.ArrayInstantiation).union(specialInstantiations);
 			Q instanceVariableWrittenEdges = Common.universe().edgesTaggedWithAny(XCSG.InstanceVariableWritten);
 			Q instanceVariableAssignments = Common.universe().nodesTaggedWithAny(XCSG.InstanceVariableAssignment);
-			for(Node objectInstantiation : objectInstantiations.eval().nodes()){
-				Q aliases = Common.toQ(PointsToAnalysis.getAliases(objectInstantiation)).difference(objectInstantiations);
+			for(Node objectInstantiation : context.intersection(objectInstantiations).eval().nodes()){
+				Q aliases = PointsToAnalysis.getAliases(objectInstantiation).difference(objectInstantiations).intersection(context);
 				boolean readonly = instanceVariableWrittenEdges.predecessors(instanceVariableAssignments).intersection(aliases).eval().nodes().isEmpty();
 				markMutableAliases(aliases, readonly);
 				if(objectInstantiation.taggedWith(XCSG.ArrayInstantiation)){
@@ -51,7 +56,14 @@ public class PointsToImmutabilityAnalysis extends ImmutabilityAnalysis {
 					// mutations to the array components mutate the array itself
 					markMutableAliases(aliases, readonly);
 				}
+				
+				// if a class variable also has this alias then any mutation to 
+				// that alias makes the method where the mutation happened impure
+				// TODO: implement
 			}
+			
+			// todo: consider open world assumptions
+			// returns and parameters of library methods not known to be immutable are assumed mutable
 			
 			// flattens the type hierarchy to the maximal types
 			if(ImmutabilityPreferences.isGeneralLoggingEnabled()) Log.info("Extracting maximal types...");
