@@ -19,7 +19,7 @@ Since both implementations produce results in the same format, you can seamlessl
 - Does not scale well beyond ~40k lines of code, but is actually faster than the inference based approach in small applications.
 
 ### Type Inference Based Analysis
-- Highly scalable. We have successfully run this algorithm over the entire JDK (several million lines of code).
+- Highly scalable. We use a fast hand-optimized lookup table based constraint solver and have successfully run this algorithm over the entire JDK (several million lines of code).
 - Conservative results dealing with dynamic dispatches and aliasing. For additional details see our [benchmark results](https://kcsl.github.io/immutability-benchmark/results).
 - Supports incremental program analysis. Could be used to summarize mutation behaviors in libraries and enhance an application-only analysis.
 
