@@ -12,7 +12,7 @@ The Immutability Toolbox seeks to answer the question: *given code C and referen
 - **Well Tested:** Both approaches have been rigorously [tested and evaluated](https://kcsl.github.io/immutability-benchmark/).
 
 ## Analysis Tradeoffs
-Since both implementations produce results in the same format, you can seamlessly swap out the analysis approach and choose the best analysis for your environment and task. For any industrial grade program analysis, it is important to know the *accuracy boundaries* (the classes of program analysis challenges the analysis will fail to produce correct results on) and scalability of each approach. Since there is no single best analysis, here are the highlights.
+Since both implementations produce results in the same format, you can seamlessly swap out the analysis approach and choose the best analysis for your environment and task. For any industrial grade program analysis, it is important to know the *accuracy boundaries* (classes of inputs for which the tool cannot be guaranteed to report accurate results) and scalability of each approach. Since there is no single best analysis, here are the highlights.
 
 ### Points-To Based Analysis
 - Most precise implementation in the toolbox
