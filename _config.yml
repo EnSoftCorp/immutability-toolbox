@@ -6,7 +6,7 @@
 name: Immutability Toolbox
 
 # Short bio or description (displayed in the header)
-description: A toolbox for object immutability and side effect analysis
+description: A toolbox for experimenting with immutability analysis
 
 # URL of your avatar or profile pic (you could use your GitHub profile pic)
 avatar: https://ensoftcorp.github.io/immutability-toolbox/images/toolbox.png
