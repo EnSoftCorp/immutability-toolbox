@@ -7,7 +7,7 @@ The Immutability Toolbox seeks to answer the question: *given code C and referen
 
 ## Features
 - **Extensible Analysis:** Both immutability analyses classify and tag references as *READONLY*, *POLYREAD*, or *MUTABLE* to indicate the immutability of the referenced object. *POLYREAD* is used to represent context-sensitive results where a mutation may occur in one context but not another. These tags are queryable by any client analysis requiring immutability analysis results.
-- **Method Purity:** From the results of the immutability analysis, the toolbox also computes method purity (a method that does not mutate objects that exist before the method invocation). Pure methods are tagged as *PURE*, whereas methods with side effects (mutations) are not.
+- **Method Purity:** From the results of the immutability analysis, the toolbox also computes method purity (a method that does not mutate objects that exist before the method invocation). Pure methods are tagged as *PURE*, whereas methods with side effects (mutations to objects existing before the method was invoked) are not.
 - **Partial Program Analysis:** Both implementations support partial program analysis (e.g. analysis of libraries).
 - **Well Tested:** Both approaches have been rigorously [tested and evaluated](https://kcsl.github.io/immutability-benchmark/).
 
