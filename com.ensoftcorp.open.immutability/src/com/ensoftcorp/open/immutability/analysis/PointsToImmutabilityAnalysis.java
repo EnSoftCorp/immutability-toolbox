@@ -21,7 +21,6 @@ import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.analysis.SetDefinitions;
 import com.ensoftcorp.open.immutability.constants.ImmutabilityTags;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
-import com.ensoftcorp.open.java.commons.wishful.JavaStopGap;
 import com.ensoftcorp.open.pointsto.common.PointsToAnalysis;
 import com.ensoftcorp.open.pointsto.preferences.PointsToPreferences;
 
