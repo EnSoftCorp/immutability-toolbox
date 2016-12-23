@@ -118,5 +118,10 @@
    <extension point="com.ensoftcorp.open.commons.codemap">
       <codemap class="com.ensoftcorp.open.immutability.codemap.ImmutabilityAnalysisCodemapStage"></codemap>
    </extension>
+   
+   <!-- adds filter definitions -->
+   <extension point="com.ensoftcorp.open.commons.filter">
+      <filter class="com.ensoftcorp.open.immutability.analysis.filters.PurityFilter"></filter>
+   </extension>
 
 </plugin>
