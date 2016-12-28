@@ -15,8 +15,8 @@ public class PurityFilter extends NodeFilter {
 	private static final String FILTER_FUNCTIONS_WITH_SIDE_EFFECTS = "FILTER_FUNCTIONS_WITH_SIDE_EFFECTS";
 	
 	public PurityFilter(){
-		this.addPossibleParameter(FILTER_PURE_FUNCTIONS, Boolean.class, false);
-		this.addPossibleParameter(FILTER_FUNCTIONS_WITH_SIDE_EFFECTS, Boolean.class, false);
+		this.addPossibleParameter(FILTER_PURE_FUNCTIONS, Boolean.class, false, "Filters pure functions");
+		this.addPossibleParameter(FILTER_FUNCTIONS_WITH_SIDE_EFFECTS, Boolean.class, false, "Filters functions with side effects (non-pure functions)");
 		this.setMinimumNumberParametersRequired(1);
 	}
 	
