@@ -2,7 +2,7 @@
 <feature
       id="com.ensoftcorp.open.immutability"
       label="Immutability Toolbox"
-      version="3.0.10.qualifier"
+      version="3.0.13.qualifier"
       provider-name="EnSoft Corp.">
 
    <description url="https://ensoftcorp.github.io/immutability-toolbox/">
@@ -36,13 +36,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
    </license>
-
-   <url>
-      <update label="immutability-toolbox" url="https://ensoftcorp.github.io/immutability-toolbox/updates/"/>
-      <discovery label="Toolbox Commons" url="https://ensoftcorp.github.io/toolbox-commons/updates/"/>
-      <discovery label="Atlas" url="http://download.ensoftcorp.com/atlas/eclipse"/>
-      <discovery label="Immutability Toolbox" url="https://ensoftcorp.github.io/immutability-toolbox/updates/"/>
-   </url>
 
    <plugin
          id="com.ensoftcorp.open.immutability"
