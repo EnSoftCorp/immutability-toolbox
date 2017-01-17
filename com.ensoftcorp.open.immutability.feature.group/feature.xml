@@ -2,7 +2,7 @@
 <feature
       id="com.ensoftcorp.open.immutability"
       label="Immutability Toolbox"
-      version="3.0.13.qualifier"
+      version="3.0.14.qualifier"
       provider-name="EnSoft Corp.">
 
    <description url="https://ensoftcorp.github.io/immutability-toolbox/">
