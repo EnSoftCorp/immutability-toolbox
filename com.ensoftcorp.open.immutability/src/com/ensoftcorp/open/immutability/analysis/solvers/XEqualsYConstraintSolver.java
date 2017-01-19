@@ -6,8 +6,8 @@ import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.remove
 import java.util.Set;
 
 import com.ensoftcorp.atlas.core.db.graph.Node;
-import com.ensoftcorp.atlas.core.log.Log;
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
+import com.ensoftcorp.open.immutability.log.Log;
 
 public class XEqualsYConstraintSolver {
 
