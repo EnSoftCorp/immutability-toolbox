@@ -38,7 +38,8 @@ public class PointsToImmutabilityAnalysis extends ImmutabilityAnalysis {
 			// note: this set also includes null, but that case is explicitly handled in address creation
 			//       so all null literals are represented with a single address id to save on space
 			
-			Q context = SetDefinitions.app(); // only consider mutations inside the application
+//			Q context = SetDefinitions.app(); // only consider mutations inside the application
+			Q context = Common.universe();
 			
 			Q specialInstantiations = Common.universe().nodesTaggedWithAny(XCSG.Java.EnumConstant).difference(Common.universe().nodesTaggedWithAny(XCSG.Null));
 			Q objectInstantiations = Common.universe().nodesTaggedWithAny(XCSG.Instantiation, XCSG.ArrayInstantiation).union(specialInstantiations);
