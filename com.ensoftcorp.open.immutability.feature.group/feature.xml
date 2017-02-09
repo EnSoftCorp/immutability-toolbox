@@ -37,6 +37,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
    </license>
 
+   <requires>
+      <import plugin="org.eclipse.debug.ui"/>
+      <import plugin="com.ensoftcorp.atlas.ui" version="3.0.14" match="greaterOrEqual"/>
+      <import feature="com.ensoftcorp.open.commons.feature.group" version="3.0.14.qualifier"/>
+      <import feature="com.ensoftcorp.open.java.commons.feature.group" version="3.0.14.qualifier"/>
+      <import feature="com.ensoftcorp.open.jimple.commons.feature.group" version="3.0.14.qualifier"/>
+   </requires>
+
    <plugin
          id="com.ensoftcorp.open.immutability"
          download-size="0"
