@@ -5,8 +5,7 @@ Bundle-SymbolicName: com.ensoftcorp.open.immutability;singleton:=true
 Bundle-Version: 3.0.14.qualifier
 Bundle-Activator: com.ensoftcorp.open.immutability.Activator
 Bundle-Vendor: EnSoft Corp.
-Require-Bundle: org.eclipse.debug.ui,
- com.ensoftcorp.atlas.ui;bundle-version="3.0.14",
+Require-Bundle: com.ensoftcorp.atlas.ui;bundle-version="3.0.14",
  com.ensoftcorp.open.java.commons;bundle-version="3.0.14",
  com.ensoftcorp.open.jimple.commons;bundle-version="3.0.14",
  com.ensoftcorp.open.pointsto;bundle-version="3.0.14"
