@@ -22,7 +22,7 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 	 */
 	public static void enabledPointsToAnalysis(boolean enabled){
 		IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
-		preferences.setDefault(RUN_IMMUTABILITY_ANALYSIS, enabled);
+		preferences.setValue(RUN_IMMUTABILITY_ANALYSIS, enabled);
 		loadPreferences();
 	}
 	
@@ -48,7 +48,7 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 	 */
 	public static void setPointsToAnalysisMode(){
 		IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
-		preferences.setDefault(IMMUTABILITY_ANALYSIS_MODE, IMMUTABILITY_ANALYSIS_POINTSTO_MODE);
+		preferences.setValue(IMMUTABILITY_ANALYSIS_MODE, IMMUTABILITY_ANALYSIS_POINTSTO_MODE);
 		loadPreferences();
 	}
 	
@@ -68,7 +68,7 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 	 */
 	public static void setInferenceAnalysisMode(){
 		IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
-		preferences.setDefault(IMMUTABILITY_ANALYSIS_MODE, IMMUTABILITY_ANALYSIS_INFERENCE_MODE);
+		preferences.setValue(IMMUTABILITY_ANALYSIS_MODE, IMMUTABILITY_ANALYSIS_INFERENCE_MODE);
 		loadPreferences();
 	}
 	
@@ -95,7 +95,7 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 	 */
 	public static void enableGeneralLogging(boolean enabled){
 		IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
-		preferences.setDefault(GENERAL_LOGGING, enabled);
+		preferences.setValue(GENERAL_LOGGING, enabled);
 		loadPreferences();
 	}
 	
@@ -118,7 +118,7 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 	 */
 	public static void enableDebugLogging(boolean enabled){
 		IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
-		preferences.setDefault(DEBUG_LOGGING, enabled);
+		preferences.setValue(DEBUG_LOGGING, enabled);
 		loadPreferences();
 	}
 	
@@ -141,7 +141,7 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 	 */
 	public static void enableSanityChecks(boolean enabled){
 		IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
-		preferences.setDefault(RUN_SANITY_CHECKS, enabled);
+		preferences.setValue(RUN_SANITY_CHECKS, enabled);
 		loadPreferences();
 	}
 	
@@ -166,7 +166,7 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 	 */
 	public static void enableGenerateSummaries(boolean enabled){
 		IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
-		preferences.setDefault(GENERATE_SUMMARIES, enabled);
+		preferences.setValue(GENERATE_SUMMARIES, enabled);
 		loadPreferences();
 	}
 	
@@ -190,7 +190,7 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 	 */
 	public static void enableLoadSummaries(boolean enabled){
 		IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
-		preferences.setDefault(LOAD_SUMMARIES, enabled);
+		preferences.setValue(LOAD_SUMMARIES, enabled);
 		loadPreferences();
 	}
 	
@@ -213,7 +213,7 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 	 */
 	public static void enableAllowAddMutableInstanceVariables(boolean enabled){
 		IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
-		preferences.setDefault(ALLOW_ADD_MUTABLE_INSTANCE_VARIABLES, enabled);
+		preferences.setValue(ALLOW_ADD_MUTABLE_INSTANCE_VARIABLES, enabled);
 		loadPreferences();
 	}
 	
@@ -236,7 +236,7 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 	 */
 	public static void enableAllowDefaultMutableInstancesVariables(boolean enabled){
 		IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
-		preferences.setDefault(ALLOW_DEFAULT_MUTABLE_INSTANCE_VARIABLES, enabled);
+		preferences.setValue(ALLOW_DEFAULT_MUTABLE_INSTANCE_VARIABLES, enabled);
 		loadPreferences();
 	}
 	
@@ -259,7 +259,7 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 	 */
 	public static void enableContainerConsideration(boolean enabled){
 		IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
-		preferences.setDefault(CONSIDER_CONTAINERS, enabled);
+		preferences.setValue(CONSIDER_CONTAINERS, enabled);
 		loadPreferences();
 	}
 	
@@ -282,7 +282,7 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 	 */
 	public static void enableFieldAdaptations(boolean enabled){
 		IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
-		preferences.setDefault(USE_FIELD_ADAPTATIONS, enabled);
+		preferences.setValue(USE_FIELD_ADAPTATIONS, enabled);
 		loadPreferences();
 	}
 	
@@ -305,7 +305,7 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 	 */
 	public static void enableInferenceRuleLogging(boolean enabled){
 		IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
-		preferences.setDefault(INFERENCE_RULE_LOGGING, enabled);
+		preferences.setValue(INFERENCE_RULE_LOGGING, enabled);
 		loadPreferences();
 	}
 	
@@ -319,23 +319,6 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 	@Override
 	public void initializeDefaultPreferences() {
 		IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
-		setDefaults(preferences);
-	}
-	
-	/**
-	 * Restores the default preferences
-	 */
-	public static void restoreDefaults(){
-		IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
-		setDefaults(preferences);
-		loadPreferences();
-	}
-	
-	/**
-	 * Helper method to set default preferences
-	 * @param preferences
-	 */
-	private static void setDefaults(IPreferenceStore preferences) {
 		preferences.setDefault(RUN_IMMUTABILITY_ANALYSIS, RUN_IMMUTABILITY_ANALYSIS_DEFAULT);
 		preferences.setDefault(IMMUTABILITY_ANALYSIS_MODE, IMMUTABILITY_ANALYSIS_INFERENCE_MODE);
 		preferences.setDefault(RUN_SANITY_CHECKS, RUN_SANITY_CHECKS_DEFAULT);
@@ -348,6 +331,26 @@ public class ImmutabilityPreferences extends AbstractPreferenceInitializer {
 		preferences.setDefault(CONSIDER_CONTAINERS, CONSIDER_CONTAINERS_DEFAULT);
 		preferences.setDefault(USE_FIELD_ADAPTATIONS, USE_FIELD_ADAPTATIONS_DEFAULT);
 		preferences.setDefault(INFERENCE_RULE_LOGGING, INFERENCE_RULE_LOGGING_DEFAULT);
+	}
+	
+	/**
+	 * Restores the default preferences
+	 */
+	public static void restoreDefaults(){
+		IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
+		preferences.setValue(RUN_IMMUTABILITY_ANALYSIS, RUN_IMMUTABILITY_ANALYSIS_DEFAULT);
+		preferences.setValue(IMMUTABILITY_ANALYSIS_MODE, IMMUTABILITY_ANALYSIS_INFERENCE_MODE);
+		preferences.setValue(RUN_SANITY_CHECKS, RUN_SANITY_CHECKS_DEFAULT);
+		preferences.setValue(GENERAL_LOGGING, GENERAL_LOGGING_DEFAULT);
+		preferences.setValue(DEBUG_LOGGING, DEBUG_LOGGING_DEFAULT);
+		preferences.setValue(ALLOW_DEFAULT_MUTABLE_INSTANCE_VARIABLES, ALLOW_DEFAULT_MUTABLE_INSTANCE_VARIABLES_DEFAULT);
+		preferences.setValue(GENERATE_SUMMARIES, GENERATE_SUMMARIES_DEFAULT);
+		preferences.setValue(LOAD_SUMMARIES, LOAD_SUMMARIES_DEFAULT);
+		preferences.setValue(ALLOW_ADD_MUTABLE_INSTANCE_VARIABLES, ALLOW_ADD_MUTABLE_INSTANCE_VARIABLES_DEFAULT);
+		preferences.setValue(CONSIDER_CONTAINERS, CONSIDER_CONTAINERS_DEFAULT);
+		preferences.setValue(USE_FIELD_ADAPTATIONS, USE_FIELD_ADAPTATIONS_DEFAULT);
+		preferences.setValue(INFERENCE_RULE_LOGGING, INFERENCE_RULE_LOGGING_DEFAULT);
+		loadPreferences();
 	}
 	
 	/**
