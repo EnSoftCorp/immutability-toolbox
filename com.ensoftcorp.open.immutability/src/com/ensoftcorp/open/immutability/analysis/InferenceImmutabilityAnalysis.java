@@ -28,7 +28,7 @@ import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
-import com.ensoftcorp.open.commons.analysis.StandardQueries;
+import com.ensoftcorp.open.commons.analysis.CommonQueries;
 import com.ensoftcorp.open.commons.utilities.DisplayUtils;
 import com.ensoftcorp.open.immutability.analysis.checkers.BasicAssignmentChecker;
 import com.ensoftcorp.open.immutability.analysis.checkers.CallChecker;
@@ -320,7 +320,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 								// let, sf[] = x
 								AtlasSet<Node> sfReferences = AnalysisUtilities.parseReferences(arrayIdentity);
 								for(Node sf : sfReferences){
-									Node m = StandardQueries.getContainingFunction(arrayIdentity);
+									Node m = CommonQueries.getContainingFunction(arrayIdentity);
 									AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(from);
 									for(Node x : xReferences){
 										if(FieldAssignmentChecker.handleStaticFieldWrite(sf, x, m)){
@@ -411,7 +411,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 			if(from.taggedWith(JavaStopGap.CLASS_VARIABLE_VALUE)){
 				AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(to);
 				for(Node x : xReferences){
-					Node m = StandardQueries.getContainingFunction(to);
+					Node m = CommonQueries.getContainingFunction(to);
 					AtlasSet<Node> sfReferences = AnalysisUtilities.parseReferences(from);
 					for(Node sf : sfReferences){
 						if(FieldAssignmentChecker.handleStaticFieldRead(x, sf, m)){
@@ -427,7 +427,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 			if(to.taggedWith(JavaStopGap.CLASS_VARIABLE_ASSIGNMENT)){
 				AtlasSet<Node> sfReferences = AnalysisUtilities.parseReferences(to);
 				for(Node sf : sfReferences){
-					Node m = StandardQueries.getContainingFunction(to);
+					Node m = CommonQueries.getContainingFunction(to);
 					AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(from);
 					for(Node x : xReferences){
 						if(FieldAssignmentChecker.handleStaticFieldWrite(sf, x, m)){
@@ -442,7 +442,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 			if(from.taggedWith(XCSG.DynamicDispatchCallSite)){
 				// Type Rule 5 - TCALL
 				// let, x = y.m(z)
-				Node containingMethod = StandardQueries.getContainingFunction(to);
+				Node containingMethod = CommonQueries.getContainingFunction(to);
 				AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(to);
 				for(Node x : xReferences){
 					// I don't think we ever needed this, but adding it here for posterity 

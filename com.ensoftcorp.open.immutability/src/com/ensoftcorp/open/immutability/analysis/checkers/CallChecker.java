@@ -11,7 +11,7 @@ import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
-import com.ensoftcorp.open.commons.analysis.StandardQueries;
+import com.ensoftcorp.open.commons.analysis.CommonQueries;
 import com.ensoftcorp.open.immutability.analysis.AnalysisUtilities;
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
 import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYConstraintSolver;
@@ -156,7 +156,7 @@ public class CallChecker {
 		
 		/////////////////////// start qm' <: qx madapt qm /////////////////////////
 		// m' is the method that contains the callsite m()
-		Node containingMethod = StandardQueries.getContainingFunction(callsite);
+		Node containingMethod = CommonQueries.getContainingFunction(callsite);
 		if(processStaticDispatchConstraints(x, method, containingMethod)){
 			typesChanged = true;
 		}
