@@ -36,9 +36,9 @@ public class PurityFilter extends NodeFilter {
 	}
 
 	@Override
-	public Q filter(Q input, Map<String, Object> parameters) throws InvalidFilterParameterException {
+	public Q filterInput(Q input, Map<String, Object> parameters) throws InvalidFilterParameterException {
 		checkParameters(parameters);
-		input = super.filter(input, parameters);
+		input = super.filterInput(input, parameters);
 		
 		if(isParameterSet(FILTER_PURE_FUNCTIONS, parameters)){
 			if((Boolean) getParameterValue(FILTER_PURE_FUNCTIONS, parameters)){
