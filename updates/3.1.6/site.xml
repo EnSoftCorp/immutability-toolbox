@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <feature url="features/com.ensoftcorp.open.immutability_3.1.6.201709081544.jar" id="com.ensoftcorp.open.immutability" version="3.1.6.201709081544">
+      <category name="com.ensoftcorp.open.immutability.category"/>
+   </feature>
+   <category-def name="com.ensoftcorp.open.immutability.category" label="Immutability Toolbox">
+      <description>
+         A toolbox for object immutability and side effect analysis
+      </description>
+   </category-def>
+</site>
