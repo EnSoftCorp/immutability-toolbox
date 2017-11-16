@@ -2,7 +2,7 @@
 <feature
       id="com.ensoftcorp.open.immutability"
       label="Immutability Toolbox"
-      version="3.2.0.qualifier"
+      version="3.3.0.qualifier"
       provider-name="EnSoft Corp.">
 
    <description url="https://ensoftcorp.github.io/immutability-toolbox/">
@@ -38,10 +38,10 @@ SOFTWARE.
    </license>
 
    <requires>
-      <import plugin="com.ensoftcorp.atlas.ui" version="3.2.0" match="greaterOrEqual"/>
-      <import feature="com.ensoftcorp.open.commons.feature" version="3.2.0.qualifier"/>
-      <import feature="com.ensoftcorp.open.java.commons.feature" version="3.2.0.qualifier"/>
-      <import feature="com.ensoftcorp.open.jimple.commons.feature" version="3.2.0.qualifier"/>
+      <import plugin="com.ensoftcorp.atlas.ui" version="3.3.0" match="greaterOrEqual"/>
+      <import feature="com.ensoftcorp.open.commons.feature" version="3.3.0.qualifier"/>
+      <import feature="com.ensoftcorp.open.java.commons.feature" version="3.3.0.qualifier"/>
+      <import feature="com.ensoftcorp.open.jimple.commons.feature" version="3.3.0.qualifier"/>
    </requires>
 
    <plugin
