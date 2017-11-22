@@ -56,7 +56,10 @@ public class ImportSummaryHandler extends AbstractHandler {
 					FileDialog dialog = new FileDialog(Display.getDefault().getActiveShell(), SWT.OPEN);
 					dialog.setFilterNames(new String[] { "Immutability Analysis Results", "All Files (*.*)" });
 					dialog.setFilterExtensions(new String[] { "*.xml", "*.*" });
-					fileResult.file = new File(dialog.open());
+					String path = dialog.open();
+					if(path != null){
+						fileResult.file = new File(path);
+					}
 				}
 			});
 			File inputFile = fileResult.file;
