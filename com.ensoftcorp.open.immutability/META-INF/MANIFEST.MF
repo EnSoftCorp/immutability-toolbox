@@ -14,3 +14,4 @@ Bundle-ActivationPolicy: lazy
 Export-Package: com.ensoftcorp.open.immutability.codemap,
  com.ensoftcorp.open.immutability.constants,
  com.ensoftcorp.open.immutability.preferences
+Automatic-Module-Name: com.ensoftcorp.open.immutability
