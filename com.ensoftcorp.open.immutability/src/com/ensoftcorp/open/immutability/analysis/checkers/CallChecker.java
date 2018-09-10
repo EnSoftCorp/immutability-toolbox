@@ -12,6 +12,7 @@ import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.analysis.CommonQueries;
+import com.ensoftcorp.open.commons.xcsg.Undocumented;
 import com.ensoftcorp.open.immutability.analysis.AnalysisUtilities;
 import com.ensoftcorp.open.immutability.analysis.ImmutabilityTypes;
 import com.ensoftcorp.open.immutability.analysis.solvers.XGreaterThanEqualYConstraintSolver;
@@ -36,7 +37,7 @@ public class CallChecker {
 	public static boolean handleCall(Node x, Node y, Node identity, Node method, Node ret, AtlasSet<Edge> parametersPassedEdges, Node containingMethod) {
 		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()) {
 			String values = "x:" + getTypes(x).toString() + ", y:" + getTypes(y).toString() + ", this:" + getTypes(identity).toString() + ", return:" + getTypes(ret).toString() + ", m':" + getTypes(containingMethod).toString();
-			Log.info("TCALL (x=y.m(z), x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", m=" + method.getAttr("##signature") + ")\n" + values);
+			Log.info("TCALL (x=y.m(z), x=" + x.getAttr(XCSG.name) + ", y=" + y.getAttr(XCSG.name) + ", m=" + method.getAttr(Undocumented.SIGNATURE) + ")\n" + values);
 		}
 		
 		boolean typesChanged = false;
@@ -137,7 +138,7 @@ public class CallChecker {
 	public static boolean handleStaticCall(Node x, Node callsite, Node method, Node ret, AtlasSet<Edge> parametersPassedEdges) {
 		
 		if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()) {
-			Log.info("TSCALL (x=y.m(z), x=" + x.getAttr(XCSG.name) + ", m=" + method.getAttr("##signature") + ")");
+			Log.info("TSCALL (x=y.m(z), x=" + x.getAttr(XCSG.name) + ", m=" + method.getAttr(Undocumented.SIGNATURE) + ")");
 		}
 		
 		boolean typesChanged = false;
