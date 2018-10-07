@@ -15,6 +15,7 @@ import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
+import com.ensoftcorp.atlas.core.query.Query;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.immutability.constants.ImmutabilityTags;
@@ -38,12 +39,12 @@ public class PointsToImmutabilityAnalysis extends ImmutabilityAnalysis {
 			//       so all null literals are represented with a single address id to save on space
 			
 //			Q context = SetDefinitions.app(); // only consider mutations inside the application
-			Q context = Common.universe();
+			Q context = Query.universe();
 			
-			Q specialInstantiations = Common.universe().nodesTaggedWithAny(XCSG.Java.EnumConstant).difference(Common.universe().nodesTaggedWithAny(XCSG.Null));
-			Q objectInstantiations = Common.universe().nodesTaggedWithAny(XCSG.Instantiation, XCSG.ArrayInstantiation).union(specialInstantiations);
-			Q instanceVariableWrittenEdges = Common.universe().edgesTaggedWithAny(XCSG.InstanceVariableWritten);
-			Q instanceVariableAssignments = Common.universe().nodesTaggedWithAny(XCSG.InstanceVariableAssignment);
+			Q specialInstantiations = Query.universe().nodes(XCSG.Java.EnumConstant).difference(Query.universe().nodes(XCSG.Null));
+			Q objectInstantiations = Query.universe().nodes(XCSG.Instantiation, XCSG.ArrayInstantiation).union(specialInstantiations);
+			Q instanceVariableWrittenEdges = Query.universe().edges(XCSG.InstanceVariableWritten);
+			Q instanceVariableAssignments = Query.universe().nodes(XCSG.InstanceVariableAssignment);
 			for(Node objectInstantiation : context.intersection(objectInstantiations).eval().nodes()){
 				Q aliases = PointsToAnalysis.getAliases(objectInstantiation).difference(objectInstantiations).intersection(context);
 				boolean readonly = instanceVariableWrittenEdges.predecessors(instanceVariableAssignments).intersection(aliases).eval().nodes().isEmpty();
@@ -83,7 +84,7 @@ public class PointsToImmutabilityAnalysis extends ImmutabilityAnalysis {
 			boolean isSane = true;
 			
 			// the points-to analysis should not produce untyped references
-			AtlasSet<Node> untypedReferences = Common.universe().nodesTaggedWithAny(ImmutabilityTags.UNTYPED).eval().nodes();
+			AtlasSet<Node> untypedReferences = Query.universe().nodes(ImmutabilityTags.UNTYPED).eval().nodes();
 			if(!untypedReferences.isEmpty()){
 				isSane = false;
 				Log.warning("The points-to analysis reported untyped references!");
@@ -131,8 +132,8 @@ public class PointsToImmutabilityAnalysis extends ImmutabilityAnalysis {
 	 * and applies the maximal type as a tag
 	 */
 	private void extractMaximalTypes(){
-		Q methods = Common.universe().nodesTaggedWithAny(XCSG.Method);
-		Q typesToExtract = Common.universe().selectNode(AnalysisUtilities.IMMUTABILITY_QUALIFIERS).difference(methods);
+		Q methods = Query.universe().nodes(XCSG.Method);
+		Q typesToExtract = Query.universe().selectNode(AnalysisUtilities.IMMUTABILITY_QUALIFIERS).difference(methods);
 		AtlasSet<Node> attributedNodes = Common.resolve(new NullProgressMonitor(), typesToExtract.eval()).nodes();
 		for(Node attributedNode : attributedNodes){
 			Set<ImmutabilityTypes> types = getTypes(attributedNode);
@@ -154,15 +155,15 @@ public class PointsToImmutabilityAnalysis extends ImmutabilityAnalysis {
 	}
 	
 	private AtlasSet<Node> getUntrackedItems(AtlasSet<Node> attributedNodes) {
-		Q literals = Common.universe().nodesTaggedWithAll(XCSG.Literal);
-		Q parameters = Common.universe().nodesTaggedWithAny(XCSG.Parameter);
-		Q returnValues = Common.universe().nodesTaggedWithAny(XCSG.ReturnValue);
-		Q instanceVariables = Common.universe().nodesTaggedWithAny(XCSG.InstanceVariable);
-		Q thisNodes = Common.universe().nodesTaggedWithAny(XCSG.Identity);
-		Q classVariables = Common.universe().nodesTaggedWithAny(XCSG.ClassVariable);
+		Q literals = Query.universe().nodesTaggedWithAll(XCSG.Literal);
+		Q parameters = Query.universe().nodes(XCSG.Parameter);
+		Q returnValues = Query.universe().nodes(XCSG.ReturnValue);
+		Q instanceVariables = Query.universe().nodes(XCSG.InstanceVariable);
+		Q thisNodes = Query.universe().nodes(XCSG.Identity);
+		Q classVariables = Query.universe().nodes(XCSG.ClassVariable);
 		// note local variables may also get tracked, but only if need be during the analysis
 		Q trackedItems = literals.union(parameters, returnValues, instanceVariables, thisNodes, classVariables);
-		Q untouchedTrackedItems = trackedItems.difference(trackedItems.nodesTaggedWithAny(ImmutabilityTags.READONLY, ImmutabilityTags.POLYREAD, ImmutabilityTags.MUTABLE), Common.toQ(attributedNodes));
+		Q untouchedTrackedItems = trackedItems.difference(trackedItems.nodes(ImmutabilityTags.READONLY, ImmutabilityTags.POLYREAD, ImmutabilityTags.MUTABLE), Common.toQ(attributedNodes));
 		AtlasSet<Node> itemsToTrack = new AtlasHashSet<Node>();
 		itemsToTrack.addAll(untouchedTrackedItems.eval().nodes());
 		return itemsToTrack;

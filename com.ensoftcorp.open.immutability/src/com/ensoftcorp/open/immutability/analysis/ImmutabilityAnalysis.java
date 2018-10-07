@@ -8,6 +8,7 @@ import com.ensoftcorp.atlas.core.db.graph.GraphElement;
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
+import com.ensoftcorp.atlas.core.query.Query;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.immutability.constants.ImmutabilityTags;
@@ -62,10 +63,10 @@ public abstract class ImmutabilityAnalysis {
 			if(ImmutabilityPreferences.isGenerateSummariesEnabled()){
 				Log.info("Immutability analysis completed in " + FORMAT.format(runtime) + " ms\n");
 			} else {
-				long numReadOnly = Common.universe().nodesTaggedWithAny(ImmutabilityTags.READONLY).eval().nodes().size();
-				long numPolyRead = Common.universe().nodesTaggedWithAny(ImmutabilityTags.POLYREAD).eval().nodes().size();
-				long numMutable = Common.universe().nodesTaggedWithAny(ImmutabilityTags.MUTABLE).eval().nodes().size();
-				long numPure = Common.universe().nodesTaggedWithAny(ImmutabilityTags.PURE_METHOD).eval().nodes().size();
+				long numReadOnly = Query.universe().nodes(ImmutabilityTags.READONLY).eval().nodes().size();
+				long numPolyRead = Query.universe().nodes(ImmutabilityTags.POLYREAD).eval().nodes().size();
+				long numMutable = Query.universe().nodes(ImmutabilityTags.MUTABLE).eval().nodes().size();
+				long numPure = Query.universe().nodes(ImmutabilityTags.PURE_METHOD).eval().nodes().size();
 				String summary = "READONLY: " + numReadOnly + ", POLYREAD: " + numPolyRead + ", MUTABLE: " + numMutable  + ", PURE: " + numPure;
 				Log.info("Immutability analysis completed in " + FORMAT.format(runtime) + " ms\n" + summary);
 			}
@@ -78,7 +79,7 @@ public abstract class ImmutabilityAnalysis {
 	 * Tags pure methods with "PURE"
 	 */
 	protected void tagPureMethods(){
-		AtlasSet<Node> methods = Common.universe().nodesTaggedWithAny(XCSG.Method).eval().nodes();
+		AtlasSet<Node> methods = Query.universe().nodes(XCSG.Method).eval().nodes();
 		for(GraphElement method : methods){
 			if(isPureMethod(method)){
 				method.tag(ImmutabilityTags.PURE_METHOD);
@@ -104,12 +105,12 @@ public abstract class ImmutabilityAnalysis {
 			// a method is pure if 
 			// 1) it does not mutate (not readonly or polyread) prestates reachable through parameters
 			// this includes the formal parameters and implicit "this" parameter
-			Q parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter);
-			Q mutableParameters = parameters.nodesTaggedWithAny(ImmutabilityTags.MUTABLE);
+			Q parameters = Common.toQ(method).children().nodes(XCSG.Parameter);
+			Q mutableParameters = parameters.nodes(ImmutabilityTags.MUTABLE);
 			if(mutableParameters.eval().nodes().size() > 0){
 				return false;
 			}
-			Q mutableIdentity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).nodesTaggedWithAny(ImmutabilityTags.MUTABLE);
+			Q mutableIdentity = Common.toQ(method).children().nodes(XCSG.Identity).nodes(ImmutabilityTags.MUTABLE);
 			if(mutableIdentity.eval().nodes().size() > 0){
 				return false;
 			}

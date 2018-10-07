@@ -13,9 +13,9 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.FileDialog;
 
-import com.ensoftcorp.atlas.core.script.Common;
+import com.ensoftcorp.atlas.core.query.Query;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
-import com.ensoftcorp.open.commons.utilities.DisplayUtils;
+import com.ensoftcorp.open.commons.ui.utilities.DisplayUtils;
 import com.ensoftcorp.open.immutability.analysis.SummaryUtilities;
 import com.ensoftcorp.open.immutability.log.Log;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
@@ -56,7 +56,7 @@ public class ExportSummaryHandler extends AbstractHandler {
 					dialog.setFilterNames(new String[] { "Immutability Analysis Results", "All Files (*.*)" });
 					dialog.setFilterExtensions(new String[] { "*.xml", "*.*" });
 					try {
-						String projectName = Common.universe().nodesTaggedWithAny(XCSG.Project).eval().nodes().getFirst().getAttr(XCSG.name).toString();
+						String projectName = Query.universe().nodes(XCSG.Project).eval().nodes().getFirst().getAttr(XCSG.name).toString();
 						dialog.setFileName(projectName + "-immutability.xml");
 					} catch (Exception e){}
 					fileResult.file = new File(dialog.open());

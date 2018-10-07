@@ -22,6 +22,7 @@ import org.osgi.framework.Version;
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
+import com.ensoftcorp.atlas.core.query.Query;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.immutability.constants.ImmutabilityTags;
@@ -194,9 +195,9 @@ public class SummaryUtilities {
 	}
 	
 	private static void tagMethod(Method method) {
-		Q packages = Common.universe().nodesTaggedWithAny(XCSG.Package).selectNode(XCSG.name, method.pkg);
-		Q parents = packages.contained().nodesTaggedWithAny(XCSG.Type).selectNode(XCSG.name, method.parentClass);
-		Q methods = parents.children().nodesTaggedWithAny(method.type);
+		Q packages = Query.universe().nodes(XCSG.Package).selectNode(XCSG.name, method.pkg);
+		Q parents = packages.contained().nodes(XCSG.Type).selectNode(XCSG.name, method.parentClass);
+		Q methods = parents.children().nodes(method.type);
 		methods = methods.selectNode(JavaStopGap.SIGNATURE, method.signature);
 		
 		AtlasSet<Node> methodNodes = methods.eval().nodes();
@@ -226,7 +227,7 @@ public class SummaryUtilities {
 					Log.warning("Missing return value node for method: " +  methodNode.address().toAddressString());
 				}
 			}
-			Q methodParameters = Common.toQ(methodNode).children().nodesTaggedWithAny(XCSG.Parameter);
+			Q methodParameters = Common.toQ(methodNode).children().nodes(XCSG.Parameter);
 			for(Method.Parameter parameter : method.parameters){
 				Node parameterNode = methodParameters.selectNode(XCSG.parameterIndex, parameter.index).eval().nodes().getFirst();
 				if(parameterNode != null){
@@ -239,9 +240,9 @@ public class SummaryUtilities {
 	}
 	
 	private static void tagField(Field field) {
-		Q packages = Common.universe().nodesTaggedWithAny(XCSG.Package).selectNode(XCSG.name, field.pkg);
-		Q parents = packages.contained().nodesTaggedWithAny(XCSG.Type).selectNode(XCSG.name, field.parentClass);
-		Q fields = parents.children().nodesTaggedWithAny(field.type);
+		Q packages = Query.universe().nodes(XCSG.Package).selectNode(XCSG.name, field.pkg);
+		Q parents = packages.contained().nodes(XCSG.Type).selectNode(XCSG.name, field.parentClass);
+		Q fields = parents.children().nodes(field.type);
 		fields = fields.selectNode(XCSG.name, field.name);
 		
 		AtlasSet<Node> fieldNodes = fields.eval().nodes();
@@ -288,7 +289,7 @@ public class SummaryUtilities {
 		writer.writeAttribute("atlas", atlasVersion.getMajor() + "." + atlasVersion.getMinor() + "." + atlasVersion.getMicro());
 		writer.writeAttribute("immutability-toolbox", immutabilityToolboxVersion.getMajor() + "." + immutabilityToolboxVersion.getMinor() + "." + immutabilityToolboxVersion.getMicro());
 		
-		for(Node field : Common.universe().nodesTaggedWithAny(XCSG.Field).nodesTaggedWithAny(ImmutabilityTags.READONLY, ImmutabilityTags.POLYREAD, ImmutabilityTags.MUTABLE, ImmutabilityTags.UNTYPED).eval().nodes()){
+		for(Node field : Query.universe().nodes(XCSG.Field).nodes(ImmutabilityTags.READONLY, ImmutabilityTags.POLYREAD, ImmutabilityTags.MUTABLE, ImmutabilityTags.UNTYPED).eval().nodes()){
 			try {
 				serializeField(field, writer);
 			} catch (Exception e){
@@ -299,7 +300,7 @@ public class SummaryUtilities {
 			fieldsSummarized++;
 		}
 		
-		for(Node method : Common.universe().nodesTaggedWithAny(XCSG.Method).nodesTaggedWithAny(ImmutabilityTags.READONLY, ImmutabilityTags.POLYREAD, ImmutabilityTags.MUTABLE, ImmutabilityTags.UNTYPED).eval().nodes()){
+		for(Node method : Query.universe().nodes(XCSG.Method).nodes(ImmutabilityTags.READONLY, ImmutabilityTags.POLYREAD, ImmutabilityTags.MUTABLE, ImmutabilityTags.UNTYPED).eval().nodes()){
 			try {
 				serializeMethod(method, writer);
 			} catch (Exception e){
@@ -338,7 +339,7 @@ public class SummaryUtilities {
 			return;
 		}
 		
-		Node pkg = Common.toQ(field).containers().nodesTaggedWithAny(XCSG.Package).eval().nodes().getFirst();
+		Node pkg = Common.toQ(field).containers().nodes(XCSG.Package).eval().nodes().getFirst();
 		if(pkg == null){
 			Log.warning("Package for field " + field.address().toAddressString() + " does not exist!");
 			return;
@@ -378,7 +379,7 @@ public class SummaryUtilities {
 			return;
 		}
 		
-		Node pkg = Common.toQ(method).containers().nodesTaggedWithAny(XCSG.Package).eval().nodes().getFirst();
+		Node pkg = Common.toQ(method).containers().nodes(XCSG.Package).eval().nodes().getFirst();
 		if(pkg == null){
 			Log.warning("Skipping, method because package for method " + method.address().toAddressString() + " does not exist!");
 			return;

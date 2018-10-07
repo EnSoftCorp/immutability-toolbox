@@ -10,6 +10,7 @@ import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
+import com.ensoftcorp.atlas.core.query.Query;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.immutability.log.Log;
@@ -75,7 +76,7 @@ public class AnalysisUtilities {
 	 */
 	public static void addDummyReturnAssignments(){
 		if(ImmutabilityPreferences.isGeneralLoggingEnabled()) Log.info("Adding dummy return assignments...");
-		Q returnsEdges = Common.universe().edgesTaggedWithAny(XCSG.Returns).retainEdges();
+		Q returnsEdges = Query.universe().edges(XCSG.Returns).retainEdges();
 		Q voidMethods = returnsEdges.predecessors(Common.types("void"));
 		for(GraphElement voidMethod : voidMethods.eval().nodes()){
 			createDummyReturnNode(voidMethod);
@@ -84,8 +85,8 @@ public class AnalysisUtilities {
 		// the remaining methods without returns are likely ill formed methods
 		// we can correct for it and move on, but these should be fixed up stream
 		// in Atlas if they occur or there is an assumption here that is being violated
-		Q allMethods = Common.universe().nodesTaggedWithAny(XCSG.Method);
-		Q returnValues = Common.universe().nodesTaggedWithAny(XCSG.ReturnValue);
+		Q allMethods = Query.universe().nodes(XCSG.Method);
+		Q returnValues = Query.universe().nodes(XCSG.ReturnValue);
 		AtlasSet<Node> malformedMethods = allMethods.difference(returnValues.parent()).eval().nodes();
 		if(!malformedMethods.isEmpty()){
 			for(Node malformedMethod : malformedMethods){
@@ -94,10 +95,10 @@ public class AnalysisUtilities {
 			}
 		}
 
-		Log.info("Added " + Common.universe().nodesTaggedWithAny(DUMMY_RETURN_NODE).eval().nodes().size() + " dummy return nodes.");
+		Log.info("Added " + Query.universe().nodes(DUMMY_RETURN_NODE).eval().nodes().size() + " dummy return nodes.");
 		
 		// sanity check (all (expected) methods have a return value)
-		returnValues = Common.universe().nodesTaggedWithAny(XCSG.ReturnValue); // refresh stale references
+		returnValues = Query.universe().nodes(XCSG.ReturnValue); // refresh stale references
 		AtlasSet<Node> unexpectedMethodsMissingReturns = allMethods.difference(returnValues.parent()).eval().nodes();
 		if(!unexpectedMethodsMissingReturns.isEmpty()){
 			throw new RuntimeException("There are " + unexpectedMethodsMissingReturns.size() + " unexpected methods missing return value nodes!");
@@ -108,43 +109,43 @@ public class AnalysisUtilities {
 		// dummy (or regular) return node. Since the dummy nodes are just place holders for readonly types,
 		// its not terribly important to completely resolve dynamic dispatches and we can just link
 		// to the dummy return node of the signature method
-		returnValues = Common.universe().nodesTaggedWithAny(XCSG.ReturnValue); // refresh stale references
-		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
-		Q callsitesWithReturn = interproceduralDataFlowEdges.successors(returnValues).nodesTaggedWithAny(XCSG.CallSite);
-		Q callsites = Common.universe().nodesTaggedWithAny(XCSG.CallSite);
+		returnValues = Query.universe().nodes(XCSG.ReturnValue); // refresh stale references
+		Q interproceduralDataFlowEdges = Query.universe().edges(XCSG.InterproceduralDataFlow);
+		Q callsitesWithReturn = interproceduralDataFlowEdges.successors(returnValues).nodes(XCSG.CallSite);
+		Q callsites = Query.universe().nodes(XCSG.CallSite);
 		Q callsitesWithoutReturn = callsites.difference(callsitesWithReturn);
 		for(Node callsiteWithoutReturn : callsitesWithoutReturn.eval().nodes()){
 			GraphElement method = getInvokedMethodSignature(callsiteWithoutReturn);
-			GraphElement returnValue = Common.toQ(method).children().nodesTaggedWithAny(XCSG.ReturnValue).eval().nodes().getFirst();
+			GraphElement returnValue = Common.toQ(method).children().nodes(XCSG.ReturnValue).eval().nodes().getFirst();
 			createDummyReturnValueEdge(returnValue, callsiteWithoutReturn);
 		}
 		
-		Log.info("Added " + Common.universe().edgesTaggedWithAny(DUMMY_RETURN_EDGE).eval().edges().size() + " dummy return value edges.");
+		Log.info("Added " + Query.universe().edges(DUMMY_RETURN_EDGE).eval().edges().size() + " dummy return value edges.");
 		
 		// sanity check (all callsites have an incoming data flow edge from a return value)
-		callsites = Common.universe().nodesTaggedWithAny(XCSG.CallSite); // refresh stale references
-		returnValues = Common.universe().nodesTaggedWithAny(XCSG.ReturnValue); // refresh stale references
-		interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow); // refresh stale references
-		Q callsitesWithReturns = interproceduralDataFlowEdges.successors(returnValues).nodesTaggedWithAny(XCSG.CallSite);
+		callsites = Query.universe().nodes(XCSG.CallSite); // refresh stale references
+		returnValues = Query.universe().nodes(XCSG.ReturnValue); // refresh stale references
+		interproceduralDataFlowEdges = Query.universe().edges(XCSG.InterproceduralDataFlow); // refresh stale references
+		Q callsitesWithReturns = interproceduralDataFlowEdges.successors(returnValues).nodes(XCSG.CallSite);
 		AtlasSet<Node> callsiteNodesWithoutReturn = callsites.difference(callsitesWithReturns).eval().nodes();
 		if(!callsiteNodesWithoutReturn.isEmpty()){
 			throw new RuntimeException("There are " + callsiteNodesWithoutReturn.size() + " missing returns to callsites!");
 		}
 		
 		// create dummy assignment nodes for callsites without assignments
-		Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
-		Q assignments = Common.universe().nodesTaggedWithAny(XCSG.Assignment);
-		Q assignedCallsites = localDataFlowEdges.predecessors(assignments).nodesTaggedWithAny(XCSG.CallSite);
+		Q localDataFlowEdges = Query.universe().edges(XCSG.LocalDataFlow);
+		Q assignments = Query.universe().nodes(XCSG.Assignment);
+		Q assignedCallsites = localDataFlowEdges.predecessors(assignments).nodes(XCSG.CallSite);
 		Q unassignedCallsites = callsites.difference(assignedCallsites);
 		for(GraphElement unassignedCallsite : unassignedCallsites.eval().nodes()){
 			createDummyAssignmentNode(unassignedCallsite);
 		}
 		
-		Log.info("Added " + Common.universe().nodesTaggedWithAny(DUMMY_ASSIGNMENT_NODE).eval().nodes().size() + " dummy assignment nodes.");
+		Log.info("Added " + Query.universe().nodes(DUMMY_ASSIGNMENT_NODE).eval().nodes().size() + " dummy assignment nodes.");
 		
 		// sanity check (all callsites are assigned to an assignment node)
-		localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow); // refresh stale references
-		assignments = Common.universe().nodesTaggedWithAny(XCSG.Assignment); // refresh stale references
+		localDataFlowEdges = Query.universe().edges(XCSG.LocalDataFlow); // refresh stale references
+		assignments = Query.universe().nodes(XCSG.Assignment); // refresh stale references
 		AtlasSet<Node> unexpectedCallsitesMissingAssignments =  callsites.difference(localDataFlowEdges.predecessors(assignments)).eval().nodes();
 		if(!unexpectedCallsitesMissingAssignments.isEmpty()){
 			throw new RuntimeException("There are " + unexpectedCallsitesMissingAssignments.size() + " unexpected callsites missing assignments!");
@@ -194,7 +195,7 @@ public class AnalysisUtilities {
 	public static void removeDummyReturnAssignments(){
 		if(ImmutabilityPreferences.isGeneralLoggingEnabled()) Log.info("Removing dummy return assignments...");
 		// edges connected to the dummy nodes will be removed once the nodes are removed
-		Q dummyNodes = Common.universe().nodesTaggedWithAny(DUMMY_RETURN_NODE, DUMMY_ASSIGNMENT_NODE);
+		Q dummyNodes = Query.universe().nodes(DUMMY_RETURN_NODE, DUMMY_ASSIGNMENT_NODE);
 		AtlasHashSet<Node> dummyNodesToRemove = new AtlasHashSet<Node>();
 		for(Node dummyNode : dummyNodes.eval().nodes()){
 			dummyNodesToRemove.add(dummyNode);
@@ -207,7 +208,7 @@ public class AnalysisUtilities {
 		
 		// these edges were likely added to compensate in irregularities in the graph
 		// lets remove them now if we added any
-		Q dummyEdges = Common.universe().edgesTaggedWithAny(DUMMY_RETURN_EDGE);
+		Q dummyEdges = Query.universe().edges(DUMMY_RETURN_EDGE);
 		AtlasHashSet<Edge> dummyEdgesToRemove = new AtlasHashSet<Edge>();
 		for(Edge dummyEdge : dummyEdges.eval().edges()){
 			dummyEdgesToRemove.add(dummyEdge);
@@ -227,7 +228,7 @@ public class AnalysisUtilities {
 	public static Node getInvokedMethodSignature(GraphElement callsite) {
 		// XCSG.InvokedSignature connects a dynamic dispatch to its signature method
 		// XCSG.InvokedFunction connects a static dispatch to it actual target method
-		Q invokedEdges = Common.universe().edgesTaggedWithAny(XCSG.InvokedSignature, XCSG.InvokedFunction);
+		Q invokedEdges = Query.universe().edges(XCSG.InvokedSignature, XCSG.InvokedFunction);
 		Node method = invokedEdges.successors(Common.toQ(callsite)).eval().nodes().getFirst();
 		return method;
 	}
@@ -367,7 +368,7 @@ public class AnalysisUtilities {
 	}
 	
 	public static GraphElement getObjectType(GraphElement ge) {
-		Q typeOfEdges = Common.universe().edgesTaggedWithAny(XCSG.TypeOf);
+		Q typeOfEdges = Query.universe().edges(XCSG.TypeOf);
 		return typeOfEdges.successors(Common.toQ(ge)).eval().nodes().getFirst();
 	}
 	
@@ -378,8 +379,8 @@ public class AnalysisUtilities {
 		AtlasHashSet<Node> worklist = new AtlasHashSet<Node>();
 		worklist.add(node);
 		
-		Q dataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.DataFlow_Edge);
-		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
+		Q dataFlowEdges = Query.universe().edges(XCSG.DataFlow_Edge);
+		Q interproceduralDataFlowEdges = Query.universe().edges(XCSG.InterproceduralDataFlow);
 		
 		while(!worklist.isEmpty()){
 			GraphElement reference = worklist.getFirst();
@@ -402,7 +403,7 @@ public class AnalysisUtilities {
 				if(reference.taggedWith(XCSG.CallSite)){
 					// parse return, a callsite on a callsite must be a callsite on the resulting object from the first callsite
 					Node method = AnalysisUtilities.getInvokedMethodSignature(reference);
-					worklist.add(Common.toQ(method).children().nodesTaggedWithAny(XCSG.ReturnValue).eval().nodes().getFirst());
+					worklist.add(Common.toQ(method).children().nodes(XCSG.ReturnValue).eval().nodes().getFirst());
 					continue;
 				}
 				
@@ -703,12 +704,12 @@ public class AnalysisUtilities {
 	 * @return
 	 */
 	public static AtlasSet<Node> getAccessedContainers(GraphElement fieldAccess){
-		Q instanceVariableAccessedEdges = Common.universe().edgesTaggedWithAny(XCSG.InstanceVariableAccessed);
+		Q instanceVariableAccessedEdges = Query.universe().edges(XCSG.InstanceVariableAccessed);
 		Q variablesAccessed = instanceVariableAccessedEdges.reverse(Common.toQ(fieldAccess));
-		Q instanceVariablesAccessed = variablesAccessed.nodesTaggedWithAny(XCSG.InstanceVariableAccess);
-		Q classVariablesAccessed = variablesAccessed.nodesTaggedWithAny(JavaStopGap.CLASS_VARIABLE_ACCESS);
+		Q instanceVariablesAccessed = variablesAccessed.nodes(XCSG.InstanceVariableAccess);
+		Q classVariablesAccessed = variablesAccessed.nodes(JavaStopGap.CLASS_VARIABLE_ACCESS);
 		Q localVariables = variablesAccessed.difference(instanceVariablesAccessed, classVariablesAccessed);
-		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
+		Q interproceduralDataFlowEdges = Query.universe().edges(XCSG.InterproceduralDataFlow);
 		Q fieldsAccessed = interproceduralDataFlowEdges.predecessors(instanceVariablesAccessed.union(classVariablesAccessed));
 		return localVariables.union(fieldsAccessed).eval().nodes();
 	}

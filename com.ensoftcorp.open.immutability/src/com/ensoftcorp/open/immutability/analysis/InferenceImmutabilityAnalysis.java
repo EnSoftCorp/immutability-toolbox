@@ -26,10 +26,11 @@ import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
+import com.ensoftcorp.atlas.core.query.Query;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.analysis.CommonQueries;
-import com.ensoftcorp.open.commons.utilities.DisplayUtils;
+import com.ensoftcorp.open.commons.ui.utilities.DisplayUtils;
 import com.ensoftcorp.open.immutability.analysis.checkers.BasicAssignmentChecker;
 import com.ensoftcorp.open.immutability.analysis.checkers.CallChecker;
 import com.ensoftcorp.open.immutability.analysis.checkers.FieldAssignmentChecker;
@@ -87,7 +88,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 					dialog.setFilterNames(new String[] { "Immutability Analysis Results", "All Files (*.*)" });
 					dialog.setFilterExtensions(new String[] { "*.xml", "*.*" });
 					try {
-						String projectName = Common.universe().nodesTaggedWithAny(XCSG.Project).eval().nodes().getFirst().getAttr(XCSG.name).toString();
+						String projectName = Query.universe().nodes(XCSG.Project).eval().nodes().getFirst().getAttr(XCSG.name).toString();
 						dialog.setFileName(projectName + "-immutability.xml");
 					} catch (Exception e){}
 					fileResult.file = new File(dialog.open());
@@ -116,7 +117,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 		// treating parameter passes as assignments (for all purposes they are...)
 		// this includes dummy return assignments which are fillers for providing 
 		// context sensitivity when the return value of a call is unused
-		Q assignments = Common.universe().nodesTaggedWithAny(XCSG.Assignment, XCSG.ParameterPass);
+		Q assignments = Query.universe().nodes(XCSG.Assignment, XCSG.ParameterPass);
 		assignments = Common.resolve(new NullProgressMonitor(), assignments);
 		for(Node assignment : assignments.eval().nodes()){
 			worklist.add(assignment);
@@ -202,7 +203,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 		if(ImmutabilityPreferences.isGeneralLoggingEnabled()) Log.info("Performing cleanup...");
 
 		if(ImmutabilityPreferences.isGeneralLoggingEnabled()) Log.info("Removing Immutability Qualifier Sets...");
-		AtlasSet<Node> attributedNodes = Common.universe().selectNode(AnalysisUtilities.IMMUTABILITY_QUALIFIERS).eval().nodes();
+		AtlasSet<Node> attributedNodes = Query.universe().selectNode(AnalysisUtilities.IMMUTABILITY_QUALIFIERS).eval().nodes();
 		AtlasHashSet<Node> attributedNodesToUnattribute = new AtlasHashSet<Node>(attributedNodes);
 		while(!attributedNodesToUnattribute.isEmpty()){
 			Node attributedNode = attributedNodesToUnattribute.getFirst();
@@ -231,10 +232,10 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 		
 		boolean typesChanged = false;
 		
-		Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
-		Q interproceduralDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow);
-		Q instanceVariableAccessedEdges = Common.universe().edgesTaggedWithAny(XCSG.InstanceVariableAccessed);
-		Q identityPassedToEdges = Common.universe().edgesTaggedWithAny(XCSG.IdentityPassedTo);
+		Q localDataFlowEdges = Query.universe().edges(XCSG.LocalDataFlow);
+		Q interproceduralDataFlowEdges = Query.universe().edges(XCSG.InterproceduralDataFlow);
+		Q instanceVariableAccessedEdges = Query.universe().edges(XCSG.InstanceVariableAccessed);
+		Q identityPassedToEdges = Query.universe().edges(XCSG.IdentityPassedTo);
 
 		// consider data flow edges
 		// incoming edges represent a read relationship in an assignment
@@ -250,7 +251,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 					// an assignment to an array component mutates the array
 					if(toReference.taggedWith(XCSG.ArrayComponents)){
 						GraphElement arrayComponents = toReference;
-						Q arrayIdentityForEdges = Common.universe().edgesTaggedWithAny(XCSG.ArrayIdentityFor);
+						Q arrayIdentityForEdges = Query.universe().edges(XCSG.ArrayIdentityFor);
 						Q arrayWrite = interproceduralDataFlowEdges.predecessors(Common.toQ(arrayComponents));
 						for(Node arrayIdentity : arrayIdentityForEdges.predecessors(arrayWrite).eval().nodes()){
 							if(ImmutabilityPreferences.isDebugLoggingEnabled()){
@@ -459,10 +460,10 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 //					Node method = Utilities.getInvokedMethodSignature(callsite);
 //					
 //					// Method (method) -Contains-> Identity
-//					Node identity = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
+//					Node identity = Common.toQ(method).children().nodes(XCSG.Identity).eval().nodes().getFirst();
 //					
 //					// Method (method) -Contains-> ReturnValue (ret)
-//					Node ret = Common.toQ(method).children().nodesTaggedWithAny(XCSG.ReturnValue).eval().nodes().getFirst();
+//					Node ret = Common.toQ(method).children().nodes(XCSG.ReturnValue).eval().nodes().getFirst();
 //					
 //					// IdentityPass (.this) -IdentityPassedTo-> CallSite (m)
 //					AtlasSet<Node> identityPassReferences = identityPassedToEdges.predecessors(Common.toQ(callsite)).eval().nodes();
@@ -472,11 +473,11 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 //						AtlasSet<Node> yReferences = Utilities.parseReferences(r);
 //						for(Node y : yReferences){
 //							// Method (method) -Contains-> Parameter (p1, p2, ...)
-//							AtlasSet<Node> parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
+//							AtlasSet<Node> parameters = Common.toQ(method).children().nodes(XCSG.Parameter).eval().nodes();
 //							
 //							// ControlFlow -Contains-> CallSite
 //							// CallSite -Contains-> ParameterPassed (z1, z2, ...)
-//							AtlasSet<Node> parametersPassed = Common.toQ(callsite).parent().children().nodesTaggedWithAny(XCSG.ParameterPass).eval().nodes();
+//							AtlasSet<Node> parametersPassed = Common.toQ(callsite).parent().children().nodes(XCSG.ParameterPass).eval().nodes();
 //							
 //							// ParameterPassed (z1, z2, ...) -InterproceduralDataFlow-> Parameter (p1, p2, ...)
 //							// such that z1-InterproceduralDataFlow->p1, z2-InterproceduralDataFlow->p2, ...
@@ -514,18 +515,18 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 							// Method (method) -Contains-> Identity
 							// there should only be one identity node, but in case the graph is malformed this will act as an early prevention measure
 							// TODO: assert this property through a sanity check before running this computation
-							AtlasSet<Node> identities = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes();
+							AtlasSet<Node> identities = Common.toQ(method).children().nodes(XCSG.Identity).eval().nodes();
 							for(Node identity : identities){
 								// Method (method) -Contains-> Parameter (p1, p2, ...)
-								AtlasSet<Node> parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
+								AtlasSet<Node> parameters = Common.toQ(method).children().nodes(XCSG.Parameter).eval().nodes();
 								
 								// ControlFlow -Contains-> CallSite
 								// CallSite -Contains-> ParameterPassed (z1, z2, ...)
-								AtlasSet<Node> parametersPassed = Common.toQ(callsite).parent().children().nodesTaggedWithAny(XCSG.ParameterPass).eval().nodes();
+								AtlasSet<Node> parametersPassed = Common.toQ(callsite).parent().children().nodes(XCSG.ParameterPass).eval().nodes();
 								
 								// ParameterPassed (z1, z2, ...) -InterproceduralDataFlow-> Parameter (p1, p2, ...)
 								// such that z1-InterproceduralDataFlow->p1, z2-InterproceduralDataFlow->p2, ...
-								AtlasSet<Edge> parametersPassedEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow)
+								AtlasSet<Edge> parametersPassedEdges = Query.universe().edges(XCSG.InterproceduralDataFlow)
 										.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
 								
 								if(CallChecker.handleCall(x, y, identity, method, ret, parametersPassedEdges, containingMethod)){
@@ -571,15 +572,15 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 					Node ret = interproceduralDataFlowEdges.predecessors(Common.toQ(callsite)).eval().nodes().getFirst();
 					
 					// Method (method) -Contains-> Parameter (p1, p2, ...)
-					AtlasSet<Node> parameters = Common.toQ(method).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
+					AtlasSet<Node> parameters = Common.toQ(method).children().nodes(XCSG.Parameter).eval().nodes();
 					
 					// ControlFlow -Contains-> CallSite
 					// CallSite -Contains-> ParameterPassed (z1, z2, ...)
-					AtlasSet<Node> parametersPassed = Common.toQ(callsite).parent().children().nodesTaggedWithAny(XCSG.ParameterPass).eval().nodes();
+					AtlasSet<Node> parametersPassed = Common.toQ(callsite).parent().children().nodes(XCSG.ParameterPass).eval().nodes();
 					
 					// ParameterPassed (z1, z2, ...) -InterproceduralDataFlow-> Parameter (p1, p2, ...)
 					// such that z1-InterproceduralDataFlow->p1, z2-InterproceduralDataFlow->p2, ...
-					AtlasSet<Edge> parametersPassedEdges = Common.universe().edgesTaggedWithAny(XCSG.InterproceduralDataFlow)
+					AtlasSet<Edge> parametersPassedEdges = Query.universe().edges(XCSG.InterproceduralDataFlow)
 							.betweenStep(Common.toQ(parametersPassed), Common.toQ(parameters)).eval().edges();
 
 					if(CallChecker.handleStaticCall(x, callsite, method, ret, parametersPassedEdges)){
@@ -611,7 +612,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 	 * Converts the immutability types to tags for partial program analysis
 	 */
 	private void convertImmutabilityTypesToTags(){
-		Q typesToExtract = Common.universe().selectNode(AnalysisUtilities.IMMUTABILITY_QUALIFIERS);
+		Q typesToExtract = Query.universe().selectNode(AnalysisUtilities.IMMUTABILITY_QUALIFIERS);
 		AtlasSet<Node> attributedNodes = Common.resolve(new NullProgressMonitor(), typesToExtract.eval()).nodes();
 		for(GraphElement attributedNode : attributedNodes){
 			Set<ImmutabilityTypes> types = getTypes(attributedNode);
@@ -649,7 +650,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 	 * and applies the maximal type as a tag
 	 */
 	private void extractMaximalTypes(){
-		Q typesToExtract = Common.universe().selectNode(AnalysisUtilities.IMMUTABILITY_QUALIFIERS);
+		Q typesToExtract = Query.universe().selectNode(AnalysisUtilities.IMMUTABILITY_QUALIFIERS);
 		AtlasSet<Node> attributedNodes = Common.resolve(new NullProgressMonitor(), typesToExtract.eval()).nodes();
 		for(Node attributedNode : attributedNodes){
 			Set<ImmutabilityTypes> types = getTypes(attributedNode);
@@ -671,15 +672,15 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 	}
 	
 	private AtlasSet<Node> getUntrackedItems(AtlasSet<Node> attributedNodes) {
-		Q literals = Common.universe().nodesTaggedWithAll(XCSG.Literal);
-		Q parameters = Common.universe().nodesTaggedWithAny(XCSG.Parameter);
-		Q returnValues = Common.universe().nodesTaggedWithAny(XCSG.ReturnValue);
-		Q instanceVariables = Common.universe().nodesTaggedWithAny(XCSG.InstanceVariable);
-		Q thisNodes = Common.universe().nodesTaggedWithAny(XCSG.Identity);
-		Q classVariables = Common.universe().nodesTaggedWithAny(XCSG.ClassVariable);
+		Q literals = Query.universe().nodesTaggedWithAll(XCSG.Literal);
+		Q parameters = Query.universe().nodes(XCSG.Parameter);
+		Q returnValues = Query.universe().nodes(XCSG.ReturnValue);
+		Q instanceVariables = Query.universe().nodes(XCSG.InstanceVariable);
+		Q thisNodes = Query.universe().nodes(XCSG.Identity);
+		Q classVariables = Query.universe().nodes(XCSG.ClassVariable);
 		// note local variables may also get tracked, but only if need be during the analysis
 		Q trackedItems = literals.union(parameters, returnValues, instanceVariables, thisNodes, classVariables);
-		Q untouchedTrackedItems = trackedItems.difference(trackedItems.nodesTaggedWithAny(ImmutabilityTags.READONLY, ImmutabilityTags.POLYREAD, ImmutabilityTags.MUTABLE), Common.toQ(attributedNodes));
+		Q untouchedTrackedItems = trackedItems.difference(trackedItems.nodes(ImmutabilityTags.READONLY, ImmutabilityTags.POLYREAD, ImmutabilityTags.MUTABLE), Common.toQ(attributedNodes));
 		AtlasSet<Node> itemsToTrack = new AtlasHashSet<Node>();
 		itemsToTrack.addAll(untouchedTrackedItems.eval().nodes());
 		return itemsToTrack;

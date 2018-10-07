@@ -9,6 +9,7 @@ import com.ensoftcorp.atlas.core.db.graph.GraphElement.EdgeDirection;
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
+import com.ensoftcorp.atlas.core.query.Query;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.analysis.CommonQueries;
@@ -65,13 +66,13 @@ public class CallChecker {
 		/////////////////////// end qz <: qx madapt qp /////////////////////////
 		
 		// check if method overrides another method (of course this will be empty for static methods)
-		Q overridesEdges = Common.universe().edgesTaggedWithAny(XCSG.Overrides);
+		Q overridesEdges = Query.universe().edges(XCSG.Overrides);
 		GraphElement overriddenMethod = overridesEdges.successors(Common.toQ(method)).eval().nodes().getFirst();
 		if(overriddenMethod != null){
 			if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()) Log.info("TCALL (Overridden Method)");
 			
 			// Method (method) -Contains-> ReturnValue (ret)
-			Node overriddenRet = Common.toQ(overriddenMethod).children().nodesTaggedWithAny(XCSG.ReturnValue).eval().nodes().getFirst();
+			Node overriddenRet = Common.toQ(overriddenMethod).children().nodes(XCSG.ReturnValue).eval().nodes().getFirst();
 			
 			// constraint: overriddenReturn <: return
 			if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Override Return Constraint overriddenReturn <: return");
@@ -81,7 +82,7 @@ public class CallChecker {
 			}
 			
 			// Method (method) -Contains-> Identity
-			Node overriddenMethodIdentity = Common.toQ(overriddenMethod).children().nodesTaggedWithAny(XCSG.Identity).eval().nodes().getFirst();
+			Node overriddenMethodIdentity = Common.toQ(overriddenMethod).children().nodes(XCSG.Identity).eval().nodes().getFirst();
 
 			// constraint: this <: overriddenThis 
 			if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Override Identity Constraint this <: overriddenThis");
@@ -91,10 +92,10 @@ public class CallChecker {
 			}
 
 			// Method (method) -Contains-> Parameter (p1, p2, ...)
-			AtlasSet<Node> overriddenMethodParameters = Common.toQ(overriddenMethod).children().nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
+			AtlasSet<Node> overriddenMethodParameters = Common.toQ(overriddenMethod).children().nodes(XCSG.Parameter).eval().nodes();
 			
 			// get the parameters of the method
-			AtlasSet<Node> parameters = Common.toQ(parametersPassedEdges).nodesTaggedWithAny(XCSG.Parameter).eval().nodes();
+			AtlasSet<Node> parameters = Common.toQ(parametersPassedEdges).nodes(XCSG.Parameter).eval().nodes();
 					
 			// for each parameter and overridden parameter pair
 			// constraint: p <: pOverriden
@@ -209,7 +210,7 @@ public class CallChecker {
 			// TODO: case mutation to parameter mutates a field which is a part of a container
 			if(ImmutabilityPreferences.isContainerConsiderationEnabled()){
 				if(!getTypes(p).contains(ImmutabilityTypes.READONLY)){
-					Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
+					Q localDataFlowEdges = Query.universe().edges(XCSG.LocalDataFlow);
 					for(Node paramValue : localDataFlowEdges.predecessors(Common.toQ(z)).eval().nodes()){
 						if(paramValue.taggedWith(XCSG.InstanceVariableAccess)){
 							Node instanceVariableAccess = paramValue;

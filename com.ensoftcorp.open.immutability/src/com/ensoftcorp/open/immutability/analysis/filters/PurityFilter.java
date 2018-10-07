@@ -3,7 +3,7 @@ package com.ensoftcorp.open.immutability.analysis.filters;
 import java.util.Map;
 
 import com.ensoftcorp.atlas.core.query.Q;
-import com.ensoftcorp.atlas.core.script.Common;
+import com.ensoftcorp.atlas.core.query.Query;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.filters.InvalidFilterParameterException;
 import com.ensoftcorp.open.commons.filters.NodeFilter;
@@ -42,15 +42,15 @@ public class PurityFilter extends NodeFilter {
 		
 		if(isParameterSet(FILTER_PURE_FUNCTIONS, parameters)){
 			if((Boolean) getParameterValue(FILTER_PURE_FUNCTIONS, parameters)){
-				Q pureMethods = Common.universe().nodesTaggedWithAny(ImmutabilityTags.PURE_METHOD);
+				Q pureMethods = Query.universe().nodes(ImmutabilityTags.PURE_METHOD);
 				input = input.difference(pureMethods);
 			}
 		}
 		
 		if(isParameterSet(FILTER_FUNCTIONS_WITH_SIDE_EFFECTS, parameters)){
 			if((Boolean) getParameterValue(FILTER_FUNCTIONS_WITH_SIDE_EFFECTS, parameters)){
-				Q allMethods = Common.universe().nodes(XCSG.Method);
-				Q pureMethods = allMethods.nodesTaggedWithAny(ImmutabilityTags.PURE_METHOD);
+				Q allMethods = Query.universe().nodes(XCSG.Method);
+				Q pureMethods = allMethods.nodes(ImmutabilityTags.PURE_METHOD);
 				input = input.difference(allMethods.difference(pureMethods));
 			}
 		}
