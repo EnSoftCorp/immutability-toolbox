@@ -88,7 +88,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 					dialog.setFilterNames(new String[] { "Immutability Analysis Results", "All Files (*.*)" });
 					dialog.setFilterExtensions(new String[] { "*.xml", "*.*" });
 					try {
-						String projectName = Query.universe().nodes(XCSG.Project).eval().nodes().getFirst().getAttr(XCSG.name).toString();
+						String projectName = Query.universe().nodes(XCSG.Project).eval().nodes().one().getAttr(XCSG.name).toString();
 						dialog.setFileName(projectName + "-immutability.xml");
 					} catch (Exception e){}
 					fileResult.file = new File(dialog.open());
@@ -206,7 +206,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 		AtlasSet<Node> attributedNodes = Query.universe().selectNode(AnalysisUtilities.IMMUTABILITY_QUALIFIERS).eval().nodes();
 		AtlasHashSet<Node> attributedNodesToUnattribute = new AtlasHashSet<Node>(attributedNodes);
 		while(!attributedNodesToUnattribute.isEmpty()){
-			Node attributedNode = attributedNodesToUnattribute.getFirst();
+			Node attributedNode = attributedNodesToUnattribute.one();
 			attributedNodesToUnattribute.remove(attributedNode);
 			attributedNode.removeAttr(AnalysisUtilities.IMMUTABILITY_QUALIFIERS);
 		}
@@ -354,7 +354,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 					for(Node f : fReferences){
 						// Reference (x) -InstanceVariableAccessed-> InstanceVariableAssignment (f=)
 						Node instanceVariableAssignment = to; // (f=)
-						Node instanceVariableAccessed = instanceVariableAccessedEdges.predecessors(Common.toQ(instanceVariableAssignment)).eval().nodes().getFirst();
+						Node instanceVariableAccessed = instanceVariableAccessedEdges.predecessors(Common.toQ(instanceVariableAssignment)).eval().nodes().one();
 						AtlasSet<Node> xReferences = AnalysisUtilities.parseReferences(instanceVariableAccessed);
 						for(Node x : xReferences){
 							if(FieldAssignmentChecker.handleFieldWrite(x, f, y)){
@@ -395,7 +395,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 					for(Node f : fReferences){
 						// Reference (y) -InstanceVariableAccessed-> InstanceVariableValue (.f)
 						Node instanceVariableValue = from; // (.f)
-						Node instanceVariableAccessed = instanceVariableAccessedEdges.predecessors(Common.toQ(instanceVariableValue)).eval().nodes().getFirst();
+						Node instanceVariableAccessed = instanceVariableAccessedEdges.predecessors(Common.toQ(instanceVariableValue)).eval().nodes().one();
 						AtlasSet<Node> yReferences = AnalysisUtilities.parseReferences(instanceVariableAccessed);
 						for(Node y : yReferences){
 							if(FieldAssignmentChecker.handleFieldRead(x, y, f)){
@@ -460,16 +460,16 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 //					Node method = Utilities.getInvokedMethodSignature(callsite);
 //					
 //					// Method (method) -Contains-> Identity
-//					Node identity = Common.toQ(method).children().nodes(XCSG.Identity).eval().nodes().getFirst();
+//					Node identity = Common.toQ(method).children().nodes(XCSG.Identity).eval().nodes().one();
 //					
 //					// Method (method) -Contains-> ReturnValue (ret)
-//					Node ret = Common.toQ(method).children().nodes(XCSG.ReturnValue).eval().nodes().getFirst();
+//					Node ret = Common.toQ(method).children().nodes(XCSG.ReturnValue).eval().nodes().one();
 //					
 //					// IdentityPass (.this) -IdentityPassedTo-> CallSite (m)
 //					AtlasSet<Node> identityPassReferences = identityPassedToEdges.predecessors(Common.toQ(callsite)).eval().nodes();
 //					for(Node identityPass : identityPassReferences){
 //						// Receiver (r) -LocalDataFlow-> IdentityPass (.this)
-//						Node r = localDataFlowEdges.predecessors(Common.toQ(identityPass)).eval().nodes().getFirst();
+//						Node r = localDataFlowEdges.predecessors(Common.toQ(identityPass)).eval().nodes().one();
 //						AtlasSet<Node> yReferences = Utilities.parseReferences(r);
 //						for(Node y : yReferences){
 //							// Method (method) -Contains-> Parameter (p1, p2, ...)
@@ -494,7 +494,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 					AtlasSet<Node> identityPassReferences = identityPassedToEdges.predecessors(Common.toQ(callsite)).eval().nodes();
 					for(Node identityPass : identityPassReferences){
 						// Receiver (receiver) -LocalDataFlow-> IdentityPass (.this)
-						Node reciever = localDataFlowEdges.predecessors(Common.toQ(identityPass)).eval().nodes().getFirst();
+						Node reciever = localDataFlowEdges.predecessors(Common.toQ(identityPass)).eval().nodes().one();
 						AtlasSet<Node> yReferences = AnalysisUtilities.parseReferences(reciever);
 						for(Node y : yReferences){
 //							// if y is an instance variable it may need a mutable type
@@ -507,10 +507,10 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 //							}
 							
 							// ReturnValue (ret) -InterproceduralDataFlow-> CallSite (m)
-							Node ret = interproceduralDataFlowEdges.predecessors(Common.toQ(callsite)).eval().nodes().getFirst();
+							Node ret = interproceduralDataFlowEdges.predecessors(Common.toQ(callsite)).eval().nodes().one();
 
 							// Method (method) -Contains-> ReturnValue (ret)
-							Node method = Common.toQ(ret).parent().eval().nodes().getFirst();
+							Node method = Common.toQ(ret).parent().eval().nodes().one();
 							
 							// Method (method) -Contains-> Identity
 							// there should only be one identity node, but in case the graph is malformed this will act as an early prevention measure
@@ -569,7 +569,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 					Node method = AnalysisUtilities.getInvokedMethodSignature(callsite);
 
 					// ReturnValue (ret) -InterproceduralDataFlow-> CallSite (m)
-					Node ret = interproceduralDataFlowEdges.predecessors(Common.toQ(callsite)).eval().nodes().getFirst();
+					Node ret = interproceduralDataFlowEdges.predecessors(Common.toQ(callsite)).eval().nodes().one();
 					
 					// Method (method) -Contains-> Parameter (p1, p2, ...)
 					AtlasSet<Node> parameters = Common.toQ(method).children().nodes(XCSG.Parameter).eval().nodes();

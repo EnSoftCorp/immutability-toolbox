@@ -212,7 +212,7 @@ public class SummaryUtilities {
 			methodsImported++;
 			setImmutabilityQualifierSet(methodNode, method.immutabilityQualifiers);
 			if(method.identityImmutabilityQualifiers != null){
-				Node identityNode = Common.toQ(methodNode).children().nodesTaggedWithAll(XCSG.Identity).eval().nodes().getFirst();
+				Node identityNode = Common.toQ(methodNode).children().nodesTaggedWithAll(XCSG.Identity).eval().nodes().one();
 				if(identityNode != null){
 					setImmutabilityQualifierSet(identityNode, method.identityImmutabilityQualifiers);
 				} else {
@@ -220,7 +220,7 @@ public class SummaryUtilities {
 				}
 			}
 			if(method.returnImmutabilityQualifiers != null){
-				Node returnNode = Common.toQ(methodNode).children().nodesTaggedWithAll(XCSG.ReturnValue).eval().nodes().getFirst();
+				Node returnNode = Common.toQ(methodNode).children().nodesTaggedWithAll(XCSG.ReturnValue).eval().nodes().one();
 				if(returnNode != null){
 					setImmutabilityQualifierSet(returnNode, method.returnImmutabilityQualifiers);
 				} else {
@@ -229,7 +229,7 @@ public class SummaryUtilities {
 			}
 			Q methodParameters = Common.toQ(methodNode).children().nodes(XCSG.Parameter);
 			for(Method.Parameter parameter : method.parameters){
-				Node parameterNode = methodParameters.selectNode(XCSG.parameterIndex, parameter.index).eval().nodes().getFirst();
+				Node parameterNode = methodParameters.selectNode(XCSG.parameterIndex, parameter.index).eval().nodes().one();
 				if(parameterNode != null){
 					setImmutabilityQualifierSet(parameterNode, parameter.immutabilityQualifiers);
 				} else {
@@ -333,13 +333,13 @@ public class SummaryUtilities {
 			return;
 		}
 		
-		Node parentClass = Common.toQ(field).parent().eval().nodes().getFirst();
+		Node parentClass = Common.toQ(field).parent().eval().nodes().one();
 		if(parentClass == null){
 			Log.warning("Skipping filed, because field " + field.address().toAddressString() + " does not have a parent!");
 			return;
 		}
 		
-		Node pkg = Common.toQ(field).containers().nodes(XCSG.Package).eval().nodes().getFirst();
+		Node pkg = Common.toQ(field).containers().nodes(XCSG.Package).eval().nodes().one();
 		if(pkg == null){
 			Log.warning("Package for field " + field.address().toAddressString() + " does not exist!");
 			return;
@@ -373,13 +373,13 @@ public class SummaryUtilities {
 			return;
 		}
 		
-		Node parentClass = Common.toQ(method).parent().eval().nodes().getFirst();
+		Node parentClass = Common.toQ(method).parent().eval().nodes().one();
 		if(parentClass == null){
 			Log.warning("Skipping method because method " + method.address().toAddressString() + " does not have a parent!");
 			return;
 		}
 		
-		Node pkg = Common.toQ(method).containers().nodes(XCSG.Package).eval().nodes().getFirst();
+		Node pkg = Common.toQ(method).containers().nodes(XCSG.Package).eval().nodes().one();
 		if(pkg == null){
 			Log.warning("Skipping, method because package for method " + method.address().toAddressString() + " does not exist!");
 			return;
@@ -394,7 +394,7 @@ public class SummaryUtilities {
 		writer.writeAttribute("immutability", methodImmutabilityTags);
 		
 		// write this node (if one exists)
-		Node thisNode = Common.toQ(method).children().nodesTaggedWithAll(XCSG.Identity).eval().nodes().getFirst();
+		Node thisNode = Common.toQ(method).children().nodesTaggedWithAll(XCSG.Identity).eval().nodes().one();
 		if(thisNode != null){
 			writer.writeStartElement("this");
 			String thisImmutabilityTags = stringifyImmutabilityTags(thisNode);
@@ -418,7 +418,7 @@ public class SummaryUtilities {
 		}
 		
 		// write return node (if one exists)
-		Node returnNode = Common.toQ(method).children().nodesTaggedWithAll(XCSG.ReturnValue).eval().nodes().getFirst();
+		Node returnNode = Common.toQ(method).children().nodesTaggedWithAll(XCSG.ReturnValue).eval().nodes().one();
 		if(returnNode != null && !returnNode.taggedWith(AnalysisUtilities.DUMMY_RETURN_NODE)){
 			writer.writeStartElement("return");
 			String returnImmutabilityTags = stringifyImmutabilityTags(returnNode);

@@ -56,7 +56,7 @@ public class ExportSummaryHandler extends AbstractHandler {
 					dialog.setFilterNames(new String[] { "Immutability Analysis Results", "All Files (*.*)" });
 					dialog.setFilterExtensions(new String[] { "*.xml", "*.*" });
 					try {
-						String projectName = Query.universe().nodes(XCSG.Project).eval().nodes().getFirst().getAttr(XCSG.name).toString();
+						String projectName = Query.universe().nodes(XCSG.Project).eval().nodes().one().getAttr(XCSG.name).toString();
 						dialog.setFileName(projectName + "-immutability.xml");
 					} catch (Exception e){}
 					fileResult.file = new File(dialog.open());

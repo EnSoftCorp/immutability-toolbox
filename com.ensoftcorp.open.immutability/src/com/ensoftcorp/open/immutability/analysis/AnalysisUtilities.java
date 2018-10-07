@@ -29,22 +29,22 @@ public class AnalysisUtilities {
 //		defaultReadonlyTypes = new AtlasHashSet<GraphElement>();
 //		
 //		// autoboxing
-//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Integer").eval().nodes().getFirst());
-//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Long").eval().nodes().getFirst());
-//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Short").eval().nodes().getFirst());
-//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Boolean").eval().nodes().getFirst());
-//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Byte").eval().nodes().getFirst());
-//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Double").eval().nodes().getFirst());
-//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Float").eval().nodes().getFirst());
-//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Character").eval().nodes().getFirst());
+//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Integer").eval().nodes().one());
+//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Long").eval().nodes().one());
+//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Short").eval().nodes().one());
+//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Boolean").eval().nodes().one());
+//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Byte").eval().nodes().one());
+//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Double").eval().nodes().one());
+//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Float").eval().nodes().one());
+//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Character").eval().nodes().one());
 //		
 //		// a few other objects are special cases for all practical purposes
-//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "String").eval().nodes().getFirst());
-//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Number").eval().nodes().getFirst());
-//		defaultReadonlyTypes.add(Common.typeSelect("java.util.concurrent.atomic", "AtomicInteger").eval().nodes().getFirst());
-//		defaultReadonlyTypes.add(Common.typeSelect("java.util.concurrent.atomic", "AtomicLong").eval().nodes().getFirst());
-//		defaultReadonlyTypes.add(Common.typeSelect("java.math", "BigDecimal").eval().nodes().getFirst());
-//		defaultReadonlyTypes.add(Common.typeSelect("java.math", "BigInteger").eval().nodes().getFirst());
+//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "String").eval().nodes().one());
+//		defaultReadonlyTypes.add(Common.typeSelect("java.lang", "Number").eval().nodes().one());
+//		defaultReadonlyTypes.add(Common.typeSelect("java.util.concurrent.atomic", "AtomicInteger").eval().nodes().one());
+//		defaultReadonlyTypes.add(Common.typeSelect("java.util.concurrent.atomic", "AtomicLong").eval().nodes().one());
+//		defaultReadonlyTypes.add(Common.typeSelect("java.math", "BigDecimal").eval().nodes().one());
+//		defaultReadonlyTypes.add(Common.typeSelect("java.math", "BigInteger").eval().nodes().one());
 //	}
 //	
 //	/**
@@ -116,7 +116,7 @@ public class AnalysisUtilities {
 		Q callsitesWithoutReturn = callsites.difference(callsitesWithReturn);
 		for(Node callsiteWithoutReturn : callsitesWithoutReturn.eval().nodes()){
 			GraphElement method = getInvokedMethodSignature(callsiteWithoutReturn);
-			GraphElement returnValue = Common.toQ(method).children().nodes(XCSG.ReturnValue).eval().nodes().getFirst();
+			GraphElement returnValue = Common.toQ(method).children().nodes(XCSG.ReturnValue).eval().nodes().one();
 			createDummyReturnValueEdge(returnValue, callsiteWithoutReturn);
 		}
 		
@@ -171,7 +171,7 @@ public class AnalysisUtilities {
 		localDataFlowEdge.tag(XCSG.LocalDataFlow);
 		
 		// create a contains edge from the callsites parent to the dummy assignment node
-		GraphElement parent = Common.toQ(unassignedCallsite).parent().eval().nodes().getFirst();
+		GraphElement parent = Common.toQ(unassignedCallsite).parent().eval().nodes().one();
 		GraphElement containsEdge = Graph.U.createEdge(parent, dummyAssignmentNode);
 		containsEdge.tag(XCSG.Contains);
 		
@@ -201,7 +201,7 @@ public class AnalysisUtilities {
 			dummyNodesToRemove.add(dummyNode);
 		}
 		while(!dummyNodesToRemove.isEmpty()){
-			Node dummyNode = dummyNodesToRemove.getFirst();
+			Node dummyNode = dummyNodesToRemove.one();
 			dummyNodesToRemove.remove(dummyNode);
 			Graph.U.delete(dummyNode);
 		}
@@ -214,7 +214,7 @@ public class AnalysisUtilities {
 			dummyEdgesToRemove.add(dummyEdge);
 		}
 		while(!dummyEdgesToRemove.isEmpty()){
-			Edge dummyEdge = dummyEdgesToRemove.getFirst();
+			Edge dummyEdge = dummyEdgesToRemove.one();
 			dummyEdgesToRemove.remove(dummyEdge);
 			Graph.U.delete(dummyEdge);
 		}
@@ -229,7 +229,7 @@ public class AnalysisUtilities {
 		// XCSG.InvokedSignature connects a dynamic dispatch to its signature method
 		// XCSG.InvokedFunction connects a static dispatch to it actual target method
 		Q invokedEdges = Query.universe().edges(XCSG.InvokedSignature, XCSG.InvokedFunction);
-		Node method = invokedEdges.successors(Common.toQ(callsite)).eval().nodes().getFirst();
+		Node method = invokedEdges.successors(Common.toQ(callsite)).eval().nodes().one();
 		return method;
 	}
 	
@@ -369,7 +369,7 @@ public class AnalysisUtilities {
 	
 	public static GraphElement getObjectType(GraphElement ge) {
 		Q typeOfEdges = Query.universe().edges(XCSG.TypeOf);
-		return typeOfEdges.successors(Common.toQ(ge)).eval().nodes().getFirst();
+		return typeOfEdges.successors(Common.toQ(ge)).eval().nodes().one();
 	}
 	
 	public static AtlasSet<Node> parseReferences(Node node){
@@ -383,7 +383,7 @@ public class AnalysisUtilities {
 		Q interproceduralDataFlowEdges = Query.universe().edges(XCSG.InterproceduralDataFlow);
 		
 		while(!worklist.isEmpty()){
-			GraphElement reference = worklist.getFirst();
+			GraphElement reference = worklist.one();
 			worklist.remove(reference);
 			if(reference != null && needsProcessing(reference)){
 				if(reference.taggedWith(XCSG.Cast)){
@@ -403,7 +403,7 @@ public class AnalysisUtilities {
 				if(reference.taggedWith(XCSG.CallSite)){
 					// parse return, a callsite on a callsite must be a callsite on the resulting object from the first callsite
 					Node method = AnalysisUtilities.getInvokedMethodSignature(reference);
-					worklist.add(Common.toQ(method).children().nodes(XCSG.ReturnValue).eval().nodes().getFirst());
+					worklist.add(Common.toQ(method).children().nodes(XCSG.ReturnValue).eval().nodes().one());
 					continue;
 				}
 				

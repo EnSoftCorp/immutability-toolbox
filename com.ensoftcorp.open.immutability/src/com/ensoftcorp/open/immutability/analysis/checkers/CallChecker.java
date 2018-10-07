@@ -67,12 +67,12 @@ public class CallChecker {
 		
 		// check if method overrides another method (of course this will be empty for static methods)
 		Q overridesEdges = Query.universe().edges(XCSG.Overrides);
-		GraphElement overriddenMethod = overridesEdges.successors(Common.toQ(method)).eval().nodes().getFirst();
+		GraphElement overriddenMethod = overridesEdges.successors(Common.toQ(method)).eval().nodes().one();
 		if(overriddenMethod != null){
 			if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()) Log.info("TCALL (Overridden Method)");
 			
 			// Method (method) -Contains-> ReturnValue (ret)
-			Node overriddenRet = Common.toQ(overriddenMethod).children().nodes(XCSG.ReturnValue).eval().nodes().getFirst();
+			Node overriddenRet = Common.toQ(overriddenMethod).children().nodes(XCSG.ReturnValue).eval().nodes().one();
 			
 			// constraint: overriddenReturn <: return
 			if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Override Return Constraint overriddenReturn <: return");
@@ -82,7 +82,7 @@ public class CallChecker {
 			}
 			
 			// Method (method) -Contains-> Identity
-			Node overriddenMethodIdentity = Common.toQ(overriddenMethod).children().nodes(XCSG.Identity).eval().nodes().getFirst();
+			Node overriddenMethodIdentity = Common.toQ(overriddenMethod).children().nodes(XCSG.Identity).eval().nodes().one();
 
 			// constraint: this <: overriddenThis 
 			if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.info("Process Override Identity Constraint this <: overriddenThis");
@@ -105,8 +105,8 @@ public class CallChecker {
 			if(numParams == numOverriddenParams){
 				if(numOverriddenParams > 0){
 					for(int i=0; i<numOverriddenParams; i++){
-						Node p = Common.toQ(parameters).selectNode(XCSG.parameterIndex, i).eval().nodes().getFirst();
-						Node pOverridden = Common.toQ(overriddenMethodParameters).selectNode(XCSG.parameterIndex, i).eval().nodes().getFirst();
+						Node p = Common.toQ(parameters).selectNode(XCSG.parameterIndex, i).eval().nodes().one();
+						Node pOverridden = Common.toQ(overriddenMethodParameters).selectNode(XCSG.parameterIndex, i).eval().nodes().one();
 
 						if(XGreaterThanEqualYConstraintSolver.satisify(pOverridden, p)){
 							typesChanged = true;
