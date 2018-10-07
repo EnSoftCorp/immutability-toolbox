@@ -2,99 +2,6 @@
 <?eclipse version="3.4"?>
 <plugin>
    
-   <!-- define command some handler extensions -->	
-   <!-- disable because these were confusing to users
-	<extension
-	      point="org.eclipse.ui.handlers">
-	   <handler
-	         commandId="com.ensoftcorp.open.immutability.menus.advanced.importSummaryCommand"
-	         class="com.ensoftcorp.open.immutability.handlers.ImportSummaryHandler">
-	   </handler>
-	</extension>
-	<extension
-	      point="org.eclipse.ui.handlers">
-	   <handler
-	         commandId="com.ensoftcorp.open.immutability.menus.advanced.exportSummaryCommand"
-	         class="com.ensoftcorp.open.immutability.handlers.ExportSummaryHandler">
-	   </handler>
-	</extension>
-	<extension
-	      point="org.eclipse.ui.handlers">
-	   <handler
-	         commandId="com.ensoftcorp.open.immutability.menus.advanced.extractMaximalTypesCommand"
-	         class="com.ensoftcorp.open.immutability.handlers.ExtractMaximalTypesHandler">
-	   </handler>
-	</extension>
-	<extension
-	      point="org.eclipse.ui.handlers">
-	   <handler
-	         commandId="com.ensoftcorp.open.immutability.menus.advanced.resumeFixedPointAnalysisCommand"
-	         class="com.ensoftcorp.open.immutability.handlers.ResumeFixedPointAnalysisHandler">
-	   </handler>
-	</extension>
-	-->
-   
-   <!-- extend the Atlas Toolbox menu with a new submenu for immutability analysis -->
-   <!--
-	<extension
-	      point="org.eclipse.ui.menus">
-	   <menuContribution
-	         locationURI="menu:com.ensoftcorp.open.commons.menus.toolbox?after=additions">
-	      <menu
-	            label="Immutability Analysis"
-	            id="com.ensoftcorp.open.immutability.menus.immutabilityMenu">
-	         <command
-	               commandId="com.ensoftcorp.open.immutability.menus.runImmutabilityAnalysisCommand"
-	               label="Run Immutability Analysis"
-	               id="com.ensoftcorp.open.immutability.menus.runImmutabilityAnalysisCommandMenuItem">
-	         </command>
-	         <command
-	               commandId="com.ensoftcorp.open.immutability.menus.editImmutabilityPreferencesCommand"
-	               label="Edit Preferences"
-	               id="com.ensoftcorp.open.immutability.menus.editImmutabilityPreferencesCommandMenuItem">
-	         </command>
-	      </menu>
-	   </menuContribution>
-	</extension>
-	-->
-	
-	<!-- create an advanced immutability analysis submenu -->
-	<!-- note: disabled advanced menu, as it causes too much confusion in the UI
-	<extension
-	      point="org.eclipse.ui.menus">
-	   <menuContribution
-	         locationURI="menu:com.ensoftcorp.open.immutability.menus.immutabilityMenu?after=additions">
-	      <menu
-	            label="Advanced"
-	            id="com.ensoftcorp.open.immutability.menus.advanced.immutabilityMenu">
-	         <command
-	               commandId="com.ensoftcorp.open.immutability.menus.advanced.importSummaryCommand"
-	               label="Import Summary"
-	               id="com.ensoftcorp.open.immutability.menus.advanced.importSummaryCommandMenuItem">
-	         </command>
-	         <command
-	               commandId="com.ensoftcorp.open.immutability.menus.advanced.exportSummaryCommand"
-	               label="Export Summary"
-	               id="com.ensoftcorp.open.immutability.menus.advanced.exportSummaryCommandMenuItem">
-	         </command>
-	         -->
-	         <!-- todo implement
-	         <command
-	               commandId="com.ensoftcorp.open.immutability.menus.advanced.extractMaximalTypesCommand"
-	               label="Extract Maximal Types"
-	               id="com.ensoftcorp.open.immutability.menus.advanced.extractMaximalTypesCommandMenuItem">
-	         </command>
-	         <command
-	               commandId="com.ensoftcorp.open.immutability.menus.advanced.resumeFixedPointAnalysisCommand"
-	               label="Resume Fixed Point Analysis"
-	               id="com.ensoftcorp.open.immutability.menus.advanced.resumeFixedPointAnalysisCommandMenuItem">
-	         </command>
-	         --><!--
-	      </menu>
-	   </menuContribution>
-	</extension>
-	-->
-   
    <!-- create an initializer extension to initialize preferences -->
    <extension
       point="org.eclipse.equinox.preferences.preferences">
@@ -102,17 +9,6 @@
 	         class="com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences">
 	   </initializer>
 	</extension>
-   
-   <!-- create a preferences menu item for immutability analysis -->
-   <extension
-         point="org.eclipse.ui.preferencePages">
-      <page
-            class="com.ensoftcorp.open.immutability.ui.ImmutabilityPreferencesPage"
-            id="com.ensoftcorp.open.immutability.ui.preferences"
-            name="Immutability Analysis"
-            category="com.ensoftcorp.open.commons.ui.toolbox.preferences">
-      </page>
-   </extension>
    
    <!-- adds the prioritized codemap stage for immutability analysis -->
    <extension point="com.ensoftcorp.open.commons.codemap">

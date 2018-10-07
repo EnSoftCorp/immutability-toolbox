@@ -11,7 +11,9 @@ Require-Bundle: com.ensoftcorp.atlas.ui;bundle-version="3.3.7",
  com.ensoftcorp.open.pointsto;bundle-version="3.3.7"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy
-Export-Package: com.ensoftcorp.open.immutability.codemap,
+Export-Package: com.ensoftcorp.open.immutability.analysis,
+ com.ensoftcorp.open.immutability.analysis.filters,
+ com.ensoftcorp.open.immutability.codemap,
  com.ensoftcorp.open.immutability.constants,
  com.ensoftcorp.open.immutability.preferences
 Automatic-Module-Name: com.ensoftcorp.open.immutability

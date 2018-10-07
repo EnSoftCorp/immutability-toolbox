@@ -7,7 +7,5 @@ com.ensoftcorp.open.immutability.analysis.solvers
 com.ensoftcorp.open.immutability.codemap
 com.ensoftcorp.open.immutability.constants
 com.ensoftcorp.open.immutability.experimental
-com.ensoftcorp.open.immutability.handlers
 com.ensoftcorp.open.immutability.log
 com.ensoftcorp.open.immutability.preferences
-com.ensoftcorp.open.immutability.ui
