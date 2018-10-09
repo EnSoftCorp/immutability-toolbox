@@ -10,7 +10,6 @@ import java.util.Set;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 
-import com.ensoftcorp.atlas.core.db.graph.GraphElement;
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
@@ -116,9 +115,9 @@ public class PointsToImmutabilityAnalysis extends ImmutabilityAnalysis {
 		}
 	}
 	
-	private ImmutabilityTypes getDefaultMaximalType(GraphElement ge) {
+	private ImmutabilityTypes getDefaultMaximalType(Node node) {
 		ImmutabilityTypes maximalType;
-		if(ge.taggedWith(XCSG.Instantiation) || ge.taggedWith(XCSG.ArrayInstantiation)){
+		if(node.taggedWith(XCSG.Instantiation) || node.taggedWith(XCSG.ArrayInstantiation)){
 			maximalType = ImmutabilityTypes.MUTABLE;
 		} else {
 			// all other cases default to readonly as the maximal type
@@ -148,7 +147,7 @@ public class PointsToImmutabilityAnalysis extends ImmutabilityAnalysis {
 			}
 		}
 		AtlasSet<Node> itemsToTrack = getUntrackedItems(attributedNodes);
-		for(GraphElement untouchedTrackedItem : itemsToTrack){
+		for(Node untouchedTrackedItem : itemsToTrack){
 			ImmutabilityTypes maximalType = getDefaultMaximalType(untouchedTrackedItem);
 			untouchedTrackedItem.tag(maximalType.toString());
 		}

@@ -4,7 +4,6 @@ import java.util.Set;
 
 import org.eclipse.core.runtime.NullProgressMonitor;
 
-import com.ensoftcorp.atlas.core.db.graph.GraphElement;
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
@@ -146,23 +145,23 @@ public class SanityChecks {
 //		defaultReadonlyTypes.addAll(Query.universe().nodes(XCSG.Null, XCSG.Literal, XCSG.Operator).eval().nodes());
 //		
 //		int unexpectedTypes = 0; 
-//		for(GraphElement ge : defaultReadonlyTypes){
-//			if(ge.taggedWith(XCSG.Null)){
+//		for(Node node : defaultReadonlyTypes){
+//			if(node.taggedWith(XCSG.Null)){
 //				// null is a special case, mutations can happen to nulls but its a runtime exception
 //				// one might argue this does not change the program state but it does if a runtime exception is thrown!
 //				continue;
 //			}
-//			if(ge.taggedWith(XCSG.Operator)){
+//			if(node.taggedWith(XCSG.Operator)){
 //				// we only need to consider operators on-demand so not all operators will actually be typed
 //				// but if they are they'd better not be typed as anything but readonly
-//				if(ge.taggedWith(ImmutabilityTags.POLYREAD) || ge.taggedWith(ImmutabilityTags.MUTABLE) || ge.taggedWith(ImmutabilityAnalysis.UNTYPED)){
-//					if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.warning("Readonly type " + ge.address().toAddressString() + " is not readonly.");
+//				if(node.taggedWith(ImmutabilityTags.POLYREAD) || node.taggedWith(ImmutabilityTags.MUTABLE) || node.taggedWith(ImmutabilityAnalysis.UNTYPED)){
+//					if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.warning("Readonly type " + node.address().toAddressString() + " is not readonly.");
 //					unexpectedTypes++;
 //				}
 //				continue;
 //			}
-//			if(!ge.taggedWith(ImmutabilityTags.READONLY)){
-//				if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.warning("Readonly type " + ge.address().toAddressString() + " is not readonly.");
+//			if(!node.taggedWith(ImmutabilityTags.READONLY)){
+//				if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.warning("Readonly type " + node.address().toAddressString() + " is not readonly.");
 //				unexpectedTypes++;
 //			}
 //		}
@@ -173,16 +172,16 @@ public class SanityChecks {
 
 	private static boolean gainedTypes(String... tags) {
 		int unexpectedTypes = 0;
-		for(GraphElement ge : Common.resolve(new NullProgressMonitor(), Query.universe().nodes(tags).eval()).nodes()){
-			Set<ImmutabilityTypes> defaultTypes = AnalysisUtilities.getDefaultTypes(ge);
-			if(ge.taggedWith(ImmutabilityTags.READONLY) && !defaultTypes.contains(ImmutabilityTypes.READONLY)){
-				if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.warning("GraphElement " + ge.address().toAddressString() + " is tagged as READONLY but READONLY is not a valid default for this element.");
+		for(Node node : Common.resolve(new NullProgressMonitor(), Query.universe().nodes(tags).eval()).nodes()){
+			Set<ImmutabilityTypes> defaultTypes = AnalysisUtilities.getDefaultTypes(node);
+			if(node.taggedWith(ImmutabilityTags.READONLY) && !defaultTypes.contains(ImmutabilityTypes.READONLY)){
+				if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.warning("GraphElement " + node.address().toAddressString() + " is tagged as READONLY but READONLY is not a valid default for this element.");
 				unexpectedTypes++;
-			} else if(ge.taggedWith(ImmutabilityTags.POLYREAD) && !defaultTypes.contains(ImmutabilityTypes.POLYREAD)){
-				if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.warning("GraphElement " + ge.address().toAddressString() + " is tagged as POLYREAD but POLYREAD is not a valid default for this element.");
+			} else if(node.taggedWith(ImmutabilityTags.POLYREAD) && !defaultTypes.contains(ImmutabilityTypes.POLYREAD)){
+				if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.warning("GraphElement " + node.address().toAddressString() + " is tagged as POLYREAD but POLYREAD is not a valid default for this element.");
 				unexpectedTypes++;
-			} else if(ge.taggedWith(ImmutabilityTags.MUTABLE) && !defaultTypes.contains(ImmutabilityTypes.MUTABLE)){
-				if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.warning("GraphElement " + ge.address().toAddressString() + " is tagged as MUTABLE but MUTABLE is not a valid default for this element.");
+			} else if(node.taggedWith(ImmutabilityTags.MUTABLE) && !defaultTypes.contains(ImmutabilityTypes.MUTABLE)){
+				if(ImmutabilityPreferences.isDebugLoggingEnabled()) Log.warning("GraphElement " + node.address().toAddressString() + " is tagged as MUTABLE but MUTABLE is not a valid default for this element.");
 				unexpectedTypes++;
 			}
 		}

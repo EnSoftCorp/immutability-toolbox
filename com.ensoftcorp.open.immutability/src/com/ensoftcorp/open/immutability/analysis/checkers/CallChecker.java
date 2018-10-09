@@ -4,8 +4,6 @@ import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.getTyp
 import static com.ensoftcorp.open.immutability.analysis.AnalysisUtilities.removeTypes;
 
 import com.ensoftcorp.atlas.core.db.graph.Edge;
-import com.ensoftcorp.atlas.core.db.graph.GraphElement;
-import com.ensoftcorp.atlas.core.db.graph.GraphElement.EdgeDirection;
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
@@ -67,7 +65,7 @@ public class CallChecker {
 		
 		// check if method overrides another method (of course this will be empty for static methods)
 		Q overridesEdges = Query.universe().edges(XCSG.Overrides);
-		GraphElement overriddenMethod = overridesEdges.successors(Common.toQ(method)).eval().nodes().one();
+		Node overriddenMethod = overridesEdges.successors(Common.toQ(method)).eval().nodes().one();
 		if(overriddenMethod != null){
 			if(ImmutabilityPreferences.isInferenceRuleLoggingEnabled()) Log.info("TCALL (Overridden Method)");
 			
@@ -190,9 +188,9 @@ public class CallChecker {
 		boolean typesChanged = false;
 		
 		// for each z,p pair process s(x), s(z), and s(p)
-		for(GraphElement parametersPassedEdge : parametersPassedEdges){
-			Node z = parametersPassedEdge.getNode(EdgeDirection.FROM);
-			Node p = parametersPassedEdge.getNode(EdgeDirection.TO);
+		for(Edge parametersPassedEdge : parametersPassedEdges){
+			Node z = parametersPassedEdge.from();
+			Node p = parametersPassedEdge.to();
 			
 			if(ImmutabilityPreferences.isDebugLoggingEnabled()) {
 				Log.info("x = m(z->p), x:" + AnalysisUtilities.getTypes(x).toString() 

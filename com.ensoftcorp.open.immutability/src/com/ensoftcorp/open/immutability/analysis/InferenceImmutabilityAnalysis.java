@@ -20,8 +20,6 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.FileDialog;
 
 import com.ensoftcorp.atlas.core.db.graph.Edge;
-import com.ensoftcorp.atlas.core.db.graph.GraphElement;
-import com.ensoftcorp.atlas.core.db.graph.GraphElement.EdgeDirection;
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
@@ -242,15 +240,15 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 		// outgoing edges represent a write relationship in an assignment
 		Node to = workItem;
 		AtlasSet<Edge> inEdges = localDataFlowEdges.reverseStep(Common.toQ(to)).eval().edges();
-		for(GraphElement edge : inEdges){
-			Node from = edge.getNode(EdgeDirection.FROM);
+		for(Edge edge : inEdges){
+			Node from = edge.from();
 
 			// process constraints for array component assignments
 			if(to.taggedWith(XCSG.ArrayWrite)){
 				for(Node toReference : AnalysisUtilities.parseReferences(to)){
 					// an assignment to an array component mutates the array
 					if(toReference.taggedWith(XCSG.ArrayComponents)){
-						GraphElement arrayComponents = toReference;
+						Node arrayComponents = toReference;
 						Q arrayIdentityForEdges = Query.universe().edges(XCSG.ArrayIdentityFor);
 						Q arrayWrite = interproceduralDataFlowEdges.predecessors(Common.toQ(arrayComponents));
 						for(Node arrayIdentity : arrayIdentityForEdges.predecessors(arrayWrite).eval().nodes()){
@@ -614,7 +612,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 	private void convertImmutabilityTypesToTags(){
 		Q typesToExtract = Query.universe().selectNode(AnalysisUtilities.IMMUTABILITY_QUALIFIERS);
 		AtlasSet<Node> attributedNodes = Common.resolve(new NullProgressMonitor(), typesToExtract.eval()).nodes();
-		for(GraphElement attributedNode : attributedNodes){
+		for(Node attributedNode : attributedNodes){
 			Set<ImmutabilityTypes> types = getTypes(attributedNode);
 			if(types.isEmpty()){
 				attributedNode.tag(ImmutabilityTags.UNTYPED);
@@ -626,7 +624,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 		}
 		
 		AtlasSet<Node> itemsToTrack = getUntrackedItems(attributedNodes);
-		for(GraphElement untouchedTrackedItem : itemsToTrack){
+		for(Node untouchedTrackedItem : itemsToTrack){
 			Set<ImmutabilityTypes> defaultTypes = AnalysisUtilities.getDefaultTypes(untouchedTrackedItem);
 			for(ImmutabilityTypes type : defaultTypes){
 				untouchedTrackedItem.tag(type.toString());
@@ -634,7 +632,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 		}
 	}
 	
-	private ImmutabilityTypes getDefaultMaximalType(GraphElement ge) {
+	private ImmutabilityTypes getDefaultMaximalType(Node ge) {
 		ImmutabilityTypes maximalType;
 		if(ge.taggedWith(XCSG.Instantiation) || ge.taggedWith(XCSG.ArrayInstantiation)){
 			maximalType = ImmutabilityTypes.MUTABLE;
@@ -665,7 +663,7 @@ public class InferenceImmutabilityAnalysis extends ImmutabilityAnalysis {
 			}
 		}
 		AtlasSet<Node> itemsToTrack = getUntrackedItems(attributedNodes);
-		for(GraphElement untouchedTrackedItem : itemsToTrack){
+		for(Node untouchedTrackedItem : itemsToTrack){
 			ImmutabilityTypes maximalType = getDefaultMaximalType(untouchedTrackedItem);
 			untouchedTrackedItem.tag(maximalType.toString());
 		}

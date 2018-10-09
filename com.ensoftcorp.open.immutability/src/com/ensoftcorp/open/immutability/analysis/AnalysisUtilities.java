@@ -5,7 +5,6 @@ import java.util.Set;
 
 import com.ensoftcorp.atlas.core.db.graph.Edge;
 import com.ensoftcorp.atlas.core.db.graph.Graph;
-import com.ensoftcorp.atlas.core.db.graph.GraphElement;
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
@@ -78,7 +77,7 @@ public class AnalysisUtilities {
 		if(ImmutabilityPreferences.isGeneralLoggingEnabled()) Log.info("Adding dummy return assignments...");
 		Q returnsEdges = Query.universe().edges(XCSG.Returns).retainEdges();
 		Q voidMethods = returnsEdges.predecessors(Common.types("void"));
-		for(GraphElement voidMethod : voidMethods.eval().nodes()){
+		for(Node voidMethod : voidMethods.eval().nodes()){
 			createDummyReturnNode(voidMethod);
 		}
 		
@@ -115,8 +114,8 @@ public class AnalysisUtilities {
 		Q callsites = Query.universe().nodes(XCSG.CallSite);
 		Q callsitesWithoutReturn = callsites.difference(callsitesWithReturn);
 		for(Node callsiteWithoutReturn : callsitesWithoutReturn.eval().nodes()){
-			GraphElement method = getInvokedMethodSignature(callsiteWithoutReturn);
-			GraphElement returnValue = Common.toQ(method).children().nodes(XCSG.ReturnValue).eval().nodes().one();
+			Node method = getInvokedMethodSignature(callsiteWithoutReturn);
+			Node returnValue = Common.toQ(method).children().nodes(XCSG.ReturnValue).eval().nodes().one();
 			createDummyReturnValueEdge(returnValue, callsiteWithoutReturn);
 		}
 		
@@ -137,7 +136,7 @@ public class AnalysisUtilities {
 		Q assignments = Query.universe().nodes(XCSG.Assignment);
 		Q assignedCallsites = localDataFlowEdges.predecessors(assignments).nodes(XCSG.CallSite);
 		Q unassignedCallsites = callsites.difference(assignedCallsites);
-		for(GraphElement unassignedCallsite : unassignedCallsites.eval().nodes()){
+		for(Node unassignedCallsite : unassignedCallsites.eval().nodes()){
 			createDummyAssignmentNode(unassignedCallsite);
 		}
 		
@@ -152,39 +151,39 @@ public class AnalysisUtilities {
 		}
 	}
 
-	private static GraphElement createDummyReturnValueEdge(GraphElement returnValue, GraphElement callsite){
-		GraphElement interproceduralDataFlowEdge = Graph.U.createEdge(returnValue, callsite);
+	private static Edge createDummyReturnValueEdge(Node returnValue, Node callsite){
+		Edge interproceduralDataFlowEdge = Graph.U.createEdge(returnValue, callsite);
 		interproceduralDataFlowEdge.tag(XCSG.InterproceduralDataFlow);
 		interproceduralDataFlowEdge.tag(DUMMY_RETURN_EDGE);
 		return interproceduralDataFlowEdge;
 	}
 	
-	private static GraphElement createDummyAssignmentNode(GraphElement unassignedCallsite) {
+	private static Node createDummyAssignmentNode(Node unassignedCallsite) {
 		// create the dummy assignment node
-		GraphElement dummyAssignmentNode = Graph.U.createNode();
+		Node dummyAssignmentNode = Graph.U.createNode();
 		dummyAssignmentNode.putAttr(XCSG.name, DUMMY_ASSIGNMENT_NODE);
 		dummyAssignmentNode.tag(XCSG.Assignment);
 		dummyAssignmentNode.tag(DUMMY_ASSIGNMENT_NODE);
 		
 		// create edge from unassigned callsite to the dummy assignment node
-		GraphElement localDataFlowEdge = Graph.U.createEdge(unassignedCallsite, dummyAssignmentNode);
+		Edge localDataFlowEdge = Graph.U.createEdge(unassignedCallsite, dummyAssignmentNode);
 		localDataFlowEdge.tag(XCSG.LocalDataFlow);
 		
 		// create a contains edge from the callsites parent to the dummy assignment node
-		GraphElement parent = Common.toQ(unassignedCallsite).parent().eval().nodes().one();
-		GraphElement containsEdge = Graph.U.createEdge(parent, dummyAssignmentNode);
+		Node parent = Common.toQ(unassignedCallsite).parent().eval().nodes().one();
+		Edge containsEdge = Graph.U.createEdge(parent, dummyAssignmentNode);
 		containsEdge.tag(XCSG.Contains);
 		
 		return dummyAssignmentNode;
 	}
 
-	private static GraphElement createDummyReturnNode(GraphElement method) {
-		GraphElement returnValue = Graph.U.createNode();
+	private static Node createDummyReturnNode(Node method) {
+		Node returnValue = Graph.U.createNode();
 		returnValue.putAttr(XCSG.name, DUMMY_RETURN_NODE);
 		returnValue.tag(XCSG.ReturnValue);
 		returnValue.tag(DUMMY_RETURN_NODE);
 		// create a contains edge from the void method to the return value
-		GraphElement containsEdge = Graph.U.createEdge(method, returnValue);
+		Edge containsEdge = Graph.U.createEdge(method, returnValue);
 		containsEdge.tag(XCSG.Contains);
 		return returnValue;
 	}
@@ -225,7 +224,7 @@ public class AnalysisUtilities {
 	 * @param callsite
 	 * @return
 	 */
-	public static Node getInvokedMethodSignature(GraphElement callsite) {
+	public static Node getInvokedMethodSignature(Node callsite) {
 		// XCSG.InvokedSignature connects a dynamic dispatch to its signature method
 		// XCSG.InvokedFunction connects a static dispatch to it actual target method
 		Q invokedEdges = Query.universe().edges(XCSG.InvokedSignature, XCSG.InvokedFunction);
@@ -357,7 +356,7 @@ public class AnalysisUtilities {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public static Set<ImmutabilityTypes> getTypes(GraphElement ge){
+	public static Set<ImmutabilityTypes> getTypes(Node ge){
 		if(ge.hasAttr(IMMUTABILITY_QUALIFIERS)){
 			return (Set<ImmutabilityTypes>) ge.getAttr(IMMUTABILITY_QUALIFIERS);
 		} else {
@@ -367,7 +366,7 @@ public class AnalysisUtilities {
 		}
 	}
 	
-	public static GraphElement getObjectType(GraphElement ge) {
+	public static Node getObjectType(Node ge) {
 		Q typeOfEdges = Query.universe().edges(XCSG.TypeOf);
 		return typeOfEdges.successors(Common.toQ(ge)).eval().nodes().one();
 	}
@@ -383,7 +382,7 @@ public class AnalysisUtilities {
 		Q interproceduralDataFlowEdges = Query.universe().edges(XCSG.InterproceduralDataFlow);
 		
 		while(!worklist.isEmpty()){
-			GraphElement reference = worklist.one();
+			Node reference = worklist.one();
 			worklist.remove(reference);
 			if(reference != null && needsProcessing(reference)){
 				if(reference.taggedWith(XCSG.Cast)){
@@ -444,13 +443,13 @@ public class AnalysisUtilities {
 					continue;
 				}
 				
-				String message = "Unhandled reference type for GraphElement " + node.address().toAddressString() + "\n" + node.toString();
+				String message = "Unhandled reference type for Node " + node.address().toAddressString() + "\n" + node.toString();
 				RuntimeException e = new RuntimeException(message);
 				Log.error(message, e);
 				throw e;
 			} else {
 				if(reference == null){
-					String message = "Null reference for GraphElement " + node.address().toAddressString();
+					String message = "Null reference for Node " + node.address().toAddressString();
 					RuntimeException e = new RuntimeException(message);
 					Log.error(message, e);
 					throw e;
@@ -463,7 +462,7 @@ public class AnalysisUtilities {
 		return parsedReferences;
 	}
 	
-	private static boolean needsProcessing(GraphElement ge){
+	private static boolean needsProcessing(Node ge){
 		if(ge.taggedWith(JimpleStopGap.DATAFLOW_DISPLAY_NODE)){
 			return true;
 		}
@@ -487,7 +486,7 @@ public class AnalysisUtilities {
 		return !isTypable(ge);
 	}
 	
-	public static boolean isTypable(GraphElement ge){
+	public static boolean isTypable(Node ge){
 		// invalid types
 		if(ge.taggedWith(XCSG.InstanceVariableAccess) || ge.taggedWith(JavaStopGap.CLASS_VARIABLE_ACCESS)){
 			return false;
@@ -569,7 +568,7 @@ public class AnalysisUtilities {
 		return false;
 	}
 	
-	public static EnumSet<ImmutabilityTypes> getDefaultTypes(GraphElement ge) {
+	public static EnumSet<ImmutabilityTypes> getDefaultTypes(Node ge) {
 		if(!isTypable(ge)){
 			RuntimeException e = new RuntimeException("Unexpected graph element: " + ge.address());
 			Log.error("Unexpected graph element: " + ge.address(), e);
@@ -703,7 +702,7 @@ public class AnalysisUtilities {
 	 * @param fieldAccess
 	 * @return
 	 */
-	public static AtlasSet<Node> getAccessedContainers(GraphElement fieldAccess){
+	public static AtlasSet<Node> getAccessedContainers(Node fieldAccess){
 		Q instanceVariableAccessedEdges = Query.universe().edges(XCSG.InstanceVariableAccessed);
 		Q variablesAccessed = instanceVariableAccessedEdges.reverse(Common.toQ(fieldAccess));
 		Q instanceVariablesAccessed = variablesAccessed.nodes(XCSG.InstanceVariableAccess);

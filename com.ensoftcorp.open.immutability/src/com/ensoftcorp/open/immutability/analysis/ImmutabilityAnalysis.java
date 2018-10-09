@@ -4,7 +4,6 @@ import java.text.DecimalFormat;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 
-import com.ensoftcorp.atlas.core.db.graph.GraphElement;
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
@@ -80,7 +79,7 @@ public abstract class ImmutabilityAnalysis {
 	 */
 	protected void tagPureMethods(){
 		AtlasSet<Node> methods = Query.universe().nodes(XCSG.Method).eval().nodes();
-		for(GraphElement method : methods){
+		for(Node method : methods){
 			if(isPureMethod(method)){
 				method.tag(ImmutabilityTags.PURE_METHOD);
 			}
@@ -95,7 +94,7 @@ public abstract class ImmutabilityAnalysis {
 	 * Assumes the maximal immutability qualifiers have already been extracted
 	 * @param method
 	 */
-	private boolean isPureMethod(GraphElement method){
+	private boolean isPureMethod(Node method){
 		if(!method.taggedWith(XCSG.Method)){
 			return false;
 		} else if(isPureMethodDefault(method)){
@@ -130,7 +129,7 @@ public abstract class ImmutabilityAnalysis {
 	 * @param method
 	 * @return
 	 */
-	private boolean isPureMethodDefault(GraphElement method){
+	private boolean isPureMethodDefault(Node method){
 		// note by convention .equals, .hashCode, .toString, and .compareTo
 		// are pure methods, but this is not enforced in overridden methods
 		// so we are not assuming it to be universally true (unlike ReIm)
