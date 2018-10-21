@@ -31,10 +31,12 @@ public class ImmutabilityAnalysisCodemapStage extends PrioritizedCodemapStage {
 	}
 
 	@Override
-	public void performIndexing(IProgressMonitor monitor) {
-		if(ImmutabilityPreferences.isImmutabilityAnalysisEnabled()){
+	public boolean performIndexing(IProgressMonitor monitor) {
+		boolean runIndexer = ImmutabilityPreferences.isImmutabilityAnalysisEnabled();
+		if(runIndexer){
 			ImmutabilityAnalysis.runAnalysis(monitor);
 		}
+		return runIndexer;
 	}
 
 }

@@ -11,7 +11,6 @@ import org.eclipse.ui.IWorkbenchPreferencePage;
 import com.ensoftcorp.open.commons.ui.components.LabelFieldEditor;
 import com.ensoftcorp.open.commons.ui.components.SpacerFieldEditor;
 import com.ensoftcorp.open.immutability.preferences.ImmutabilityPreferences;
-import com.ensoftcorp.open.immutability.ui.Activator;
 
 /**
  * UI for setting immutability analysis preferences
@@ -45,7 +44,7 @@ public class ImmutabilityPreferencesPage extends FieldEditorPreferencePage imple
 
 	@Override
 	public void init(IWorkbench workbench) {
-		IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
+		IPreferenceStore preferences = ImmutabilityPreferences.getPreferenceStore();
 		setPreferenceStore(preferences);
 		setDescription("Configure preferences for the Immutability Analysis Toolbox plugin.");
 		
