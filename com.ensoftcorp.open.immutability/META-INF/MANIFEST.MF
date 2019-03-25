@@ -2,13 +2,13 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Immutability Toolbox
 Bundle-SymbolicName: com.ensoftcorp.open.immutability;singleton:=true
-Bundle-Version: 3.3.7.qualifier
+Bundle-Version: 3.3.8.qualifier
 Bundle-Activator: com.ensoftcorp.open.immutability.Activator
 Bundle-Vendor: EnSoft Corp.
 Require-Bundle: com.ensoftcorp.atlas.ui;bundle-version="3.3.7",
- com.ensoftcorp.open.java.commons;bundle-version="3.3.7",
- com.ensoftcorp.open.jimple.commons;bundle-version="3.3.7",
- com.ensoftcorp.open.pointsto;bundle-version="3.3.7"
+ com.ensoftcorp.open.java.commons;bundle-version="3.3.8",
+ com.ensoftcorp.open.jimple.commons;bundle-version="3.3.8",
+ com.ensoftcorp.open.pointsto;bundle-version="3.3.8"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy
 Export-Package: com.ensoftcorp.open.immutability.analysis,
